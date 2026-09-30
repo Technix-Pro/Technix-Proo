@@ -678,10 +678,72 @@
     }
     customElements.define('coin-row', CoinRow);
 
-    function show(tab, title) {
-      document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
-      const activeScreen = document.getElementById('screen-' + tab);
-      if (activeScreen) activeScreen.classList.remove('hidden');
+    // Główna funkcja nawigacji po ekranach
+function show(tab, title) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+  const activeScreen = document.getElementById(`screen-${tab}`);
+  if (activeScreen) activeScreen.classList.remove('hidden');
+
+  const headerTitle = document.getElementById('header-title');
+  if (headerTitle && title) headerTitle.textContent = title;
+
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === tab);
+  });
+}
+
+// Przełączanie podzakładek (np. w sekcji nagród / zadań / rang)
+function rewardTab(id, btn) {
+  document.querySelectorAll('.reward-view').forEach(v => v.classList.add('hidden'));
+  
+  const activeView = document.getElementById(`reward-${id}`);
+  if (activeView) activeView.classList.remove('hidden');
+
+  if (btn) {
+    const parent = btn.parentElement;
+    if (parent) {
+      parent.querySelectorAll('.subtab').forEach(b => b.classList.remove('active-sub'));
+    }
+    btn.classList.add('active-sub');
+  }
+
+  // Obsługa widoczności sekcji Rangi
+  const ranksScreen = document.getElementById('screen-ranks');
+  if (ranksScreen) {
+    if (id === 'ranks') {
+      ranksScreen.classList.remove('hidden');
+    } else {
+      ranksScreen.classList.add('hidden');
+    }
+  }
+
+  // Wywołanie renderowania specyficznego dla zakładki
+  if (id === 'tasks' && typeof renderTaskList === 'function') renderTaskList();
+  if (id === 'history' && typeof renderRewardHistory === 'function') renderRewardHistory();
+}
+
+// System powiadomień Toast
+function showToast(message) {
+  const toast = document.getElementById('toast');
+  if (!toast) return;
+  toast.textContent = message;
+  toast.classList.remove('hidden');
+  
+  if (window.toastTimer) clearTimeout(window.toastTimer);
+  window.toastTimer = setTimeout(() => {
+    toast.classList.add('hidden');
+  }, 3000);
+}
+
+// Inicjalizacja po załadowaniu DOM
+document.addEventListener('DOMContentLoaded', () => {
+  // Domyślne uruchomienie pierwszej zakładki
+  const defaultBtn = document.querySelector('.subtab');
+  if (defaultBtn) {
+    rewardTab('tasks', defaultBtn);
+  }
+});
+
 
       const headerTitle = document.getElementById('header-title');
       if (headerTitle) headerTitle.textContent = title;
@@ -721,10 +783,7 @@
       if (id === 'group') renderPosts();
     }
 
-    function rewardTab(id, btn) {
-      document.querySelectorAll('.reward-view').forEach(v => v.classList.add('hidden'));
-      const activeView = document.getElementById('reward-' + id);
-      if (activeView) activeView.classList.remove('hidden');
+
 
       if (btn) {
         btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active-sub'));
@@ -744,13 +803,7 @@ if (ranksScreen) {
       if (id === 'history') renderRewardHistory();
     }
 
-    function showToast(message) {
-      const toast = document.getElementById('toast');
-      if (!toast) return;
-      toast.textContent = message;
-      toast.classList.remove('hidden');
-      clearTimeout(window.toastTimer);
-      window.toastTimer = setTimeout(() => toast.classList.add('hidden'), 2200);
+    
     }
 
     function toggleLike(btn) {
