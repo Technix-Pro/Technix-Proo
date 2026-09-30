@@ -5,12 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#080b14">
   <title>TechnixPro — Core Engine</title>
-  
-  <!-- Tailwind CSS CDN -->
+
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- Google Font: Inter -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
   <script>
@@ -41,6 +38,7 @@
       box-sizing: border-box;
       -webkit-tap-highlight-color: transparent;
     }
+
     body {
       margin: 0;
       background-color: #080b14;
@@ -48,8 +46,9 @@
       font-family: 'Inter', sans-serif;
       overflow-x: hidden;
     }
+
     .muted { color: #93a0b8; }
-    
+
     .panel {
       background: linear-gradient(145deg, rgba(21, 29, 46, 0.7), rgba(13, 19, 32, 0.9));
       border: 1px solid rgba(39, 52, 77, 0.6);
@@ -57,44 +56,47 @@
       box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
       border-radius: 18px;
     }
-    
+
     .screen {
       animation: fadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    
+
     .subtab {
       min-width: 33.333%;
       transition: all 0.2s ease;
     }
+
     .active-sub {
       color: #b9a4ff;
       border-color: #8b5cf6;
     }
-    
+
     .nav-btn {
       color: #93a0b8;
       transition: all 0.2s ease;
     }
+
     .nav-btn.active {
       color: #b9a4ff;
       transform: translateY(-2px);
     }
+
     .nav-btn span {
       font-size: 10px;
       margin-top: 3px;
       font-weight: 500;
     }
-    
+
     .scroll-none::-webkit-scrollbar { display: none; }
     .scroll-none { -ms-overflow-style: none; scrollbar-width: none; }
-    
-    /* Cyberpunk Processor Component Styles */
+
     .processor {
       position: relative;
       overflow: hidden;
       background: radial-gradient(circle at center, #164e63 0%, #111827 45%, #080b14 80%);
       border: 1px solid rgba(34, 211, 238, 0.3);
     }
+
     .processor::before, .processor::after {
       content: "";
       position: absolute;
@@ -103,35 +105,41 @@
       border: 1px solid rgba(34, 211, 238, 0.25);
       animation: spin 10s linear infinite;
     }
+
     .processor::after {
       inset: 4%;
       border-color: rgba(139, 92, 246, 0.25);
       animation-direction: reverse;
       animation-duration: 14s;
     }
+
     .chip {
       z-index: 2;
       animation: pulseGlow 3s ease-in-out infinite;
       box-shadow: 0 0 30px rgba(34, 211, 238, 0.4), 0 0 60px rgba(139, 92, 246, 0.3);
     }
+
     .dot {
       animation: blink 1.8s infinite;
     }
+
     .dot:nth-child(2) { animation-delay: 0.4s; }
     .dot:nth-child(3) { animation-delay: 0.8s; }
-    
-    /* Keyframe Animations */
+
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(6px); }
       to { opacity: 1; transform: translateY(0); }
     }
+
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
+
     @keyframes pulseGlow {
       0%, 100% { transform: scale(1); filter: brightness(1); }
       50% { transform: scale(1.05); filter: brightness(1.25); }
     }
+
     @keyframes blink {
       0%, 100% { opacity: 0.2; transform: scale(0.8); }
       50% { opacity: 1; transform: scale(1.1); }
@@ -141,31 +149,28 @@
 <body class="min-h-screen flex flex-col justify-between">
 
   <main class="max-w-md mx-auto w-full min-h-screen bg-[#080b14] flex flex-col relative pb-28 border-x border-slate-900/60 shadow-2xl">
-    
-   <!-- TOP HEADER -->
-<header class="sticky top-0 z-30 flex items-center justify-between px-4 py-3 bg-[#080b14]/90 backdrop-blur-xl border-b border-slate-800/80">
-  <div class="flex items-center gap-3">
-    <button onclick="show('profile','Profil')" class="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 via-indigo-600 to-cyan-400 p-[1.5px] transition active:scale-95 shadow-lg shadow-violet-500/50">
-      <div class="w-full h-full bg-[#080b14] rounded-[10.5px] flex items-center justify-center font-black text-transparent bg-clip-text bg-gradient-to-tr from-violet-400 to-cyan-300 text-lg tracking-tighter">
-        T
+
+    <header class="sticky top-0 z-30 flex items-center justify-between px-4 py-3 bg-[#080b14]/90 backdrop-blur-xl border-b border-slate-800/80">
+      <div class="flex items-center gap-3">
+        <button onclick="show('profile','Profil')" class="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 via-indigo-600 to-cyan-400 p-[1.5px] transition active:scale-95 shadow-lg shadow-violet-500/50">
+          <div class="w-full h-full bg-[#080b14] rounded-[10.5px] flex items-center justify-center font-black text-transparent bg-clip-text bg-gradient-to-tr from-violet-400 to-cyan-300 text-lg tracking-tighter">T</div>
+        </button>
+        <div>
+          <p class="text-[9px] uppercase tracking-[0.25em] text-cyan-400 font-bold">TechnixPro</p>
+          <h1 id="header-title" class="text-base font-bold text-white tracking-wide">Sieć społeczna</h1>
+        </div>
       </div>
-    </button>
-    <div>
-      <p class="text-[9px] uppercase tracking-[0.25em] text-cyan-400 font-bold">TechnixPro</p>
-      <h1 id="header-title" class="text-base font-bold text-white tracking-wide">Sieć społeczna</h1>
-    </div>
-  </div>
-  <div class="flex items-center gap-3 muted">
-    <button onclick="show('search','Wyszukiwarka')" class="w-9 h-9 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-center hover:text-white transition active:scale-95">
-      <i class="fa-solid fa-magnifying-glass text-xs"></i>
-    </button>
-    <button onclick="show('notifications','Powiadomienia')" class="w-9 h-9 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-center hover:text-white relative transition active:scale-95">
-      <i class="fa-regular fa-bell text-xs"></i>
-      <span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
-      <span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-cyan-400"></span>
-    </button>
-  </div>
-</header>
+      <div class="flex items-center gap-3 muted">
+        <button onclick="show('search','Wyszukiwarka')" class="w-9 h-9 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-center hover:text-white transition active:scale-95">
+          <i class="fa-solid fa-magnifying-glass text-xs"></i>
+        </button>
+        <button onclick="show('notifications','Powiadomienia')" class="w-9 h-9 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-center hover:text-white relative transition active:scale-95">
+          <i class="fa-regular fa-bell text-xs"></i>
+          <span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+          <span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-cyan-400"></span>
+        </button>
+      </div>
+    </header>
 
     <div id="home-subtabs" class="flex relative sticky top-[65px] z-20 bg-[#080b14]/95 backdrop-blur-md border-b border-slate-800/80">
       <button class="subtab py-2.5 text-xs font-semibold text-center text-[#b9a4ff]" onclick="sub('home','channel',this)">Kanał</button>
@@ -181,7 +186,7 @@
       <button class="inline-block py-2.5 px-4 border-b-2 border-transparent muted text-xs font-semibold" onclick="rewardTab('rewards',this)">Nagrody</button>
       <button class="inline-block py-2.5 px-4 border-b-2 border-transparent muted text-xs font-semibold" onclick="rewardTab('leaderboard',this)">Ranking</button>
       <button class="inline-block py-2.5 px-4 border-b-2 border-transparent muted text-xs font-semibold" onclick="rewardTab('history',this)">Historia</button>
-      <button class="inline-block py-2.5 px-4 border-b-2 border-transparent muted text-xs font-semibold text-center" onclick="rewardTab('ranks', this)">Rangi</button>
+      <button class="inline-block py-2.5 px-4 border-b-2 border-transparent muted text-xs font-semibold" onclick="rewardTab('ranks',this)">Rangi</button>
     </div>
 
     <div id="app-content" class="p-4 space-y-4 flex-1">
@@ -221,42 +226,29 @@
               <span class="text-[10px] muted">Dzisiaj, 02:18</span>
             </div>
             <h2 class="font-bold text-base text-slate-100">TechnixPro wchodzi w Fazę Stealth</h2>
-            <p class="text-xs muted leading-relaxed">
-              Zbieraj TechnixCoins,pnij się po szczeblach poziomów i odblokuj unikalne rangi w ecomstystemie TechnixPro 
-            </p>
+            <p class="text-xs muted leading-relaxed">Zbieraj TechnixCoins, wspinaj się po szczeblach poziomów i odblokuj unikalne rangi w ekosystemie TechnixPro.</p>
             <div class="flex items-center gap-4 pt-2 text-xs border-t border-slate-800/60">
               <button onclick="toggleLike(this)" class="flex items-center gap-1.5 muted hover:text-pink-400 transition active:scale-95">
                 <i class="fa-regular fa-heart"></i>
-                <span id="devlog-likes-count" class="text-[11px]">142</span>
+                <span class="text-[11px]">142</span>
               </button>
               <button onclick="show('comments','Komentarze')" class="flex items-center gap-1.5 muted hover:text-cyan-400 transition active:scale-95">
                 <i class="fa-regular fa-comment"></i>
-                <span id="devlog-comments-count" class="text-[11px]">98</span>
+                <span class="text-[11px]">98</span>
               </button>
             </div>
           </div>
-        </div>
-<!-- Sekcja Bonus Czasowy (Co 4h) -->
-<div class="panel p-4 mb-4 text-center">
-  <h3 class="text-sm font-bold tracking-wider text-slate-300 uppercase mb-2">
-    Bonus Czasowy
-  </h3>
-  <p class="text-xs text-slate-400 mb-3">
-    Odbieraj darmowe TechnixCoins co 4 godziny!
-  </p>
-  
-  <div class="flex items-center justify-center space-x-2 text-2xl font-mono text-cyan-400 mb-3">
-    <i class="fa-regular font-bold fa-clock text-lg"></i>
-    <span id="bonus-timer">04:00:00</span>
-  </div>
 
-  <button 
-    id="claim-bonus-btn" 
-    disabled 
-    class="w-full py-2.5 px-4 text-xs font-semibold rounded-lg bg-slate-700 text-slate-400 cursor-not-allowed transition-all duration-200">
-    Odbierz +50 TechnixCoins
-  </button>
-</div>
+          <div class="panel p-4 mb-4 text-center">
+            <h3 class="text-sm font-bold tracking-wider text-slate-300 uppercase mb-2">Bonus Czasowy</h3>
+            <p class="text-xs text-slate-400 mb-3">Odbieraj darmowe TechnixCoins co 4 godziny!</p>
+            <div class="flex items-center justify-center space-x-2 text-2xl font-mono text-cyan-400 mb-3">
+              <i class="fa-regular font-bold fa-clock text-lg"></i>
+              <span id="bonus-timer">04:00:00</span>
+            </div>
+            <button id="claim-bonus-btn" disabled class="w-full py-2.5 px-4 text-xs font-semibold rounded-lg bg-slate-700 text-slate-400 cursor-not-allowed transition-all duration-200">Odbierz +50 TechnixCoins</button>
+          </div>
+        </div>
 
         <div id="home-group" class="sub hidden space-y-4">
           <div class="panel p-4 space-y-3">
@@ -269,7 +261,6 @@
               </button>
             </div>
           </div>
-
           <div id="posts-feed" class="space-y-3"></div>
         </div>
 
@@ -288,9 +279,7 @@
 
           <div class="panel p-4 space-y-3">
             <h3 class="text-sm font-bold text-violet-300">Od rdzenia do całego ekosystemu</h3>
-            <p class="text-xs muted leading-relaxed">
-              TechnixPro łączy innowacje sprzętowe z rynkiem krypto w komunikatorze Telegram. Zbieraj punkty XP, wykonuj zadania deweloperskie i przygotuj się na oficjalny token $TECHNIX.
-            </p>
+            <p class="text-xs muted leading-relaxed">TechnixPro łączy innowacje sprzętowe z rynkiem krypto w komunikatorze Telegram. Zbieraj punkty XP, wykonuj zadania deweloperskie i przygotuj się na oficjalny token $TECHNIX.</p>
             <div class="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200 flex gap-2">
               <i class="fa-solid fa-triangle-exclamation text-amber-400 mt-0.5"></i>
               <span>Projekt w fazie stealth. Wszystkie dane demo zostaną zsynchronizowane po starcie backendu.</span>
@@ -331,7 +320,7 @@
 
             <div class="grid grid-cols-3 gap-2 pt-2 text-center">
               <div class="bg-slate-900/80 rounded-xl p-2.5 border border-slate-800">
-                <span class="block text-sm font-bold text-cyan-400" id="streak-days">7 dni</span>
+                <span class="block text-sm font-bold text-cyan-400">7 dni</span>
                 <span class="text-[9px] muted">Streak</span>
               </div>
               <div class="bg-slate-900/80 rounded-xl p-2.5 border border-slate-800">
@@ -354,7 +343,7 @@
             </div>
             <h3 class="text-base font-bold text-white">Cyber Week — Community Sprint</h3>
             <p class="text-xs muted">Wykonuj zadania społecznościowe, zbieraj punkty XP oraz odblokuj limitowaną odznakę.</p>
-            <button onclick="triggerTaskAction('event')" class="w-full bg-violet-600 hover:bg-violet-500 text-white font-semibold text-xs py-2.5 rounded-xl transition active:scale-95">Dołącz do Sprintu</button>
+            <button onclick="triggerTaskAction('event',50,'Event')" class="w-full bg-violet-600 hover:bg-violet-500 text-white font-semibold text-xs py-2.5 rounded-xl transition active:scale-95">Dołącz do Sprintu</button>
           </div>
         </div>
 
@@ -375,7 +364,7 @@
                   <span class="block font-bold text-xs mt-2">Bonus Dzienny</span>
                   <span class="text-[10px] muted">+25 XP za logowanie</span>
                 </div>
-                <button onclick="claimReward('TechnixCoins', 25)" class="mt-3 text-xs text-violet-400 font-semibold text-left">Odbierz &rarr;</button>
+                <button onclick="claimReward('Bonus Dzienny', 25)" class="mt-3 text-xs text-violet-400 font-semibold text-left">Odbierz &rarr;</button>
               </div>
               <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-3 flex flex-col justify-between opacity-60">
                 <div>
@@ -416,71 +405,59 @@
             <div id="reward-log" class="space-y-2"></div>
           </div>
         </div>
+
+        <div id="reward-ranks" class="reward-view hidden space-y-4">
+          <div class="panel p-4">
+            <h3 class="text-base font-bold text-white mb-2">Poziomy i Rangi</h3>
+            <p class="text-xs text-slate-400 mb-4">Zbieraj Punkty Doświadczenia (XP), aby odblokowywać wyższe rangi i unikalne profity.</p>
+            <div class="space-y-3">
+              <div class="p-3 bg-slate-900/80 border border-amber-800/40 rounded-xl flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-lg bg-amber-900/30 text-amber-600 flex items-center justify-center font-bold text-sm border border-amber-800/30">BR</div>
+                  <div>
+                    <h4 class="text-sm font-semibold text-white">Brązowy Rekrut</h4>
+                    <p class="text-[10px] text-slate-400">Od 0 XP</p>
+                  </div>
+                </div>
+                <span class="text-xs font-semibold text-amber-500">Poziom 1</span>
+              </div>
+
+              <div class="p-3 bg-slate-900/80 border border-slate-700/40 rounded-xl flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-lg bg-slate-800 text-slate-300 flex items-center justify-center font-bold text-sm border border-slate-600/30">SR</div>
+                  <div>
+                    <h4 class="text-sm font-semibold text-white">Srebrny Operat</h4>
+                    <p class="text-[10px] text-slate-400">Od 1 000 XP</p>
+                  </div>
+                </div>
+                <span class="text-xs font-semibold text-slate-400">Poziom 2</span>
+              </div>
+
+              <div class="p-3 bg-slate-900/80 border border-yellow-600/40 rounded-xl flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-lg bg-yellow-900/30 text-yellow-500 flex items-center justify-center font-bold text-sm border border-yellow-600/30">ZL</div>
+                  <div>
+                    <h4 class="text-sm font-semibold text-white">Złoty Mistrz</h4>
+                    <p class="text-[10px] text-slate-400">Od 5 000 XP</p>
+                  </div>
+                </div>
+                <span class="text-xs font-semibold text-yellow-500">Poziom 3</span>
+              </div>
+
+              <div class="p-3 bg-slate-900/80 border border-cyan-500/40 rounded-xl flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-lg bg-cyan-950 text-cyan-400 flex items-center justify-center font-bold text-sm border border-cyan-500/30">DM</div>
+                  <div>
+                    <h4 class="text-sm font-semibold text-white">Diamentowy Lider</h4>
+                    <p class="text-[10px] text-slate-400">Od 20 000 XP</p>
+                  </div>
+                </div>
+                <span class="text-xs font-semibold text-cyan-400">Poziom 4</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
-<section id="screen-ranks" class="hidden space-y-4">
-  <div class="panel p-4">
-    <h3 class="text-base font-bold text-white mb-2">Poziomy i Rangi</h3>
-    <p class="text-xs text-slate-400 mb-4">Zbieraj Punkty Doświadczenia (XP), aby odblokowywać wyższe rangi i unikalne profity.</p>
-    
-    <div class="space-y-3">
-      <!-- Brąz -->
-      <div class="p-3 bg-slate-900/80 border border-amber-800/40 rounded-xl flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-lg bg-amber-900/30 text-amber-600 flex items-center justify-center font-bold text-sm border border-amber-800/30">
-            BR
-          </div>
-          <div>
-            <h4 class="text-sm font-semibold text-white">Brązowy Rekrut</h4>
-            <p class="text-[10px] text-slate-400">Od 0 XP</p>
-          </div>
-        </div>
-        <span class="text-xs font-semibold text-amber-500">Poziom 1</span>
-      </div>
-
-      <!-- Srebro -->
-      <div class="p-3 bg-slate-900/80 border border-slate-700/40 rounded-xl flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-lg bg-slate-800 text-slate-300 flex items-center justify-center font-bold text-sm border border-slate-600/30">
-            SR
-          </div>
-          <div>
-            <h4 class="text-sm font-semibold text-white">Srebrny Operat</h4>
-            <p class="text-[10px] text-slate-400">Od 1 000 XP</p>
-          </div>
-        </div>
-        <span class="text-xs font-semibold text-slate-400">Poziom 2</span>
-      </div>
-
-      <!-- Złoto -->
-      <div class="p-3 bg-slate-900/80 border border-yellow-600/40 rounded-xl flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-lg bg-yellow-900/30 text-yellow-500 flex items-center justify-center font-bold text-sm border border-yellow-600/30">
-            ZL
-          </div>
-          <div>
-            <h4 class="text-sm font-semibold text-white">Złoty Mistrz</h4>
-            <p class="text-[10px] text-slate-400">Od 5 000 XP</p>
-          </div>
-        </div>
-        <span class="text-xs font-semibold text-yellow-500">Poziom 3</span>
-      </div>
-
-      <!-- Diament -->
-      <div class="p-3 bg-slate-900/80 border border-cyan-500/40 rounded-xl flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-lg bg-cyan-950 text-cyan-400 flex items-center justify-center font-bold text-sm border border-cyan-500/30">
-            DM
-          </div>
-          <div>
-            <h4 class="text-sm font-semibold text-white">Diamentowy Lider</h4>
-            <p class="text-[10px] text-slate-400">Od 20 000 XP</p>
-          </div>
-        </div>
-        <span class="text-xs font-semibold text-cyan-400">Poziom 4</span>
-      </div>
-    </div>
-  </div>
-</section>
 
       <section id="screen-crypto" class="screen hidden space-y-4">
         <div class="flex justify-between items-center">
@@ -527,7 +504,7 @@
             <span>Ustawienia Profilu</span>
             <i class="fa-solid fa-chevron-right text-[10px] muted"></i>
           </button>
-          <button onclick="showToast('Bezpieczeństwo: Polączenie Telegram SSL')" class="w-full p-3.5 text-left flex justify-between items-center text-slate-300">
+          <button onclick="showToast('Bezpieczeństwo: Połączenie Telegram SSL')" class="w-full p-3.5 text-left flex justify-between items-center text-slate-300">
             <span>Bezpieczeństwo & Dostęp</span>
             <i class="fa-solid fa-chevron-right text-[10px] muted"></i>
           </button>
@@ -589,57 +566,6 @@
   </main>
 
   <div id="toast" class="hidden fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-slate-800/90 border border-slate-700/80 text-slate-100 text-xs font-medium px-4 py-2.5 rounded-xl shadow-xl backdrop-blur-md"></div>
-<script>
-  document.addEventListener("DOMContentLoaded", () => {
-  const CLAIM_INTERVAL = 4 * 60 * 60 * 1000; // 4 godziny w milisekundach
-  const timerElement = document.getElementById("bonus-timer");
-  const claimBtn = document.getElementById("claim-bonus-btn");
-
-  function updateBonusTimer() {
-    const lastClaim = parseInt(localStorage.getItem("lastTechnixClaimTime") || "0", 10);
-    const now = Date.now();
-    const timePassed = now - lastClaim;
-    const timeLeft = CLAIM_INTERVAL - timePassed;
-
-    if (timeLeft <= 0) {
-      // Bonus jest gotowy do odbioru
-      timerElement.textContent = "00:00:00";
-      claimBtn.disabled = false;
-      claimBtn.classList.remove("bg-slate-700", "text-slate-400", "cursor-not-allowed");
-      claimBtn.classList.add("bg-cyan-500", "hover:bg-cyan-400", "text-slate-950", "shadow-lg", "shadow-cyan-500/20");
-      claimBtn.textContent = "Odbierz +50 TechnixCoins";
-    } else {
-      // Licznik odlicza czas
-      claimBtn.disabled = true;
-      claimBtn.classList.add("bg-slate-700", "text-slate-400", "cursor-not-allowed");
-      claimBtn.classList.remove("bg-cyan-500", "hover:bg-cyan-400", "text-slate-950", "shadow-lg", "shadow-cyan-500/20");
-
-      const hours = Math.floor(timeLeft / (1000 * 60 * 60));
-      const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-
-      const formatTwoDigits = (num) => String(num).padStart(2, "0");
-      timerElement.textContent = `${formatTwoDigits(hours)}:${formatTwoDigits(minutes)}:${formatTwoDigits(seconds)}`;
-      claimBtn.textContent = `Dostępne za ${formatTwoDigits(hours)}h ${formatTwoDigits(minutes)}m`;
-    }
-  }
-
-  // Kliknięcie w przycisk odbioru
-  claimBtn.addEventListener("click", () => {
-    if (claimBtn.disabled) return;
-
-    // Zapisanie czasu odbioru
-    localStorage.setItem("lastTechnixClaimTime", Date.now().toString());
-
-    // Tutaj możesz dodać logikę naliczania +50 TechnixCoins do salda użytkownika
-
-    updateBonusTimer();
-  });
-
-  // Odświeżanie licznika co sekundę
-  updateBonusTimer();
-  setInterval(updateBonusTimer, 1000);
-});
 
   <script>
     const TelegramApp = window.Telegram?.WebApp;
@@ -660,9 +586,7 @@
         this.innerHTML = `
           <div class="flex items-center justify-between py-2.5 border-b border-slate-800/60 last:border-none">
             <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center font-bold ${color}">
-                ${icon}
-              </div>
+              <div class="w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center font-bold ${color}">${icon}</div>
               <div>
                 <span class="block text-xs font-bold text-white">${name}</span>
                 <span class="text-[10px] muted font-mono">${symbol}</span>
@@ -678,72 +602,26 @@
     }
     customElements.define('coin-row', CoinRow);
 
-    // Główna funkcja nawigacji po ekranach
-function show(tab, title) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
-  const activeScreen = document.getElementById(`screen-${tab}`);
-  if (activeScreen) activeScreen.classList.remove('hidden');
+    function show(tab, title) {
+      const homeTabs = document.getElementById('home-subtabs');
+      const giftTabs = document.getElementById('gift-subtabs');
 
-  const headerTitle = document.getElementById('header-title');
-  if (headerTitle && title) headerTitle.textContent = title;
+      if (tab === 'info') {
+        document.getElementById('screen-home')?.classList.remove('hidden');
+        document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+        document.getElementById('screen-home')?.classList.remove('hidden');
+        homeTabs?.classList.remove('hidden');
+        giftTabs?.classList.add('hidden');
+        document.getElementById('header-title').textContent = title;
+        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === 'home'));
+        sub('home', 'info', document.querySelector('#home-subtabs .subtab:last-child'));
+        window.scrollTo(0, 0);
+        return;
+      }
 
-  document.querySelectorAll('.nav-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.tab === tab);
-  });
-}
-
-// Przełączanie podzakładek (np. w sekcji nagród / zadań / rang)
-function rewardTab(id, btn) {
-  document.querySelectorAll('.reward-view').forEach(v => v.classList.add('hidden'));
-  
-  const activeView = document.getElementById(`reward-${id}`);
-  if (activeView) activeView.classList.remove('hidden');
-
-  if (btn) {
-    const parent = btn.parentElement;
-    if (parent) {
-      parent.querySelectorAll('.subtab').forEach(b => b.classList.remove('active-sub'));
-    }
-    btn.classList.add('active-sub');
-  }
-
-  // Obsługa widoczności sekcji Rangi
-  const ranksScreen = document.getElementById('screen-ranks');
-  if (ranksScreen) {
-    if (id === 'ranks') {
-      ranksScreen.classList.remove('hidden');
-    } else {
-      ranksScreen.classList.add('hidden');
-    }
-  }
-
-  // Wywołanie renderowania specyficznego dla zakładki
-  if (id === 'tasks' && typeof renderTaskList === 'function') renderTaskList();
-  if (id === 'history' && typeof renderRewardHistory === 'function') renderRewardHistory();
-}
-
-// System powiadomień Toast
-function showToast(message) {
-  const toast = document.getElementById('toast');
-  if (!toast) return;
-  toast.textContent = message;
-  toast.classList.remove('hidden');
-  
-  if (window.toastTimer) clearTimeout(window.toastTimer);
-  window.toastTimer = setTimeout(() => {
-    toast.classList.add('hidden');
-  }, 3000);
-}
-
-// Inicjalizacja po załadowaniu DOM
-document.addEventListener('DOMContentLoaded', () => {
-  // Domyślne uruchomienie pierwszej zakładki
-  const defaultBtn = document.querySelector('.subtab');
-  if (defaultBtn) {
-    rewardTab('tasks', defaultBtn);
-  }
-});
-
+      document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+      const activeScreen = document.getElementById('screen-' + tab);
+      if (activeScreen) activeScreen.classList.remove('hidden');
 
       const headerTitle = document.getElementById('header-title');
       if (headerTitle) headerTitle.textContent = title;
@@ -752,9 +630,8 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.classList.toggle('active', btn.dataset.tab === tab);
       });
 
-      document.getElementById('home-subtabs')?.classList.toggle('hidden', tab !== 'home');
-      document.getElementById('gift-subtabs')?.classList.toggle('hidden', tab !== 'gift');
-
+      homeTabs?.classList.toggle('hidden', tab !== 'home');
+      giftTabs?.classList.toggle('hidden', tab !== 'gift');
       window.scrollTo(0, 0);
     }
 
@@ -770,55 +647,55 @@ document.addEventListener('DOMContentLoaded', () => {
       const activeSub = document.getElementById(parent + '-' + id);
       if (activeSub) activeSub.classList.remove('hidden');
 
-      btn.parentElement.querySelectorAll('button').forEach(b => {
-        b.classList.remove('text-[#b9a4ff]');
-        b.classList.add('muted');
-      });
-      
-      btn.classList.remove('muted');
-      btn.classList.add('text-[#b9a4ff]');
-
-      updateSubtabIndicator(btn);
+      if (btn) {
+        btn.parentElement.querySelectorAll('button').forEach(b => {
+          b.classList.remove('text-[#b9a4ff]');
+          b.classList.add('muted');
+        });
+        btn.classList.remove('muted');
+        btn.classList.add('text-[#b9a4ff]');
+        updateSubtabIndicator(btn);
+      }
 
       if (id === 'group') renderPosts();
     }
 
-
+    function rewardTab(id, btn) {
+      document.querySelectorAll('.reward-view').forEach(v => v.classList.add('hidden'));
+      const activeView = document.getElementById('reward-' + id);
+      if (activeView) activeView.classList.remove('hidden');
 
       if (btn) {
         btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active-sub'));
         btn.classList.add('active-sub');
       }
-// Dodaj obsługę wywołania dla ekranu rang
-const ranksScreen = document.getElementById('screen-ranks');
-if (ranksScreen) {
-  if (id === 'ranks') {
-    ranksScreen.classList.remove('hidden');
-  } else {
-    ranksScreen.classList.add('hidden');
-  }
-}
 
       if (id === 'tasks') renderTaskList();
       if (id === 'history') renderRewardHistory();
     }
 
-    
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      if (!toast) return;
+      toast.textContent = message;
+      toast.classList.remove('hidden');
+      clearTimeout(window.toastTimer);
+      window.toastTimer = setTimeout(() => toast.classList.add('hidden'), 2200);
     }
 
     function toggleLike(btn) {
       const icon = btn.querySelector('i');
       const count = btn.querySelector('span');
-      let val = parseInt(count.textContent);
-      
+      const val = parseInt(count.textContent, 10) || 0;
+
       if (icon.classList.contains('fa-regular')) {
         icon.classList.replace('fa-regular', 'fa-solid');
         btn.classList.add('text-pink-400');
-        count.textContent = val + 1;
+        count.textContent = String(val + 1);
       } else {
         icon.classList.replace('fa-solid', 'fa-regular');
         btn.classList.remove('text-pink-400');
-        count.textContent = val - 1;
+        count.textContent = String(val - 1);
       }
     }
 
@@ -844,7 +721,7 @@ if (ranksScreen) {
     function renderPosts() {
       const feed = document.getElementById('posts-feed');
       if (!feed) return;
-      
+
       const posts = JSON.parse(localStorage.getItem('tp_posts') || '[]');
       if (!posts.length) {
         feed.innerHTML = '<div class="panel p-4 text-center text-xs muted">Brak postów. Bądź pierwszy!</div>';
@@ -882,7 +759,7 @@ if (ranksScreen) {
     function addXP(amount, reason) {
       const current = getXP();
       const updated = current + amount;
-      localStorage.setItem('tp_xp', updated);
+      localStorage.setItem('tp_xp', String(updated));
 
       const logs = JSON.parse(localStorage.getItem('tp_reward_logs') || '[]');
       logs.unshift({ reason, amount, date: new Date().toLocaleString('pl-PL') });
@@ -895,9 +772,17 @@ if (ranksScreen) {
     function updateXPDisplay() {
       const xp = getXP();
       const xpTotal = document.getElementById('xp-total');
+      const xpProgressText = document.getElementById('xp-progress-text');
       const rankDisplay = document.getElementById('rank-xp-display');
+      const progressBar = document.getElementById('xp-progress-bar');
+
       if (xpTotal) xpTotal.textContent = xp.toLocaleString();
+      if (xpProgressText) xpProgressText.textContent = `${xp.toLocaleString()} / 3 000 XP`;
       if (rankDisplay) rankDisplay.textContent = `${xp.toLocaleString()} XP`;
+      if (progressBar) {
+        const percentage = Math.min((xp / 3000) * 100, 100);
+        progressBar.style.width = `${percentage}%`;
+      }
     }
 
     function claimReward(name, amount) {
@@ -952,7 +837,7 @@ if (ranksScreen) {
       const logs = JSON.parse(localStorage.getItem('tp_reward_logs') || '[]');
       const container = document.getElementById('reward-log');
       if (!container) return;
-      
+
       if (!logs.length) {
         container.innerHTML = '<p class="text-xs muted">Brak odnotowanej aktywności XP.</p>';
         return;
@@ -969,10 +854,63 @@ if (ranksScreen) {
       `).join('');
     }
 
-    window.onload = function() {
+    function initBonusTimer() {
+      const button = document.getElementById('claim-bonus-btn');
+      const timer = document.getElementById('bonus-timer');
+      if (!button || !timer) return;
+
+      const CLAIM_INTERVAL = 4 * 60 * 60 * 1000;
+
+      function updateBonusTimer() {
+        const lastClaim = Number(localStorage.getItem('lastTechnixClaimTime') || 0);
+        const now = Date.now();
+        const remaining = CLAIM_INTERVAL - (now - lastClaim);
+
+        if (remaining <= 0) {
+          timer.textContent = '00:00:00';
+          button.disabled = false;
+          button.classList.remove('bg-slate-700', 'text-slate-400', 'cursor-not-allowed');
+          button.classList.add('bg-cyan-500', 'hover:bg-cyan-400', 'text-slate-950', 'shadow-lg', 'shadow-cyan-500/20');
+          button.textContent = 'Odbierz +50 TechnixCoins';
+          return;
+        }
+
+        const hours = Math.floor(remaining / (1000 * 60 * 60));
+        const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+
+        const pad = (value) => String(value).padStart(2, '0');
+        timer.textContent = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+        button.disabled = true;
+        button.classList.add('bg-slate-700', 'text-slate-400', 'cursor-not-allowed');
+        button.classList.remove('bg-cyan-500', 'hover:bg-cyan-400', 'text-slate-950', 'shadow-lg', 'shadow-cyan-500/20');
+        button.textContent = `Dostępne za ${pad(hours)}h ${pad(minutes)}m`;
+      }
+
+      button.addEventListener('click', () => {
+        if (button.disabled) return;
+        localStorage.setItem('lastTechnixClaimTime', String(Date.now()));
+        addXP(50, 'Bonus Czasowy');
+        updateBonusTimer();
+      });
+
+      updateBonusTimer();
+      setInterval(updateBonusTimer, 1000);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initBonusTimer();
+      updateXPDisplay();
+      renderPosts();
+      renderTaskList();
+      renderRewardHistory();
+
+      const firstSubtab = document.querySelector('#home-subtabs .subtab');
+      if (firstSubtab) updateSubtabIndicator(firstSubtab);
+
       if (TelegramApp && TelegramApp.initDataUnsafe?.user) {
-        const u = TelegramApp.initDataUnsafe.user;
-        const name = u.username ? `@${u.username}` : `${u.first_name} ${u.last_name || ''}`;
+        const user = TelegramApp.initDataUnsafe.user;
+        const name = user.username ? `@${user.username}` : `${user.first_name} ${user.last_name || ''}`.trim();
         const telegramUsername = document.getElementById('telegram-username');
         const profileName = document.getElementById('profile-name');
         const profileId = document.getElementById('profile-id');
@@ -980,15 +918,10 @@ if (ranksScreen) {
 
         if (telegramUsername) telegramUsername.textContent = name;
         if (profileName) profileName.textContent = name;
-        if (profileId) profileId.textContent = `TG ID: #${u.id}`;
+        if (profileId) profileId.textContent = `TG ID: #${user.id}`;
         if (rankUserLabel) rankUserLabel.textContent = `12. ${name}`;
       }
-
-      updateXPDisplay();
-      renderPosts();
-      const firstSubtab = document.querySelector('#home-subtabs .subtab');
-      if (firstSubtab) updateSubtabIndicator(firstSubtab);
-    };
+    });
   </script>
 </body>
 </html>
