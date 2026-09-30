@@ -235,6 +235,27 @@
             </div>
           </div>
         </div>
+<!-- Sekcja Bonus Czasowy (Co 4h) -->
+<div class="panel p-4 mb-4 text-center">
+  <h3 class="text-sm font-bold tracking-wider text-slate-300 uppercase mb-2">
+    Bonus Czasowy
+  </h3>
+  <p class="text-xs text-slate-400 mb-3">
+    Odbieraj darmowe TechnixCoins co 4 godziny!
+  </p>
+  
+  <div class="flex items-center justify-center space-x-2 text-2xl font-mono text-cyan-400 mb-3">
+    <i class="fa-regular font-bold fa-clock text-lg"></i>
+    <span id="bonus-timer">04:00:00</span>
+  </div>
+
+  <button 
+    id="claim-bonus-btn" 
+    disabled 
+    class="w-full py-2.5 px-4 text-xs font-semibold rounded-lg bg-slate-700 text-slate-400 cursor-not-allowed transition-all duration-200">
+    Odbierz +50 TechnixCoins
+  </button>
+</div>
 
         <div id="home-group" class="sub hidden space-y-4">
           <div class="panel p-4 space-y-3">
@@ -503,6 +524,56 @@
   </main>
 
   <div id="toast" class="hidden fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-slate-800/90 border border-slate-700/80 text-slate-100 text-xs font-medium px-4 py-2.5 rounded-xl shadow-xl backdrop-blur-md"></div>
+document.addEventListener("DOMContentLoaded", () => {
+  const CLAIM_INTERVAL = 4 * 60 * 60 * 1000; // 4 godziny w milisekundach
+  const timerElement = document.getElementById("bonus-timer");
+  const claimBtn = document.getElementById("claim-bonus-btn");
+
+  function updateBonusTimer() {
+    const lastClaim = parseInt(localStorage.getItem("lastTechnixClaimTime") || "0", 10);
+    const now = Date.now();
+    const timePassed = now - lastClaim;
+    const timeLeft = CLAIM_INTERVAL - timePassed;
+
+    if (timeLeft <= 0) {
+      // Bonus jest gotowy do odbioru
+      timerElement.textContent = "00:00:00";
+      claimBtn.disabled = false;
+      claimBtn.classList.remove("bg-slate-700", "text-slate-400", "cursor-not-allowed");
+      claimBtn.classList.add("bg-cyan-500", "hover:bg-cyan-400", "text-slate-950", "shadow-lg", "shadow-cyan-500/20");
+      claimBtn.textContent = "Odbierz +50 TechnixCoins";
+    } else {
+      // Licznik odlicza czas
+      claimBtn.disabled = true;
+      claimBtn.classList.add("bg-slate-700", "text-slate-400", "cursor-not-allowed");
+      claimBtn.classList.remove("bg-cyan-500", "hover:bg-cyan-400", "text-slate-950", "shadow-lg", "shadow-cyan-500/20");
+
+      const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+      const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+      const formatTwoDigits = (num) => String(num).padStart(2, "0");
+      timerElement.textContent = `${formatTwoDigits(hours)}:${formatTwoDigits(minutes)}:${formatTwoDigits(seconds)}`;
+      claimBtn.textContent = `Dostępne za ${formatTwoDigits(hours)}h ${formatTwoDigits(minutes)}m`;
+    }
+  }
+
+  // Kliknięcie w przycisk odbioru
+  claimBtn.addEventListener("click", () => {
+    if (claimBtn.disabled) return;
+
+    // Zapisanie czasu odbioru
+    localStorage.setItem("lastTechnixClaimTime", Date.now().toString());
+
+    // Tutaj możesz dodać logikę naliczania +50 TechnixCoins do salda użytkownika
+
+    updateBonusTimer();
+  });
+
+  // Odświeżanie licznika co sekundę
+  updateBonusTimer();
+  setInterval(updateBonusTimer, 1000);
+});
 
   <script>
     const TelegramApp = window.Telegram?.WebApp;
