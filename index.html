@@ -136,60 +136,6 @@
       0%, 100% { opacity: 0.2; transform: scale(0.8); }
       50% { opacity: 1; transform: scale(1.1); }
     }
-    // Aktualizacja wskaźnika pod zakładkami
-function updateSubtabIndicator(btn) {
-  const indicator = document.getElementById('subtab-indicator');
-  if (!indicator || !btn) return;
-  indicator.style.width = `${btn.offsetWidth}px`;
-  indicator.style.left = `${btn.offsetLeft}px`;
-}
-
-function sub(parent, id, btn) {
-  document.querySelectorAll('.sub').forEach(s => s.classList.add('hidden'));
-  const activeSub = document.getElementById(parent + '-' + id);
-  if (activeSub) activeSub.classList.remove('hidden');
-
-  btn.parentElement.querySelectorAll('button').forEach(b => {
-    b.classList.remove('text-[#b9a4ff]');
-    b.classList.add('muted');
-  });
-  
-  btn.classList.remove('muted');
-  btn.classList.add('text-[#b9a4ff]');
-
-  updateSubtabIndicator(btn);
-
-  if (id === 'group') renderPosts();
-}
-
-// Obsługa polubień z natychmiastowym odświeżaniem i animacją
-function toggleLike(btn) {
-  const icon = btn.querySelector('i');
-  const count = btn.querySelector('span');
-  let val = parseInt(count.textContent);
-  
-  icon.classList.add('like-pop');
-  setTimeout(() => icon.classList.remove('like-pop'), 300);
-
-  if (icon.classList.contains('fa-regular')) {
-    icon.classList.replace('fa-regular', 'fa-solid');
-    btn.classList.remove('muted');
-    btn.classList.add('text-pink-400');
-    count.textContent = val + 1;
-  } else {
-    icon.classList.replace('fa-solid', 'fa-regular');
-    btn.classList.remove('text-pink-400');
-    btn.classList.add('muted');
-    count.textContent = val - 1;
-  }
-}
-
-// Inicjalizacja pozycji paska po załadowaniu
-window.addEventListener('load', () => {
-  const firstSubtab = document.querySelector('#home-subtabs .subtab');
-  if (firstSubtab) updateSubtabIndicator(firstSubtab);
-});
-
   </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between">
@@ -199,8 +145,7 @@ window.addEventListener('load', () => {
    <!-- TOP HEADER -->
 <header class="sticky top-0 z-30 flex items-center justify-between px-4 py-3 bg-[#080b14]/90 backdrop-blur-xl border-b border-slate-800/80">
   <div class="flex items-center gap-3">
-    <!-- Nowe Logo TechnixPro w lewym górnym rogu -->
-    <button onclick="show('profile','Profil')" class="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 via-indigo-600 to-cyan-400 p-[1.5px] transition active:scale-95 shadow-lg shadow-violet-500/20">
+    <button onclick="show('profile','Profil')" class="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 via-indigo-600 to-cyan-400 p-[1.5px] transition active:scale-95 shadow-lg shadow-violet-500/50">
       <div class="w-full h-full bg-[#080b14] rounded-[10.5px] flex items-center justify-center font-black text-transparent bg-clip-text bg-gradient-to-tr from-violet-400 to-cyan-300 text-lg tracking-tighter">
         T
       </div>
@@ -222,18 +167,13 @@ window.addEventListener('load', () => {
   </div>
 </header>
 
+    <div id="home-subtabs" class="flex relative sticky top-[65px] z-20 bg-[#080b14]/95 backdrop-blur-md border-b border-slate-800/80">
+      <button class="subtab py-2.5 text-xs font-semibold text-center text-[#b9a4ff]" onclick="sub('home','channel',this)">Kanał</button>
+      <button class="subtab py-2.5 muted text-xs font-semibold text-center" onclick="sub('home','group',this)">Grupa</button>
+      <button class="subtab py-2.5 muted text-xs font-semibold text-center" onclick="sub('home','info',this)">Info</button>
+      <div id="subtab-indicator" class="subtab-indicator"></div>
+    </div>
 
-    <!-- SUB-NAVIGATION BAR (HOME TABS) -->
-<div id="home-subtabs" class="flex relative sticky top-[65px] z-20 bg-[#080b14]/95 backdrop-blur-md border-b border-slate-800/80">
-  <button class="subtab py-2.5 text-xs font-semibold text-center text-[#b9a4ff]" onclick="sub('home','channel',this)">Kanał</button>
-  <button class="subtab py-2.5 muted text-xs font-semibold text-center" onclick="sub('home','group',this)">Grupa</button>
-  <button class="subtab py-2.5 muted text-xs font-semibold text-center" onclick="sub('home','info',this)">Info</button>
-  <!-- Pływający pasek pod zakładką -->
-  <div id="subtab-indicator" class="subtab-indicator"></div>
-</div>
-
-
-    <!-- SUB-NAVIGATION BAR (GIFT / REWARDS TABS) -->
     <div id="gift-subtabs" class="hidden overflow-x-auto whitespace-nowrap scroll-none sticky top-[65px] z-20 bg-[#080b14]/95 backdrop-blur-md border-b border-slate-800/80 px-2">
       <button class="inline-block active-sub py-2.5 px-4 border-b-2 text-xs font-semibold" onclick="rewardTab('overview',this)">Przegląd</button>
       <button class="inline-block py-2.5 px-4 border-b-2 border-transparent muted text-xs font-semibold" onclick="rewardTab('events',this)">Eventy Live</button>
@@ -243,13 +183,8 @@ window.addEventListener('load', () => {
       <button class="inline-block py-2.5 px-4 border-b-2 border-transparent muted text-xs font-semibold" onclick="rewardTab('history',this)">Historia</button>
     </div>
 
-    <!-- MAIN VIEW CONTAINER -->
     <div id="app-content" class="p-4 space-y-4 flex-1">
-
-      <!-- SECTION 1: START (HOME) -->
       <section id="screen-home" class="screen space-y-4">
-        
-        <!-- SUB-TAB 1: CHANNEL -->
         <div id="home-channel" class="sub space-y-4">
           <div class="panel p-3.5 flex items-center justify-between">
             <div class="flex items-center gap-2">
@@ -259,7 +194,6 @@ window.addEventListener('load', () => {
             <span class="text-[10px] text-violet-400 bg-violet-500/10 border border-violet-500/20 px-2 py-0.5 rounded-full font-mono">v2.4 Stealth</span>
           </div>
 
-          <!-- DEMO WALLET CARD -->
           <div class="panel p-4 relative overflow-hidden">
             <p class="text-[10px] uppercase tracking-wider muted font-semibold">Szacowana wartość portfela</p>
             <div class="flex items-baseline gap-2 mt-1">
@@ -280,35 +214,33 @@ window.addEventListener('load', () => {
             </div>
           </div>
 
-          <!-- DEV LOG POST -->
-<div class="panel p-4 space-y-3">
-  <div class="flex justify-between items-center">
-    <span class="text-[10px] uppercase font-mono text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">Log #001</span>
-    <span class="text-[10px] muted">Dzisiaj, 02:18</span>
-  </div>
-  <h2 class="font-bold text-base text-slate-100">TechnixPro wchodzi w Fazę Stealth</h2>
-  <p class="text-xs muted leading-relaxed">
-    Rozpoczynamy integrację z ekosystemem Telegrama i siecią TON. Przenosimy architekturę na bezpieczny backend z darmową bazą danych.
-  </p>
-  <div class="flex items-center gap-4 pt-2 text-xs border-t border-slate-800/60">
-    <button onclick="toggleLike(this)" class="flex items-center gap-1.5 muted hover:text-pink-400 transition active:scale-95">
-      <i class="fa-regular fa-heart"></i>
-      <span id="devlog-likes-count" class="text-[11px]">142</span>
-    </button>
-    <button onclick="show('comments','Komentarze')" class="flex items-center gap-1.5 muted hover:text-cyan-400 transition active:scale-95">
-      <i class="fa-regular fa-comment"></i>
-      <span id="devlog-comments-count" class="text-[11px]">98</span>
-    </button>
-  </div>
-</div>
+          <div class="panel p-4 space-y-3">
+            <div class="flex justify-between items-center">
+              <span class="text-[10px] uppercase font-mono text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">Log #001</span>
+              <span class="text-[10px] muted">Dzisiaj, 02:18</span>
+            </div>
+            <h2 class="font-bold text-base text-slate-100">TechnixPro wchodzi w Fazę Stealth</h2>
+            <p class="text-xs muted leading-relaxed">
+              Rozpoczynamy integrację z ekosystemem Telegrama i siecią TON. Przenosimy architekturę na bezpieczny backend z darmową bazą danych.
+            </p>
+            <div class="flex items-center gap-4 pt-2 text-xs border-t border-slate-800/60">
+              <button onclick="toggleLike(this)" class="flex items-center gap-1.5 muted hover:text-pink-400 transition active:scale-95">
+                <i class="fa-regular fa-heart"></i>
+                <span id="devlog-likes-count" class="text-[11px]">142</span>
+              </button>
+              <button onclick="show('comments','Komentarze')" class="flex items-center gap-1.5 muted hover:text-cyan-400 transition active:scale-95">
+                <i class="fa-regular fa-comment"></i>
+                <span id="devlog-comments-count" class="text-[11px]">98</span>
+              </button>
+            </div>
+          </div>
         </div>
 
-        <!-- SUB-TAB 2: GROUP (LOCALSTORAGE POSTS) -->
         <div id="home-group" class="sub hidden space-y-4">
           <div class="panel p-4 space-y-3">
             <h2 class="font-bold text-sm text-slate-200">Społeczność & Dyskusja</h2>
             <p class="text-xs muted">Twoje wpisy są automatycznie zapisywane na tym urządzeniu (zabezpieczone Anti-XSS).</p>
-            <textarea id="post-input" rows="3" class="w-full rounded-xl bg-[#080b14] border border-slate-700/80 p-3 text-xs text-slate-200 focus:outline-none focus:border-violet-500 resize-none" placeholder="Napisz coś nowatorskiego..."></textarea>
+            <textarea id="post-input" rows="3" class="w-full rounded-xl bg-[#080b14] border border-slate-700/80 p-3 text-xs text-slate-200 focus:outline-none focus:border-violet-500 resize-none" placeholder="Napisz wiadomość..."></textarea>
             <div class="flex justify-end">
               <button onclick="createNewPost()" class="bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition active:scale-95 flex items-center gap-2">
                 <i class="fa-solid fa-paper-plane text-[10px]"></i> Opublikuj
@@ -316,24 +248,17 @@ window.addEventListener('load', () => {
             </div>
           </div>
 
-          <!-- POSTS CONTAINER -->
-          <div id="posts-feed" class="space-y-3">
-            <!-- Dynamic Post Items rendered here -->
-          </div>
+          <div id="posts-feed" class="space-y-3"></div>
         </div>
 
-        <!-- SUB-TAB 3: INFO & VISION -->
         <div id="home-info" class="sub hidden space-y-4">
-          <!-- PROCESSOR CYBERPUNK ART -->
           <div class="processor rounded-2xl p-6 flex flex-col items-center text-center relative min-h-[240px] justify-center">
             <i class="dot absolute top-6 left-8 w-1.5 h-1.5 rounded-full bg-cyan-400"></i>
             <i class="dot absolute top-12 right-10 w-2 h-2 rounded-full bg-cyan-300"></i>
             <i class="dot absolute bottom-8 left-12 w-1.5 h-1.5 rounded-full bg-violet-400"></i>
-            
             <div class="chip w-20 h-20 rounded-2xl bg-gradient-to-br from-cyan-400 to-violet-600 flex items-center justify-center text-3xl text-slate-900 shadow-lg">
               <i class="fa-solid fa-microchip"></i>
             </div>
-            
             <p class="text-[9px] uppercase tracking-[0.25em] text-cyan-300 font-bold mt-5">Core Engine · Architecture</p>
             <h2 class="text-xl font-extrabold text-white mt-1">TechnixPro Vision</h2>
             <p class="text-xs text-slate-300 max-w-xs mt-1">Niezależny procesor sprzętowy, cyfrowe aktywa i społeczność deweloperów.</p>
@@ -350,13 +275,9 @@ window.addEventListener('load', () => {
             </div>
           </div>
         </div>
-
       </section>
 
-      <!-- SECTION 2: BONUSY (GIFT / REWARDS HUB) -->
       <section id="screen-gift" class="screen hidden space-y-4">
-        
-        <!-- OVERVIEW VIEW -->
         <div id="reward-overview" class="reward-view space-y-4">
           <div class="panel p-4 relative overflow-hidden bg-gradient-to-br from-violet-900/40 via-slate-900 to-cyan-900/30">
             <span class="text-[9px] font-mono text-cyan-300 bg-cyan-500/20 border border-cyan-400/30 px-2 py-0.5 rounded-full">CORE REWARDS SYSTEM</span>
@@ -373,9 +294,7 @@ window.addEventListener('load', () => {
                   <span class="text-xs font-bold text-violet-400">XP</span>
                 </div>
               </div>
-              <span id="user-level-badge" class="bg-violet-600/30 border border-violet-500/40 text-violet-300 font-extrabold text-xs px-3 py-1 rounded-full">
-                LEVEL 12
-              </span>
+              <span id="user-level-badge" class="bg-violet-600/30 border border-violet-500/40 text-violet-300 font-extrabold text-xs px-3 py-1 rounded-full">LEVEL 12</span>
             </div>
 
             <div class="space-y-1">
@@ -405,7 +324,6 @@ window.addEventListener('load', () => {
           </div>
         </div>
 
-        <!-- EVENTS VIEW -->
         <div id="reward-events" class="reward-view hidden space-y-3">
           <div class="panel p-4 space-y-3">
             <div class="flex justify-between items-center">
@@ -414,23 +332,17 @@ window.addEventListener('load', () => {
             </div>
             <h3 class="text-base font-bold text-white">Cyber Week — Community Sprint</h3>
             <p class="text-xs muted">Wykonuj zadania społecznościowe, zbieraj punkty XP oraz odblokuj limitowaną odznakę.</p>
-            <button onclick="triggerTaskAction('event')" class="w-full bg-violet-600 hover:bg-violet-500 text-white font-semibold text-xs py-2.5 rounded-xl transition active:scale-95">
-              Dołącz do Sprintu
-            </button>
+            <button onclick="triggerTaskAction('event')" class="w-full bg-violet-600 hover:bg-violet-500 text-white font-semibold text-xs py-2.5 rounded-xl transition active:scale-95">Dołącz do Sprintu</button>
           </div>
         </div>
 
-        <!-- TASKS VIEW -->
         <div id="reward-tasks" class="reward-view hidden space-y-3">
           <div class="panel p-4">
             <h3 class="font-bold text-sm text-slate-200 mb-3">Dzisiejsze zadania</h3>
-            <div id="task-list" class="space-y-2">
-              <!-- Rendered via JS -->
-            </div>
+            <div id="task-list" class="space-y-2"></div>
           </div>
         </div>
 
-        <!-- REWARDS VIEW -->
         <div id="reward-rewards" class="reward-view hidden space-y-3">
           <div class="panel p-4">
             <h3 class="font-bold text-sm text-slate-200 mb-3">Dostępne nagrody</h3>
@@ -455,7 +367,6 @@ window.addEventListener('load', () => {
           </div>
         </div>
 
-        <!-- LEADERBOARD VIEW -->
         <div id="reward-leaderboard" class="reward-view hidden space-y-3">
           <div class="panel p-4">
             <h3 class="font-bold text-sm text-slate-200">Ranking Społeczności</h3>
@@ -477,28 +388,21 @@ window.addEventListener('load', () => {
           </div>
         </div>
 
-        <!-- HISTORY VIEW -->
         <div id="reward-history" class="reward-view hidden space-y-3">
           <div class="panel p-4">
             <h3 class="font-bold text-sm text-slate-200 mb-3">Historia aktywności XP</h3>
-            <div id="reward-log" class="space-y-2">
-              <!-- Rendered via JS -->
-            </div>
+            <div id="reward-log" class="space-y-2"></div>
           </div>
         </div>
-
       </section>
 
-      <!-- SECTION 3: KRYPTOWALUTY -->
       <section id="screen-crypto" class="screen hidden space-y-4">
         <div class="flex justify-between items-center">
           <h2 class="text-lg font-bold text-white">Rynek Krypto</h2>
           <span class="text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Live Sync</span>
         </div>
-        
         <div class="panel p-4 space-y-3">
           <div id="crypto-container">
-            <!-- Custom elements dynamically rendered -->
             <coin-row name="Bitcoin" symbol="BTC" price="271 840 PLN" change="+5.24%" icon="₿" color="text-amber-400"></coin-row>
             <coin-row name="Ethereum" symbol="ETH" price="13 420 PLN" change="+3.81%" icon="Ξ" color="text-indigo-400"></coin-row>
             <coin-row name="Solana" symbol="SOL" price="582 PLN" change="+12.47%" icon="S" color="text-cyan-400"></coin-row>
@@ -507,7 +411,6 @@ window.addEventListener('load', () => {
         </div>
       </section>
 
-      <!-- SECTION 4: PORTFEL -->
       <section id="screen-wallet" class="screen hidden space-y-4">
         <h2 class="text-lg font-bold text-white">Portfel Cyfrowy</h2>
         <div class="panel p-5 text-center space-y-3">
@@ -520,7 +423,6 @@ window.addEventListener('load', () => {
         </div>
       </section>
 
-      <!-- SECTION 5: PROFIL -->
       <section id="screen-profile" class="screen hidden space-y-4">
         <div class="panel p-5 text-center space-y-3">
           <div class="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-violet-600 to-cyan-400 p-0.5">
@@ -546,7 +448,6 @@ window.addEventListener('load', () => {
         </div>
       </section>
 
-      <!-- SECTION 6: MENU -->
       <section id="screen-menu" class="screen hidden space-y-4">
         <h2 class="text-lg font-bold text-white">Menu Główne</h2>
         <div class="panel p-4 space-y-2 text-xs">
@@ -555,7 +456,6 @@ window.addEventListener('load', () => {
         </div>
       </section>
 
-      <!-- AUXILIARY SCREENS -->
       <section id="screen-search" class="screen hidden space-y-4">
         <input class="panel w-full p-3 text-xs bg-[#080b14] text-white border border-slate-700 rounded-xl focus:outline-none" placeholder="Szukaj w TechnixPro...">
       </section>
@@ -572,10 +472,8 @@ window.addEventListener('load', () => {
         <textarea class="panel w-full p-3 text-xs bg-[#080b14] border border-slate-700 rounded-xl focus:outline-none" rows="3" placeholder="Dodaj komentarz..."></textarea>
         <button onclick="showToast('Komentarz został wysłany!')" class="bg-violet-600 text-xs font-semibold px-4 py-2 rounded-xl">Wyślij</button>
       </section>
-
     </div>
 
-    <!-- BOTTOM NAVIGATION BAR -->
     <nav class="fixed bottom-0 left-0 right-0 z-40 max-w-md mx-auto bg-[#080b14]/95 backdrop-blur-xl border-t border-slate-800/80 px-2 pt-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))] flex justify-around">
       <button class="nav-btn active flex flex-col items-center" data-tab="home" onclick="show('home','Sieć społeczna')">
         <i class="fa-solid fa-house text-base"></i>
@@ -602,21 +500,17 @@ window.addEventListener('load', () => {
         <span>Menu</span>
       </button>
     </nav>
-
   </main>
 
-  <!-- TOAST NOTIFICATION POPUP -->
-  <div id="toast" class="hidden fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-slate-800/90 border border-slate-700/80 text-slate-100 text-xs font-medium px-4 py-2.5 rounded-xl shadow-xl backdrop-blur-md transition-all"></div>
+  <div id="toast" class="hidden fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-slate-800/90 border border-slate-700/80 text-slate-100 text-xs font-medium px-4 py-2.5 rounded-xl shadow-xl backdrop-blur-md"></div>
 
   <script>
-    /* TELEGRAM MINI APP INTEGRATION HELPER */
     const TelegramApp = window.Telegram?.WebApp;
     if (TelegramApp) {
       TelegramApp.ready();
       TelegramApp.expand();
     }
 
-    // Custom Coin Component
     class CoinRow extends HTMLElement {
       connectedCallback() {
         const name = this.getAttribute('name');
@@ -647,23 +541,29 @@ window.addEventListener('load', () => {
     }
     customElements.define('coin-row', CoinRow);
 
-    // SCREEN NAVIGATION LOGIC
     function show(tab, title) {
       document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
       const activeScreen = document.getElementById('screen-' + tab);
       if (activeScreen) activeScreen.classList.remove('hidden');
 
-      document.getElementById('header-title').textContent = title;
+      const headerTitle = document.getElementById('header-title');
+      if (headerTitle) headerTitle.textContent = title;
 
       document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.tab === tab);
       });
 
-      // Toggle Sub-navigation displays
-      document.getElementById('home-subtabs').classList.toggle('hidden', tab !== 'home');
-      document.getElementById('gift-subtabs').classList.toggle('hidden', tab !== 'gift');
+      document.getElementById('home-subtabs')?.classList.toggle('hidden', tab !== 'home');
+      document.getElementById('gift-subtabs')?.classList.toggle('hidden', tab !== 'gift');
 
       window.scrollTo(0, 0);
+    }
+
+    function updateSubtabIndicator(btn) {
+      const indicator = document.getElementById('subtab-indicator');
+      if (!indicator || !btn) return;
+      indicator.style.width = `${btn.offsetWidth}px`;
+      indicator.style.left = `${btn.offsetLeft}px`;
     }
 
     function sub(parent, id, btn) {
@@ -671,8 +571,15 @@ window.addEventListener('load', () => {
       const activeSub = document.getElementById(parent + '-' + id);
       if (activeSub) activeSub.classList.remove('hidden');
 
-      btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active-sub'));
-      btn.classList.add('active-sub');
+      btn.parentElement.querySelectorAll('button').forEach(b => {
+        b.classList.remove('text-[#b9a4ff]');
+        b.classList.add('muted');
+      });
+      
+      btn.classList.remove('muted');
+      btn.classList.add('text-[#b9a4ff]');
+
+      updateSubtabIndicator(btn);
 
       if (id === 'group') renderPosts();
     }
@@ -691,9 +598,9 @@ window.addEventListener('load', () => {
       if (id === 'history') renderRewardHistory();
     }
 
-    // TOAST NOTIFICATIONS
     function showToast(message) {
       const toast = document.getElementById('toast');
+      if (!toast) return;
       toast.textContent = message;
       toast.classList.remove('hidden');
       clearTimeout(window.toastTimer);
@@ -716,7 +623,6 @@ window.addEventListener('load', () => {
       }
     }
 
-    // POSTS LOGIC (LOCALSTORAGE + Anti-XSS)
     function sanitize(str) {
       return String(str).replace(/[&<>"']/g, match => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -729,11 +635,7 @@ window.addEventListener('load', () => {
       if (!content) return showToast('Wpisz treść posta przed publikacją.');
 
       const posts = JSON.parse(localStorage.getItem('tp_posts') || '[]');
-      posts.unshift({
-        content: content,
-        date: new Date().toLocaleString('pl-PL')
-      });
-
+      posts.unshift({ content, date: new Date().toLocaleString('pl-PL') });
       localStorage.setItem('tp_posts', JSON.stringify(posts));
       input.value = '';
       renderPosts();
@@ -774,7 +676,6 @@ window.addEventListener('load', () => {
       showToast('Post usunięty.');
     }
 
-    // XP & REWARDS LOGIC
     function getXP() {
       return Number(localStorage.getItem('tp_xp') || 2450);
     }
@@ -794,8 +695,10 @@ window.addEventListener('load', () => {
 
     function updateXPDisplay() {
       const xp = getXP();
-      document.getElementById('xp-total').textContent = xp.toLocaleString();
-      document.getElementById('rank-xp-display').textContent = `${xp.toLocaleString()} XP`;
+      const xpTotal = document.getElementById('xp-total');
+      const rankDisplay = document.getElementById('rank-xp-display');
+      if (xpTotal) xpTotal.textContent = xp.toLocaleString();
+      if (rankDisplay) rankDisplay.textContent = `${xp.toLocaleString()} XP`;
     }
 
     function claimReward(name, amount) {
@@ -814,7 +717,10 @@ window.addEventListener('load', () => {
         ['visit_info', 'Odwiedź zakładkę Info', 25]
       ];
 
-      document.getElementById('task-list').innerHTML = tasks.map(t => {
+      const taskList = document.getElementById('task-list');
+      if (!taskList) return;
+
+      taskList.innerHTML = tasks.map(t => {
         const isDone = completed.includes(t[0]);
         return `
           <div class="flex items-center justify-between bg-slate-900/80 p-3 rounded-xl border border-slate-800 text-xs">
@@ -846,6 +752,7 @@ window.addEventListener('load', () => {
     function renderRewardHistory() {
       const logs = JSON.parse(localStorage.getItem('tp_reward_logs') || '[]');
       const container = document.getElementById('reward-log');
+      if (!container) return;
       
       if (!logs.length) {
         container.innerHTML = '<p class="text-xs muted">Brak odnotowanej aktywności XP.</p>';
@@ -863,21 +770,26 @@ window.addEventListener('load', () => {
       `).join('');
     }
 
-    // INITIALIZATION
     window.onload = function() {
-      // Sync Telegram User Data if available
       if (TelegramApp && TelegramApp.initDataUnsafe?.user) {
         const u = TelegramApp.initDataUnsafe.user;
         const name = u.username ? `@${u.username}` : `${u.first_name} ${u.last_name || ''}`;
-        document.getElementById('telegram-username').textContent = name;
-        document.getElementById('profile-name').textContent = name;
-        document.getElementById('profile-id').textContent = `TG ID: #${u.id}`;
-        document.getElementById('rank-user-label').textContent = `12. ${name}`;
+        const telegramUsername = document.getElementById('telegram-username');
+        const profileName = document.getElementById('profile-name');
+        const profileId = document.getElementById('profile-id');
+        const rankUserLabel = document.getElementById('rank-user-label');
+
+        if (telegramUsername) telegramUsername.textContent = name;
+        if (profileName) profileName.textContent = name;
+        if (profileId) profileId.textContent = `TG ID: #${u.id}`;
+        if (rankUserLabel) rankUserLabel.textContent = `12. ${name}`;
       }
 
       updateXPDisplay();
       renderPosts();
+      const firstSubtab = document.querySelector('#home-subtabs .subtab');
+      if (firstSubtab) updateSubtabIndicator(firstSubtab);
     };
   </script>
 </body>
-                  </html>
+</html>
