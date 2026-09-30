@@ -524,7 +524,8 @@
   </main>
 
   <div id="toast" class="hidden fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-slate-800/90 border border-slate-700/80 text-slate-100 text-xs font-medium px-4 py-2.5 rounded-xl shadow-xl backdrop-blur-md"></div>
-document.addEventListener("DOMContentLoaded", () => {
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
   const CLAIM_INTERVAL = 4 * 60 * 60 * 1000; // 4 godziny w milisekundach
   const timerElement = document.getElementById("bonus-timer");
   const claimBtn = document.getElementById("claim-bonus-btn");
