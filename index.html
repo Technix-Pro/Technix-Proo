@@ -170,11 +170,14 @@
 
 
     <!-- SUB-NAVIGATION BAR (HOME TABS) -->
-    <div id="home-subtabs" class="flex sticky top-[65px] z-20 bg-[#080b14]/95 backdrop-blur-md border-b border-slate-800/80">
-      <button class="subtab active-sub py-2.5 border-b-2 text-xs font-semibold text-center" onclick="sub('home','channel',this)">Kanał</button>
-      <button class="subtab py-2.5 border-b-2 border-transparent muted text-xs font-semibold text-center" onclick="sub('home','group',this)">Grupa</button>
-      <button class="subtab py-2.5 border-b-2 border-transparent muted text-xs font-semibold text-center" onclick="sub('home','info',this)">Info</button>
-    </div>
+<div id="home-subtabs" class="flex relative sticky top-[65px] z-20 bg-[#080b14]/95 backdrop-blur-md border-b border-slate-800/80">
+  <button class="subtab py-2.5 text-xs font-semibold text-center text-[#b9a4ff]" onclick="sub('home','channel',this)">Kanał</button>
+  <button class="subtab py-2.5 muted text-xs font-semibold text-center" onclick="sub('home','group',this)">Grupa</button>
+  <button class="subtab py-2.5 muted text-xs font-semibold text-center" onclick="sub('home','info',this)">Info</button>
+  <!-- Pływający pasek pod zakładką -->
+  <div id="subtab-indicator" class="subtab-indicator"></div>
+</div>
+
 
     <!-- SUB-NAVIGATION BAR (GIFT / REWARDS TABS) -->
     <div id="gift-subtabs" class="hidden overflow-x-auto whitespace-nowrap scroll-none sticky top-[65px] z-20 bg-[#080b14]/95 backdrop-blur-md border-b border-slate-800/80 px-2">
