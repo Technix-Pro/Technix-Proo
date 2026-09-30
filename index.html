@@ -417,6 +417,70 @@
           </div>
         </div>
       </section>
+<section id="screen-ranks" class="hidden space-y-4">
+  <div class="panel p-4">
+    <h3 class="text-base font-bold text-white mb-2">Poziomy i Rangi</h3>
+    <p class="text-xs text-slate-400 mb-4">Zbieraj Punkty Doświadczenia (XP), aby odblokowywać wyższe rangi i unikalne profity.</p>
+    
+    <div class="space-y-3">
+      <!-- Brąz -->
+      <div class="p-3 bg-slate-900/80 border border-amber-800/40 rounded-xl flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg bg-amber-900/30 text-amber-600 flex items-center justify-center font-bold text-sm border border-amber-800/30">
+            BR
+          </div>
+          <div>
+            <h4 class="text-sm font-semibold text-white">Brązowy Rekrut</h4>
+            <p class="text-[10px] text-slate-400">Od 0 XP</p>
+          </div>
+        </div>
+        <span class="text-xs font-semibold text-amber-500">Poziom 1</span>
+      </div>
+
+      <!-- Srebro -->
+      <div class="p-3 bg-slate-900/80 border border-slate-700/40 rounded-xl flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg bg-slate-800 text-slate-300 flex items-center justify-center font-bold text-sm border border-slate-600/30">
+            SR
+          </div>
+          <div>
+            <h4 class="text-sm font-semibold text-white">Srebrny Operat</h4>
+            <p class="text-[10px] text-slate-400">Od 1 000 XP</p>
+          </div>
+        </div>
+        <span class="text-xs font-semibold text-slate-400">Poziom 2</span>
+      </div>
+
+      <!-- Złoto -->
+      <div class="p-3 bg-slate-900/80 border border-yellow-600/40 rounded-xl flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg bg-yellow-900/30 text-yellow-500 flex items-center justify-center font-bold text-sm border border-yellow-600/30">
+            ZL
+          </div>
+          <div>
+            <h4 class="text-sm font-semibold text-white">Złoty Mistrz</h4>
+            <p class="text-[10px] text-slate-400">Od 5 000 XP</p>
+          </div>
+        </div>
+        <span class="text-xs font-semibold text-yellow-500">Poziom 3</span>
+      </div>
+
+      <!-- Diament -->
+      <div class="p-3 bg-slate-900/80 border border-cyan-500/40 rounded-xl flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg bg-cyan-950 text-cyan-400 flex items-center justify-center font-bold text-sm border border-cyan-500/30">
+            DM
+          </div>
+          <div>
+            <h4 class="text-sm font-semibold text-white">Diamentowy Lider</h4>
+            <p class="text-[10px] text-slate-400">Od 20 000 XP</p>
+          </div>
+        </div>
+        <span class="text-xs font-semibold text-cyan-400">Poziom 4</span>
+      </div>
+    </div>
+  </div>
+</section>
 
       <section id="screen-crypto" class="screen hidden space-y-4">
         <div class="flex justify-between items-center">
@@ -666,6 +730,15 @@
         btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active-sub'));
         btn.classList.add('active-sub');
       }
+// Dodaj obsługę wywołania dla ekranu rang
+const ranksScreen = document.getElementById('screen-ranks');
+if (ranksScreen) {
+  if (id === 'ranks') {
+    ranksScreen.classList.remove('hidden');
+  } else {
+    ranksScreen.classList.add('hidden');
+  }
+}
 
       if (id === 'tasks') renderTaskList();
       if (id === 'history') renderRewardHistory();
