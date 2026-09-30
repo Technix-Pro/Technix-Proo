@@ -136,6 +136,60 @@
       0%, 100% { opacity: 0.2; transform: scale(0.8); }
       50% { opacity: 1; transform: scale(1.1); }
     }
+    // Aktualizacja wskaźnika pod zakładkami
+function updateSubtabIndicator(btn) {
+  const indicator = document.getElementById('subtab-indicator');
+  if (!indicator || !btn) return;
+  indicator.style.width = `${btn.offsetWidth}px`;
+  indicator.style.left = `${btn.offsetLeft}px`;
+}
+
+function sub(parent, id, btn) {
+  document.querySelectorAll('.sub').forEach(s => s.classList.add('hidden'));
+  const activeSub = document.getElementById(parent + '-' + id);
+  if (activeSub) activeSub.classList.remove('hidden');
+
+  btn.parentElement.querySelectorAll('button').forEach(b => {
+    b.classList.remove('text-[#b9a4ff]');
+    b.classList.add('muted');
+  });
+  
+  btn.classList.remove('muted');
+  btn.classList.add('text-[#b9a4ff]');
+
+  updateSubtabIndicator(btn);
+
+  if (id === 'group') renderPosts();
+}
+
+// Obsługa polubień z natychmiastowym odświeżaniem i animacją
+function toggleLike(btn) {
+  const icon = btn.querySelector('i');
+  const count = btn.querySelector('span');
+  let val = parseInt(count.textContent);
+  
+  icon.classList.add('like-pop');
+  setTimeout(() => icon.classList.remove('like-pop'), 300);
+
+  if (icon.classList.contains('fa-regular')) {
+    icon.classList.replace('fa-regular', 'fa-solid');
+    btn.classList.remove('muted');
+    btn.classList.add('text-pink-400');
+    count.textContent = val + 1;
+  } else {
+    icon.classList.replace('fa-solid', 'fa-regular');
+    btn.classList.remove('text-pink-400');
+    btn.classList.add('muted');
+    count.textContent = val - 1;
+  }
+}
+
+// Inicjalizacja pozycji paska po załadowaniu
+window.addEventListener('load', () => {
+  const firstSubtab = document.querySelector('#home-subtabs .subtab');
+  if (firstSubtab) updateSubtabIndicator(firstSubtab);
+});
+
   </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between">
@@ -227,26 +281,26 @@
           </div>
 
           <!-- DEV LOG POST -->
-          <div class="panel p-4 space-y-3">
-            <div class="flex justify-between items-center">
-              <span class="text-[10px] uppercase font-mono text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">Log #001</span>
-              <span class="text-[10px] muted">Dzisiaj, 02:18</span>
-            </div>
-            <h2 class="font-bold text-base text-slate-100">TechnixPro wchodzi w Fazę Stealth</h2>
-            <p class="text-xs muted leading-relaxed">
-              Rozpoczynamy integrację z ekosystemem Telegrama i siecią TON. Przenosimy architekturę na bezpieczny backend z darmową bazą danych.
-            </p>
-            <div class="flex items-center gap-4 pt-2 text-xs border-t border-slate-800/60">
-              <button onclick="toggleLike(this)" class="flex items-center gap-1.5 muted hover:text-pink-400 transition">
-                <i class="fa-regular fa-heart"></i>
-                <span class="text-[11px]">142</span>
-              </button>
-              <button onclick="show('comments','Komentarze')" class="flex items-center gap-1.5 muted hover:text-cyan-400 transition">
-                <i class="fa-regular fa-comment"></i>
-                <span class="text-[11px]">98</span>
-              </button>
-            </div>
-          </div>
+<div class="panel p-4 space-y-3">
+  <div class="flex justify-between items-center">
+    <span class="text-[10px] uppercase font-mono text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">Log #001</span>
+    <span class="text-[10px] muted">Dzisiaj, 02:18</span>
+  </div>
+  <h2 class="font-bold text-base text-slate-100">TechnixPro wchodzi w Fazę Stealth</h2>
+  <p class="text-xs muted leading-relaxed">
+    Rozpoczynamy integrację z ekosystemem Telegrama i siecią TON. Przenosimy architekturę na bezpieczny backend z darmową bazą danych.
+  </p>
+  <div class="flex items-center gap-4 pt-2 text-xs border-t border-slate-800/60">
+    <button onclick="toggleLike(this)" class="flex items-center gap-1.5 muted hover:text-pink-400 transition active:scale-95">
+      <i class="fa-regular fa-heart"></i>
+      <span id="devlog-likes-count" class="text-[11px]">142</span>
+    </button>
+    <button onclick="show('comments','Komentarze')" class="flex items-center gap-1.5 muted hover:text-cyan-400 transition active:scale-95">
+      <i class="fa-regular fa-comment"></i>
+      <span id="devlog-comments-count" class="text-[11px]">98</span>
+    </button>
+  </div>
+</div>
         </div>
 
         <!-- SUB-TAB 2: GROUP (LOCALSTORAGE POSTS) -->
