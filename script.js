@@ -19,5 +19,6 @@ async function displayPoints(telegramId) {
 }
 
 // Przykładowe wywołanie funkcji
+document.getElementById('user-points').innerText = "Test ID: " + Telegram.WebApp.initDataUnsafe.user.id;
 displayPoints(Telegram.WebApp.initDataUnsafe.user.id
 ); 
