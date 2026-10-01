@@ -12,7 +12,7 @@ async function displayPoints(telegramId) {
     return;
   }
 
-  const pointsElement = document.getElementById('user-points');
+  const pointsElement = document.getElementById('xp-total');
   if (pointsElement && data) {
     pointsElement.innerText = data.technix_points;
   }
