@@ -19,4 +19,5 @@ async function displayPoints(telegramId) {
 }
 
 // Przykładowe wywołanie funkcji
-displayPoints(123456789); 
+displayPoints(Telegram.WebApp.initDataUnsafe.user.id
+); 
