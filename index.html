@@ -9,9 +9,8 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <script src="https://telegram.org"></script>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-  
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -154,8 +153,8 @@
 
     <header class="sticky top-0 z-30 flex items-center justify-between px-4 py-3 bg-[#080b14]/90 backdrop-blur-xl border-b border-slate-800/80">
       <div class="flex items-center gap-3">
-        <button onclick="show('profile','Profil')" class="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 via-indigo-600 to-cyan-400 p-[1.5px] transition active:scale-95 shadow-lg shadow-violet-500/50">
-          <div class="w-full h-full bg-[#080b14] rounded-[10.5px] flex items-center justify-center font-black text-transparent bg-clip-text bg-gradient-to-tr from-violet-400 to-cyan-300 text-lg tracking-tighter">T</div>
+        <button onclick="show('profile','Profil')" class="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 via-indigo-600 to-cyan-400 p-[1.5px] transition active:scale-95 shadow-lg shadow-violet-500/20">
+          <div class="w-full h-full bg-[#080b14] rounded-[10.5px] flex items-center justify-center font-black text-transparent bg-clip-text bg-gradient-to-tr from-violet-400 to-cyan-300 text-lg tracking-tighter">TP</div>
         </button>
         <div>
           <p class="text-[9px] uppercase tracking-[0.25em] text-cyan-400 font-bold">TechnixPro</p>
@@ -256,7 +255,7 @@
           <div class="panel p-4 space-y-3">
             <h2 class="font-bold text-sm text-slate-200">Społeczność & Dyskusja</h2>
             <p class="text-xs muted">Twoje wpisy są automatycznie zapisywane na tym urządzeniu (zabezpieczone Anti-XSS).</p>
-            <textarea id="post-input" rows="3" class="w-full rounded-xl bg-[#080b14] border border-slate-700/80 p-3 text-xs text-slate-200 focus:outline-none focus:border-violet-500 resize-none" placeholder="Napisz wiadomość..."></textarea>
+            <textarea id="post-input" rows="3" class="w-full rounded-xl bg-[#080b14] border border-slate-700/80 p-3 text-xs text-slate-200 focus:outline-none focus:border-violet-500 resize-none" placeholder="Napisz coś ciekawego..."></textarea>
             <div class="flex justify-end">
               <button onclick="createNewPost()" class="bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition active:scale-95 flex items-center gap-2">
                 <i class="fa-solid fa-paper-plane text-[10px]"></i> Opublikuj
@@ -281,7 +280,7 @@
 
           <div class="panel p-4 space-y-3">
             <h3 class="text-sm font-bold text-violet-300">Od rdzenia do całego ekosystemu</h3>
-            <p class="text-xs muted leading-relaxed">TechnixPro łączy innowacje sprzętowe z rynkiem krypto w komunikatorze Telegram. Zbieraj punkty XP, wykonuj zadania deweloperskie i przygotuj się na oficjalny token $TECHNIX.</p>
+            <p class="text-xs muted leading-relaxed">TechnixPro łączy innowacje sprzętowe z rynkiem krypto w komunikatorze Telegram. Zbieraj punkty XP, wykonuj zadania deweloperskie i przygotuj się na rewolucję.</p>
             <div class="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200 flex gap-2">
               <i class="fa-solid fa-triangle-exclamation text-amber-400 mt-0.5"></i>
               <span>Projekt w fazie stealth. Wszystkie dane demo zostaną zsynchronizowane po starcie backendu.</span>
@@ -303,20 +302,20 @@
               <div>
                 <span class="text-xs muted font-medium" id="telegram-username">@User</span>
                 <div class="flex items-baseline gap-1 mt-0.5">
-                  <span id="xp-total" class="text-2xl font-black text-white">2 450</span>
+                  <span id="xp-total" class="text-2xl font-black text-white">0</span>
                   <span class="text-xs font-bold text-violet-400">XP</span>
                 </div>
               </div>
-              <span id="user-level-badge" class="bg-violet-600/30 border border-violet-500/40 text-violet-300 font-extrabold text-xs px-3 py-1 rounded-full">LEVEL 12</span>
+              <span id="user-level-badge" class="bg-violet-600/30 border border-violet-500/40 text-violet-300 font-extrabold text-xs px-3 py-1 rounded-full">LEVEL 1</span>
             </div>
 
             <div class="space-y-1">
               <div class="flex justify-between text-[10px] muted">
                 <span>Postęp poziomu</span>
-                <span id="xp-progress-text">2 450 / 3 000 XP</span>
+                <span id="xp-progress-text">0 / 3 000 XP</span>
               </div>
               <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
-                <div id="xp-progress-bar" class="bg-gradient-to-r from-violet-500 to-cyan-400 h-full transition-all duration-500" style="width: 81.6%"></div>
+                <div id="xp-progress-bar" class="bg-gradient-to-r from-violet-500 to-cyan-400 h-full transition-all duration-500" style="width: 0%"></div>
               </div>
             </div>
 
@@ -345,7 +344,7 @@
             </div>
             <h3 class="text-base font-bold text-white">Cyber Week — Community Sprint</h3>
             <p class="text-xs muted">Wykonuj zadania społecznościowe, zbieraj punkty XP oraz odblokuj limitowaną odznakę.</p>
-            <button onclick="triggerTaskAction('event',50,'Event')" class="w-full bg-violet-600 hover:bg-violet-500 text-white font-semibold text-xs py-2.5 rounded-xl transition active:scale-95">Dołącz do Sprintu</button>
+            <button onclick="triggerTaskAction('event',50,'Event')" class="w-full bg-violet-600 hover:bg-violet-500 text-white font-semibold text-xs py-2.5 rounded-xl transition active:scale-95">Dołącz do eventu</button>
           </div>
         </div>
 
@@ -395,7 +394,7 @@
               </div>
               <div class="flex items-center justify-between bg-violet-900/30 p-2.5 rounded-xl border border-violet-500/30 text-xs font-semibold">
                 <span id="rank-user-label">12. You (@User)</span>
-                <span id="rank-xp-display" class="font-bold text-violet-300">2 450 XP</span>
+                <span id="rank-xp-display" class="font-bold text-violet-300">0 XP</span>
               </div>
             </div>
           </div>
@@ -497,7 +496,7 @@
           </div>
           <div>
             <h2 id="profile-name" class="font-bold text-base text-white">TechnixUser</h2>
-            <p id="profile-id" class="text-xs muted">TG ID: #00000000</p>
+            <p id="profile-id" class="text-xs muted">TG ID: #brak danych</p>
           </div>
         </div>
 
@@ -700,233 +699,9 @@
         count.textContent = String(val - 1);
       }
     }
+  </script>
 
-    function sanitize(str) {
-      return String(str).replace(/[&<>"']/g, match => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-      }[match]));
-    }
-
-    function createNewPost() {
-      const input = document.getElementById('post-input');
-      const content = input.value.trim();
-      if (!content) return showToast('Wpisz treść posta przed publikacją.');
-
-      const posts = JSON.parse(localStorage.getItem('tp_posts') || '[]');
-      posts.unshift({ content, date: new Date().toLocaleString('pl-PL') });
-      localStorage.setItem('tp_posts', JSON.stringify(posts));
-      input.value = '';
-      renderPosts();
-      showToast('Post został pomyślnie opublikowany.');
-    }
-
-    function renderPosts() {
-      const feed = document.getElementById('posts-feed');
-      if (!feed) return;
-
-      const posts = JSON.parse(localStorage.getItem('tp_posts') || '[]');
-      if (!posts.length) {
-        feed.innerHTML = '<div class="panel p-4 text-center text-xs muted">Brak postów. Bądź pierwszy!</div>';
-        return;
-      }
-
-      feed.innerHTML = posts.map((p, idx) => `
-        <article class="panel p-4 space-y-2">
-          <div class="flex justify-between items-center text-xs">
-            <span class="font-bold text-violet-300">TechnixUser</span>
-            <span class="text-[10px] muted">${p.date}</span>
-          </div>
-          <p class="text-xs text-slate-200 whitespace-pre-wrap leading-relaxed">${sanitize(p.content)}</p>
-          <div class="flex justify-end pt-1">
-            <button onclick="removePost(${idx})" class="text-[10px] text-slate-500 hover:text-red-400 transition">
-              <i class="fa-regular fa-trash-can"></i> Usuń
-            </button>
-          </div>
-        </article>
-      `).join('');
-    }
-
-    function removePost(index) {
-      const posts = JSON.parse(localStorage.getItem('tp_posts') || '[]');
-      posts.splice(index, 1);
-      localStorage.setItem('tp_posts', JSON.stringify(posts));
-      renderPosts();
-      showToast('Post usunięty.');
-    }
-
-    function getXP() {
-      return Number(localStorage.getItem('tp_xp') || 2450);
-    }
-
-    function addXP(amount, reason) {
-      const current = getXP();
-      const updated = current + amount;
-      localStorage.setItem('tp_xp', String(updated));
-
-      const logs = JSON.parse(localStorage.getItem('tp_reward_logs') || '[]');
-      logs.unshift({ reason, amount, date: new Date().toLocaleString('pl-PL') });
-      localStorage.setItem('tp_reward_logs', JSON.stringify(logs));
-
-      updateXPDisplay();
-      showToast(`+${amount} XP: ${reason}`);
-    }
-
-    function updateXPDisplay() {
-      const xp = getXP();
-      const xpTotal = document.getElementById('xp-total');
-      const xpProgressText = document.getElementById('xp-progress-text');
-      const rankDisplay = document.getElementById('rank-xp-display');
-      const progressBar = document.getElementById('xp-progress-bar');
-
-      if (xpTotal) xpTotal.textContent = xp.toLocaleString();
-      if (xpProgressText) xpProgressText.textContent = `${xp.toLocaleString()} / 3 000 XP`;
-      if (rankDisplay) rankDisplay.textContent = `${xp.toLocaleString()} XP`;
-      if (progressBar) {
-        const percentage = Math.min((xp / 3000) * 100, 100);
-        progressBar.style.width = `${percentage}%`;
-      }
-    }
-
-    function claimReward(name, amount) {
-      const claimedKey = 'tp_claimed_' + name;
-      if (localStorage.getItem(claimedKey)) return showToast('Ta nagroda została już odebrana.');
-
-      localStorage.setItem(claimedKey, 'true');
-      addXP(amount, name);
-    }
-
-    function renderTaskList() {
-      const completed = JSON.parse(localStorage.getItem('tp_tasks') || '[]');
-      const tasks = [
-        ['login', 'Zaloguj się codziennie', 25],
-        ['post', 'Opublikuj post w Grupie', 50],
-        ['visit_info', 'Odwiedź zakładkę Info', 25]
-      ];
-
-      const taskList = document.getElementById('task-list');
-      if (!taskList) return;
-
-      taskList.innerHTML = tasks.map(t => {
-        const isDone = completed.includes(t[0]);
-        return `
-          <div class="flex items-center justify-between bg-slate-900/80 p-3 rounded-xl border border-slate-800 text-xs">
-            <div class="flex items-center gap-2.5">
-              <i class="fa-solid ${isDone ? 'fa-circle-check text-emerald-400' : 'fa-circle text-slate-700'} text-sm"></i>
-              <div>
-                <span class="block font-bold text-slate-200">${t[1]}</span>
-                <span class="text-[10px] muted">+${t[2]} XP</span>
-              </div>
-            </div>
-            <button onclick="triggerTaskAction('${t[0]}', ${t[2]}, '${t[1]}')" class="text-[11px] font-semibold ${isDone ? 'muted cursor-default' : 'text-violet-400 hover:text-violet-300'}">
-              ${isDone ? 'Wykonane' : 'Wykonaj'}
-            </button>
-          </div>
-        `;
-      }).join('');
-    }
-
-    function triggerTaskAction(id, xpVal = 50, title = 'Zadanie') {
-      const completed = JSON.parse(localStorage.getItem('tp_tasks') || '[]');
-      if (completed.includes(id)) return showToast('Zadanie zostało już zaliczone.');
-
-      completed.push(id);
-      localStorage.setItem('tp_tasks', JSON.stringify(completed));
-      addXP(xpVal, title);
-      renderTaskList();
-    }
-
-    function renderRewardHistory() {
-      const logs = JSON.parse(localStorage.getItem('tp_reward_logs') || '[]');
-      const container = document.getElementById('reward-log');
-      if (!container) return;
-
-      if (!logs.length) {
-        container.innerHTML = '<p class="text-xs muted">Brak odnotowanej aktywności XP.</p>';
-        return;
-      }
-
-      container.innerHTML = logs.slice(0, 10).map(l => `
-        <div class="flex justify-between items-center bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 text-xs">
-          <div>
-            <span class="block font-semibold text-slate-200">${sanitize(l.reason)}</span>
-            <span class="text-[9px] muted">${l.date}</span>
-          </div>
-          <span class="font-bold text-emerald-400">+${l.amount} XP</span>
-        </div>
-      `).join('');
-    }
-
-    function initBonusTimer() {
-      const button = document.getElementById('claim-bonus-btn');
-      const timer = document.getElementById('bonus-timer');
-      if (!button || !timer) return;
-
-      const CLAIM_INTERVAL = 4 * 60 * 60 * 1000;
-
-      function updateBonusTimer() {
-        const lastClaim = Number(localStorage.getItem('lastTechnixClaimTime') || 0);
-        const now = Date.now();
-        const remaining = CLAIM_INTERVAL - (now - lastClaim);
-
-        if (remaining <= 0) {
-          timer.textContent = '00:00:00';
-          button.disabled = false;
-          button.classList.remove('bg-slate-700', 'text-slate-400', 'cursor-not-allowed');
-          button.classList.add('bg-cyan-500', 'hover:bg-cyan-400', 'text-slate-950', 'shadow-lg', 'shadow-cyan-500/20');
-          button.textContent = 'Odbierz +50 TechnixCoins';
-          return;
-        }
-
-        const hours = Math.floor(remaining / (1000 * 60 * 60));
-        const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
-
-        const pad = (value) => String(value).padStart(2, '0');
-        timer.textContent = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
-        button.disabled = true;
-        button.classList.add('bg-slate-700', 'text-slate-400', 'cursor-not-allowed');
-        button.classList.remove('bg-cyan-500', 'hover:bg-cyan-400', 'text-slate-950', 'shadow-lg', 'shadow-cyan-500/20');
-        button.textContent = `Dostępne za ${pad(hours)}h ${pad(minutes)}m`;
-      }
-
-      button.addEventListener('click', () => {
-        if (button.disabled) return;
-        localStorage.setItem('lastTechnixClaimTime', String(Date.now()));
-        addXP(50, 'Bonus Czasowy');
-        updateBonusTimer();
-      });
-
-      updateBonusTimer();
-      setInterval(updateBonusTimer, 1000);
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      initBonusTimer();
-      updateXPDisplay();
-      renderPosts();
-      renderTaskList();
-      renderRewardHistory();
-
-      const firstSubtab = document.querySelector('#home-subtabs .subtab');
-      if (firstSubtab) updateSubtabIndicator(firstSubtab);
-
-      if (TelegramApp && TelegramApp.initDataUnsafe?.user) {
-        const user = TelegramApp.initDataUnsafe.user;
-        const name = user.username ? `@${user.username}` : `${user.first_name} ${user.last_name || ''}`.trim();
-        const telegramUsername = document.getElementById('telegram-username');
-        const profileName = document.getElementById('profile-name');
-        const profileId = document.getElementById('profile-id');
-        const rankUserLabel = document.getElementById('rank-user-label');
-
-        if (telegramUsername) telegramUsername.textContent = name;
-        if (profileName) profileName.textContent = name;
-        if (profileId) profileId.textContent = `TG ID: #${user.id}`;
-        if (rankUserLabel) rankUserLabel.textContent = `12. ${name}`;
-          displayPoints(user.id);
-      }
-    });
-  </script>  
-<span id="user-points">0</span>
-  <script src="./script.js" type="module"></script>
+  <span id="user-points">0</span>
+  <script src="./script.js"></script>
 </body>
 </html>
