@@ -314,34 +314,34 @@
               <div>
                 <span class="text-xs muted font-medium" id="telegram-username">@User</span>
                 <div class="flex items-baseline gap-1 mt-0.5">
-                  <span id="xp-total" class="text-2xl font-black text-white">2 450</span>
+                  <span id="xp-total" class="text-2xl font-black text-white">0</span>
                   <span class="text-xs font-bold text-violet-400">XP</span>
                 </div>
               </div>
-              <span id="user-level-badge" class="bg-violet-600/30 border border-violet-500/40 text-violet-300 font-extrabold text-xs px-3 py-1 rounded-full">LEVEL 12</span>
+              <span id="user-level-badge" class="bg-violet-600/30 border border-violet-500/40 text-violet-300 font-extrabold text-xs px-3 py-1 rounded-full">LEVEL 1</span>
             </div>
 
             <div class="space-y-1">
               <div class="flex justify-between text-[10px] muted">
                 <span>Postęp poziomu</span>
-                <span id="xp-progress-text">2 450 / 3 000 XP</span>
+                <span id="xp-progress-text">0 / 1 000 XP</span>
               </div>
               <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
-                <div id="xp-progress-bar" class="bg-gradient-to-r from-violet-500 to-cyan-400 h-full transition-all duration-500" style="width: 81.6%"></div>
+                <div id="xp-progress-bar" class="bg-gradient-to-r from-violet-500 to-cyan-400 h-full transition-all duration-500" style="width: 0%"></div>
               </div>
             </div>
 
             <div class="grid grid-cols-3 gap-2 pt-2 text-center">
               <div class="bg-slate-900/80 rounded-xl p-2.5 border border-slate-800">
-                <span class="block text-sm font-bold text-cyan-400">7 dni</span>
+                <span class="block text-sm font-bold text-cyan-400">0 dni</span>
                 <span class="text-[9px] muted">Streak</span>
               </div>
               <div class="bg-slate-900/80 rounded-xl p-2.5 border border-slate-800">
-                <span class="block text-sm font-bold text-violet-400">12</span>
+                <span class="block text-sm font-bold text-violet-400">0</span>
                 <span class="text-[9px] muted">Nagrody</span>
               </div>
               <div class="bg-slate-900/80 rounded-xl p-2.5 border border-slate-800">
-                <span class="block text-sm font-bold text-emerald-400">84%</span>
+                <span class="block text-sm font-bold text-emerald-400">100%</span>
                 <span class="text-[9px] muted">Aktywność</span>
               </div>
             </div>
@@ -375,17 +375,17 @@
             <h3 class="font-bold text-sm text-slate-200">Zapraszaj znajomych</h3>
             <p class="text-xs muted">Zyskaj +100 XP za każdego nowego użytkownika dołączającego z Twojego linku polecającego.</p>
             <div class="flex items-center gap-2">
-              <input id="ref-link-input" type="text" readonly value="https://t.me/TechnixProBot?start=ref_user123" class="w-full bg-[#080b14] border border-slate-700/80 rounded-xl p-2.5 text-xs font-mono text-cyan-400 focus:outline-none" />
+              <input id="ref-link-input" type="text" readonly value="https://t.me/TechnixProBot?start=ref_user" class="w-full bg-[#080b14] border border-slate-700/80 rounded-xl p-2.5 text-xs font-mono text-cyan-400 focus:outline-none" />
               <button onclick="copyReferralLink()" class="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs px-4 py-2.5 rounded-xl transition active:scale-95 shrink-0">Kopiuj</button>
             </div>
             <div class="pt-2 border-t border-slate-800 space-y-2">
               <div class="flex justify-between items-center text-xs">
                 <span class="text-slate-300">Poleceni gracze:</span>
-                <span class="font-bold text-violet-400">3 osoby</span>
+                <span class="font-bold text-violet-400">0 osób</span>
               </div>
               <div class="flex justify-between items-center text-xs">
                 <span class="text-slate-300">Zdobyte XP z poleceń:</span>
-                <span class="font-bold text-emerald-400">+300 XP</span>
+                <span class="font-bold text-emerald-400">+0 XP</span>
               </div>
             </div>
           </div>
@@ -431,8 +431,8 @@
                 <span class="font-bold text-cyan-400">4 910 XP</span>
               </div>
               <div class="flex items-center justify-between bg-violet-900/30 p-2.5 rounded-xl border border-violet-500/30 text-xs font-semibold">
-                <span id="rank-user-label">12. You (@User)</span>
-                <span id="rank-xp-display" class="font-bold text-violet-300">2 450 XP</span>
+                <span id="rank-user-label">--. Ty (@User)</span>
+                <span id="rank-xp-display" class="font-bold text-violet-300">0 XP</span>
               </div>
             </div>
           </div>
@@ -521,7 +521,7 @@
         <h2 class="text-lg font-bold text-white">Portfel Cyfrowy</h2>
         <div class="panel p-5 text-center space-y-3">
           <p class="text-xs muted">Saldo demonstracyjne sieci TON</p>
-          <div class="text-3xl font-extrabold text-white tracking-tight">24 680,42 PLN</div>
+          <div class="text-3xl font-extrabold text-white tracking-tight">0,00 PLN</div>
           <div class="flex justify-center gap-2 pt-2">
             <button onclick="showToast('Funkcja wpłaty zostanie odblokowana w Fazie 3')" class="bg-violet-600 text-xs font-semibold px-4 py-2 rounded-xl">Wpłać</button>
             <button onclick="showToast('Funkcja wypłaty zostanie odblokowana w Fazie 3')" class="bg-slate-800 border border-slate-700 text-xs font-semibold px-4 py-2 rounded-xl">Wypłać</button>
@@ -546,19 +546,19 @@
             </div>
           </div>
           <div>
-            <h2 id="profile-name" class="font-bold text-base text-white">TechnixUser</h2>
-            <p id="profile-id" class="text-xs muted">TG ID: #00000000</p>
+            <h2 id="profile-name" class="font-bold text-base text-white">Gostek</h2>
+            <p id="profile-id" class="text-xs muted">TG ID: brak danych</p>
           </div>
         </div>
 
         <div class="panel p-4 space-y-2">
           <div class="flex justify-between items-center text-xs py-1">
             <span class="muted">Twój Poziom:</span>
-            <span id="profile-level" class="font-bold text-violet-400">Level 12</span>
+            <span id="profile-level" class="font-bold text-violet-400">Level 1</span>
           </div>
           <div class="flex justify-between items-center text-xs py-1">
             <span class="muted">Punkty XP:</span>
-            <span id="profile-xp" class="font-bold text-cyan-400">2 450 XP</span>
+            <span id="profile-xp" class="font-bold text-cyan-400">0 XP</span>
           </div>
         </div>
 
@@ -672,6 +672,12 @@
     }
     customElements.define('coin-row', CoinRow);
 
+    // SYSTEM INDYWIDUALNEGO UŻYTKOWNIKA (PER-USER STORAGE)
+    function getUserStorageKey(suffix) {
+      const userId = TelegramApp?.initDataUnsafe?.user?.id;
+      return userId ? `tp_${suffix}_${userId}` : `tp_${suffix}_guest`;
+    }
+
     // GŁÓWNA NAWIGACJA EKRANÓW
     function show(tab, title) {
       const homeTabs = document.getElementById('home-subtabs');
@@ -703,7 +709,7 @@
         btn.classList.toggle('active', btn.dataset.tab === tab);
       });
 
-      // KLUCZOWA POPRAWKA: Pasek home-subtabs widoczny TYLKO w zakładce 'home'
+      // Pasek home-subtabs widoczny TYLKO w zakładce 'home'
       if (homeTabs) {
         if (tab === 'home') {
           homeTabs.classList.remove('hidden');
@@ -880,9 +886,11 @@
       const content = input.value.trim();
       if (!content) return showToast('Wpisz treść posta przed publikacją.');
 
-      const posts = JSON.parse(localStorage.getItem('tp_posts') || '[]');
-      posts.unshift({ content, date: new Date().toLocaleString('pl-PL') });
-      localStorage.setItem('tp_posts', JSON.stringify(posts));
+      const key = getUserStorageKey('posts');
+      const posts = JSON.parse(localStorage.getItem(key) || '[]');
+      const username = TelegramApp?.initDataUnsafe?.user?.first_name || 'Użytkownik';
+      posts.unshift({ author: username, content, date: new Date().toLocaleString('pl-PL') });
+      localStorage.setItem(key, JSON.stringify(posts));
       input.value = '';
       renderPosts();
       showToast('Post został pomyślnie opublikowany.');
@@ -892,7 +900,8 @@
       const feed = document.getElementById('posts-feed');
       if (!feed) return;
 
-      const posts = JSON.parse(localStorage.getItem('tp_posts') || '[]');
+      const key = getUserStorageKey('posts');
+      const posts = JSON.parse(localStorage.getItem(key) || '[]');
       if (!posts.length) {
         feed.innerHTML = '<div class="panel p-4 text-center text-xs muted">Brak postów. Bądź pierwszy!</div>';
         return;
@@ -901,7 +910,7 @@
       feed.innerHTML = posts.map((p, idx) => `
         <article class="panel p-4 space-y-2">
           <div class="flex justify-between items-center text-xs">
-            <span class="font-bold text-violet-300">TechnixUser</span>
+            <span class="font-bold text-violet-300">${sanitize(p.author || 'TechnixUser')}</span>
             <span class="text-[10px] muted">${p.date}</span>
           </div>
           <p class="text-xs text-slate-200 whitespace-pre-wrap leading-relaxed">${sanitize(p.content)}</p>
@@ -915,9 +924,10 @@
     }
 
     function removePost(index) {
-      const posts = JSON.parse(localStorage.getItem('tp_posts') || '[]');
+      const key = getUserStorageKey('posts');
+      const posts = JSON.parse(localStorage.getItem(key) || '[]');
       posts.splice(index, 1);
-      localStorage.setItem('tp_posts', JSON.stringify(posts));
+      localStorage.setItem(key, JSON.stringify(posts));
       renderPosts();
       showToast('Post usunięty.');
     }
@@ -934,19 +944,22 @@
       });
     }
 
-    // SYSTEM XP I REWARDS
+    // SYSTEM XP I REWARDS (PER-USER)
     function getXP() {
-      return Number(localStorage.getItem('tp_xp') || 2450);
+      const key = getUserStorageKey('xp');
+      return Number(localStorage.getItem(key) || 0);
     }
 
     function addXP(amount, reason) {
+      const key = getUserStorageKey('xp');
       const current = getXP();
       const updated = current + amount;
-      localStorage.setItem('tp_xp', String(updated));
+      localStorage.setItem(key, String(updated));
 
-      const logs = JSON.parse(localStorage.getItem('tp_reward_logs') || '[]');
+      const logKey = getUserStorageKey('reward_logs');
+      const logs = JSON.parse(localStorage.getItem(logKey) || '[]');
       logs.unshift({ reason, amount, date: new Date().toLocaleString('pl-PL') });
-      localStorage.setItem('tp_reward_logs', JSON.stringify(logs));
+      localStorage.setItem(logKey, JSON.stringify(logs));
 
       updateXPDisplay();
       showToast(`+${amount} XP: ${reason}`);
@@ -959,19 +972,30 @@
       const rankDisplay = document.getElementById('rank-xp-display');
       const progressBar = document.getElementById('xp-progress-bar');
       const profileXp = document.getElementById('profile-xp');
+      const userLevelBadge = document.getElementById('user-level-badge');
+      const profileLevel = document.getElementById('profile-level');
+
+      // Kalkulacja poziomu na podstawie XP
+      let level = 1;
+      if (xp >= 20000) level = 4;
+      else if (xp >= 5000) level = 3;
+      else if (xp >= 1000) level = 2;
 
       if (xpTotal) xpTotal.textContent = xp.toLocaleString();
-      if (xpProgressText) xpProgressText.textContent = `${xp.toLocaleString()} / 3 000 XP`;
+      if (xpProgressText) xpProgressText.textContent = `${xp.toLocaleString()} / 1 000 XP`;
       if (rankDisplay) rankDisplay.textContent = `${xp.toLocaleString()} XP`;
       if (profileXp) profileXp.textContent = `${xp.toLocaleString()} XP`;
+      if (userLevelBadge) userLevelBadge.textContent = `LEVEL ${level}`;
+      if (profileLevel) profileLevel.textContent = `Level ${level}`;
+
       if (progressBar) {
-        const percentage = Math.min((xp / 3000) * 100, 100);
+        const percentage = Math.min((xp / 1000) * 100, 100);
         progressBar.style.width = `${percentage}%`;
       }
     }
 
     function claimReward(name, amount) {
-      const claimedKey = 'tp_claimed_' + name;
+      const claimedKey = getUserStorageKey('claimed_' + name);
       if (localStorage.getItem(claimedKey)) return showToast('Ta nagroda została już odebrana.');
 
       localStorage.setItem(claimedKey, 'true');
@@ -979,7 +1003,8 @@
     }
 
     function renderTaskList() {
-      const completed = JSON.parse(localStorage.getItem('tp_tasks') || '[]');
+      const taskKey = getUserStorageKey('tasks');
+      const completed = JSON.parse(localStorage.getItem(taskKey) || '[]');
       const tasks = [
         ['login', 'Zaloguj się codziennie', 25],
         ['post', 'Opublikuj post w Grupie', 50],
@@ -1009,17 +1034,19 @@
     }
 
     function triggerTaskAction(id, xpVal = 50, title = 'Zadanie') {
-      const completed = JSON.parse(localStorage.getItem('tp_tasks') || '[]');
+      const taskKey = getUserStorageKey('tasks');
+      const completed = JSON.parse(localStorage.getItem(taskKey) || '[]');
       if (completed.includes(id)) return showToast('Zadanie zostało już zaliczone.');
 
       completed.push(id);
-      localStorage.setItem('tp_tasks', JSON.stringify(completed));
+      localStorage.setItem(taskKey, JSON.stringify(completed));
       addXP(xpVal, title);
       renderTaskList();
     }
 
     function renderRewardHistory() {
-      const logs = JSON.parse(localStorage.getItem('tp_reward_logs') || '[]');
+      const logKey = getUserStorageKey('reward_logs');
+      const logs = JSON.parse(localStorage.getItem(logKey) || '[]');
       const container = document.getElementById('reward-log');
       if (!container) return;
 
@@ -1048,7 +1075,8 @@
       const CLAIM_INTERVAL = 4 * 60 * 60 * 1000;
 
       function updateBonusTimer() {
-        const lastClaim = Number(localStorage.getItem('lastTechnixClaimTime') || 0);
+        const claimKey = getUserStorageKey('lastTechnixClaimTime');
+        const lastClaim = Number(localStorage.getItem(claimKey) || 0);
         const now = Date.now();
         const remaining = CLAIM_INTERVAL - (now - lastClaim);
 
@@ -1075,7 +1103,8 @@
 
       button.addEventListener('click', () => {
         if (button.disabled) return;
-        localStorage.setItem('lastTechnixClaimTime', String(Date.now()));
+        const claimKey = getUserStorageKey('lastTechnixClaimTime');
+        localStorage.setItem(claimKey, String(Date.now()));
         addXP(50, 'Bonus Czasowy');
         updateBonusTimer();
       });
@@ -1115,10 +1144,13 @@
         if (profileAvatar && user.photo_url) {
           profileAvatar.innerHTML = `<img src="${user.photo_url}" class="w-full h-full rounded-full object-cover"/>`;
         }
+
+        // Ponowne przeliczenie salda po odczytaniu danych użytkownika
+        updateXPDisplay();
       }
     });
   </script>
   
-  <script src="./script.js" type="module"></script>
+  <script src="./script.js"></script>
 </body>
 </html>
