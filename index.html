@@ -1,331 +1,1902 @@
-const TelegramApp = window.Telegram?.WebApp;
-if (TelegramApp) {
-  TelegramApp.ready();
-  TelegramApp.expand();
-}
-
-const RANK_TIERS = [
-  { name: '🥉 Brązowy Rekrut', icon: '📍', xpMin: 0, xpMax: 999, color: 'bg-amber-900/30 border-amber-800', badge: 'BR' },
-  { name: '🥈 Srebrny Operat', icon: '⚙️', xpMin: 1000, xpMax: 4999, color: 'bg-slate-800/30 border-slate-600', badge: 'SR' },
-  { name: '🥇 Złoty Mistrz', icon: '👑', xpMin: 5000, xpMax: 19999, color: 'bg-yellow-900/30 border-yellow-700', badge: 'ZM' },
-  { name: '💎 Diamentowy Lider', icon: '🔷', xpMin: 20000, xpMax: Infinity, color: 'bg-cyan-900/30 border-cyan-700', badge: 'DL' }
+const TELEGRAM_ADMIN_ID = '7777540542';
+const RANKS = [
+  { name: 'Brązowy Rekrut', min: 0, max: 999, icon: '🥉', color: 'border-amber-700 bg-amber-900/30' },
+  { name: 'Srebrny Operat', min: 1000, max: 4999, icon: '🥈', color: 'border-slate-600 bg-slate-800/30' },
+  { name: 'Złoty Mistrz', min: 5000, max: 19999, icon: '🥇', color: 'border-yellow-700 bg-yellow-900/30' },
+  { name: 'Diamentowy Lider', min: 20000, max: Infinity, icon: '💎', color: 'border-cyan-700 bg-cyan-900/30' }
 ];
 
 const TASKS = [
-  { id: 'daily_login', name: 'Zaloguj się codziennie', xp: 25, icon: '📱' },
-  { id: 'chat_msg', name: 'Wyślij wiadomość w czacie', xp: 10, icon: '💬' },
+  { id: 'daily_login', name: 'Logowanie', xp: 25, icon: '📱' },
+  { id: 'chat_msg', name: 'Wiadomość w czacie', xp: 10, icon: '💬' },
   { id: 'invite_3', name: 'Zaproś 3 osoby', xp: 50, icon: '🔗' },
-  { id: 'claim_badge', name: 'Odblokuj odznakę', xp: 100, icon: '🎖️' }
+  { id: 'unlock_badge', name: 'Odblokuj odznakę', xp: 100, icon: '🎖️' }
 ];
 
 const BADGES = [
-  { id: 'early_adopter', name: 'Pionier', icon: '🚀', xp: 0 },
+  { id: 'pionier', name: 'Pionier', icon: '🚀', xp: 0 },
   { id: 'chat_master', name: 'Master Czatu', icon: '💬', xp: 100 },
   { id: 'referral_king', name: 'Referral King', icon: '👑', xp: 500 },
-  { id: 'ton_connector', name: 'TON Partner', icon: '⛓️', xp: 1000 },
-  { id: 'legendary', name: 'Legenda', icon: '⭐', xp: 50000 }
+  { id: 'ton_partner', name: 'TON Partner', icon: '⛓️', xp: 1000 },
+  { id: 'legend', name: 'Legenda', icon: '⭐', xp: 50000 }
 ];
 
-let currentUserId = null;
-let userState = {};
+const TelegramApp = window.Telegram?.WebApp;
+
+let userState = {
+  xp: 0,
+  completedTasks: [],
+  unlockedBadges: [],
+  posts: [],
+  chatMessages: [],
+  referrals: [],
+  avatar: null
+};
+
+let currentUserId = 'guest';
 
 function getTelegramUserId() {
-  if (TelegramApp?.initDataUnsafe?.user?.id) {
-    return String(TelegramApp.initDataUnsafe.user.id);
-  }
-  const saved = localStorage.getItem('tp_last_user_id');
-  return saved || 'guest';
+  if (TelegramApp?.initDataUnsafe?.user?.id) return String(TelegramApp.initDataUnsafe.user.id);
+  return localStorage.getItem('tp_last_user_id') || 'guest';
 }
 
-function initUser(userId) {
-  currentUserId = userId;
-  const key = `tp_user_${userId}`;
-  if (!localStorage.getItem(key + '_initialized')) {
-    userState = {
-      xp: 0,
-      chatMessages: [],
-      adminPosts: [],
-      completedTasks: [],
-      unlockedBadges: [],
-      referrals: [],
-      tonBalance: 0,
-      avatar: null
-    };
-    localStorage.setItem(key + '_data', JSON.stringify(userState));
-    localStorage.setItem(key + '_initialized', 'true');
-  } else {
-    userState = JSON.parse(localStorage.getItem(key + '_data') || '{}');
+function loadUserState() {
+  currentUserId = getTelegramUserId();
+  const stored = localStorage.getItem(`tp_user_${currentUserId}`);
+  if (stored) {
+    userState = { ...userState, ...JSON.parse(stored) };
   }
-  localStorage.setItem('tp_last_user_id', userId);
+  localStorage.setItem('tp_last_user_id', currentUserId);
+  saveUserState();
 }
 
-function saveUser() {
-  localStorage.setItem(`tp_user_${currentUserId}_data`, JSON.stringify(userState));
+function saveUserState() {
+  localStorage.setItem(`tp_user_${currentUserId}`, JSON.stringify(userState));
 }
 
 function addXP(amount, reason) {
-  userState.xp += amount;
-  saveUser();
+  userState.xp += Number(amount || 0);
+  saveUserState();
+  renderStats();
   showToast(`+${amount} XP: ${reason}`);
-  updateXPDisplay();
 }
 
-function getRankTier(xp) {
-  return RANK_TIERS.find(t => xp >= t.xpMin && xp < t.xpMax) || RANK_TIERS[3];
+function getCurrentRank() {
+  return RANKS.find(rank => userState.xp >= rank.min && userState.xp <= rank.max) || RANKS[RANKS.length - 1];
 }
 
-function getLevel(xp) {
-  return Math.floor(xp / 1000) + 1;
+function getLevelFromXP() {
+  return Math.floor(userState.xp / 1000) + 1;
 }
 
-function updateXPDisplay() {
-  const level = getLevel(userState.xp);
-  const rank = getRankTier(userState.xp);
-  document.getElementById('xp-display').textContent = userState.xp.toLocaleString();
-  document.getElementById('level-display').textContent = level;
-  document.getElementById('profile-xp').textContent = userState.xp.toLocaleString();
-  document.getElementById('profile-level').textContent = level;
+function renderStats() {
+  const level = getLevelFromXP();
+  const rank = getCurrentRank();
+  const progress = Math.min((userState.xp / 3000) * 100, 100);
+
+  document.getElementById('xp-display').textContent = Number(userState.xp).toLocaleString('pl-PL');
+  document.getElementById('progress-text').textContent = `${Number(userState.xp).toLocaleString('pl-PL')} / 3000 XP`;
+  document.getElementById('progress-bar').style.width = `${progress}%`;
+  document.getElementById('level-badge').textContent = `LEVEL ${level}`;
+  document.getElementById('profile-xp').textContent = Number(userState.xp).toLocaleString('pl-PL');
+  document.getElementById('profile-level').textContent = String(level);
+  document.getElementById('profile-username').textContent = `@${window.profileUsername || 'user'}`;
 }
 
-function publishAdminPost() {
-  const content = document.getElementById('admin-post-input').value.trim();
-  const media = document.getElementById('admin-media-url').value.trim();
-  if (!content) return showToast('Wpisz treść postu');
-  
-  const post = {
-    id: Date.now(),
-    author: document.getElementById('profile-name').textContent,
-    content,
-    media,
-    date: new Date().toLocaleString('pl-PL'),
-    likes: 0,
-    comments: []
-  };
-  
-  userState.adminPosts.unshift(post);
-  saveUser();
-  document.getElementById('admin-post-input').value = '';
-  document.getElementById('admin-media-url').value = '';
-  renderChannelFeed();
-  showToast('Post opublikowany!');
+function renderRanks() {
+  const list = document.getElementById('rank-list');
+  list.innerHTML = RANKS.map((rank) => {
+    const active = getCurrentRank().name === rank.name;
+    return `
+      <div class="rounded-xl border ${rank.color} ${active ? 'ring-2 ring-cyan-400' : ''} p-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-lg">${rank.icon}</span>
+            <span class="text-xs font-bold text-white">${rank.name}</span>
+          </div>
+          <span class="text-[10px] text-slate-400">${rank.min.toLocaleString('pl-PL')} - ${rank.max === Infinity ? '∞' : rank.max.toLocaleString('pl-PL')} XP</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderTasks() {
+  const list = document.getElementById('task-list');
+  list.innerHTML = TASKS.map((task) => {
+    const done = userState.completedTasks.includes(task.id);
+    return `
+      <div class="rounded-xl bg-slate-900/70 border border-slate-800 p-2.5 flex justify-between items-center">
+        <div class="flex items-center gap-2 text-xs">
+          <span>${task.icon}</span>
+          <span class="text-slate-200">${task.name}</span>
+        </div>
+        <button onclick="completeTask('${task.id}', ${task.xp}, '${task.name}')" class="${done ? 'text-slate-500 cursor-default' : 'text-emerald-400'} text-[10px] font-bold">
+          ${done ? 'Wykonane' : `+${task.xp} XP`}
+        </button>
+      </div>
+    `;
+  }).join('');
+}
+
+function completeTask(taskId, xp, name) {
+  if (userState.completedTasks.includes(taskId)) return;
+  userState.completedTasks.push(taskId);
+  addXP(xp, name);
+  saveUserState();
+  renderTasks();
+  checkBadges();
+}
+
+function renderBadges() {
+  const list = document.getElementById('badge-list');
+  list.innerHTML = BADGES.map((badge) => {
+    const unlocked = userState.unlockedBadges.includes(badge.id) || userState.xp >= badge.xp;
+    return `
+      <div class="rounded-xl border ${unlocked ? 'border-amber-700 bg-amber-900/25' : 'border-slate-700 bg-slate-900/50 opacity-50'} p-2 text-center">
+        <div class="text-xl">${badge.icon}</div>
+        <div class="text-[9px] font-bold text-slate-200 mt-1">${badge.name}</div>
+        <div class="text-[8px] text-slate-400">${badge.xp} XP</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function checkBadges() {
+  BADGES.forEach((badge) => {
+    if (userState.xp >= badge.xp && !userState.unlockedBadges.includes(badge.id)) {
+      userState.unlockedBadges.push(badge.id);
+      showToast(`Odznaka odblokowana: ${badge.name}`);
+    }
+  });
+  renderBadges();
+  saveUserState();
 }
 
 function renderChannelFeed() {
   const feed = document.getElementById('channel-feed');
-  feed.innerHTML = '';
-  
-  userState.adminPosts.forEach(post => {
-    const postEl = document.createElement('div');
-    postEl.className = 'panel p-4 space-y-2';
-    postEl.innerHTML = `
+  if (!feed) return;
+  feed.innerHTML = userState.posts.length ? userState.posts.map(post => `
+    <article class="rounded-xl border border-slate-800 bg-slate-900/60 p-3 text-xs space-y-2">
       <div class="flex justify-between items-center">
-        <span class="font-bold text-sm text-cyan-400">${post.author}</span>
+        <span class="font-bold text-cyan-400">${post.author}</span>
         <span class="text-[10px] text-slate-400">${post.date}</span>
       </div>
-      <p class="text-xs text-slate-200">${post.content}</p>
-      ${post.media ? `<img src="${post.media}" class="rounded-lg max-h-40 w-full object-cover" onerror="this.style.display='none'">` : ''}
-      <div class="flex gap-4 pt-2 text-xs">
-        <button onclick="likePost(${post.id})" class="text-slate-400 hover:text-pink-400 cursor-pointer">
-          <i class="fa-heart"></i> ${post.likes}
-        </button>
-        <button onclick="showToast('Komentarze wkrótce')" class="text-slate-400 hover:text-cyan-400 cursor-pointer">
-          <i class="fa-comment"></i> ${post.comments.length}
-        </button>
+      <p class="text-slate-200 leading-relaxed">${post.text}</p>
+      ${post.media ? `<img src="${post.media}" class="w-full max-h-48 rounded-lg object-cover" onerror="this.style.display='none'">` : ''}
+      <div class="flex gap-3 text-[10px] text-slate-400">
+        <span><i class="fa-regular fa-heart"></i> ${post.likes}</span>
+        <span><i class="fa-regular fa-comment"></i> ${post.comments}</span>
       </div>
-    `;
-    feed.appendChild(postEl);
-  });
+    </article>
+  `).join('') : '<div class="rounded-xl bg-slate-900/60 border border-slate-800 p-3 text-xs text-slate-300">Brak postów. Administrator może dodać nowy wpis.</div>';
 }
 
-function likePost(postId) {
-  const post = userState.adminPosts.find(p => p.id === postId);
-  if (post) {
-    post.likes++;
-    saveUser();
-    renderChannelFeed();
-  }
-}
+function publishAdminPost() {
+  const isAdmin = String(currentUserId) === String(TELEGRAM_ADMIN_ID);
+  if (!isAdmin) return showToast('Tylko administrator może publikować posty');
 
-function sendChatMessage() {
-  const input = document.getElementById('chat-input');
-  const msg = input.value.trim();
-  if (!msg) return;
-  
-  userState.chatMessages.push({
-    user: document.getElementById('profile-name').textContent,
-    text: msg,
-    time: new Date().toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })
-  });
-  
-  saveUser();
-  input.value = '';
-  addXP(10, 'Wiadomość w czacie');
-  renderChat();
-}
+  const text = document.getElementById('admin-post-input').value.trim();
+  const media = document.getElementById('admin-media-url').value.trim();
+  if (!text) return showToast('Wpisz treść posta');
 
-function renderChat() {
-  const chatEl = document.getElementById('chat-messages');
-  chatEl.innerHTML = '';
-  userState.chatMessages.slice(-20).forEach(msg => {
-    const msgEl = document.createElement('div');
-    msgEl.className = 'chat-message bg-slate-900/80 p-2 rounded-lg text-xs';
-    msgEl.innerHTML = `<span class="text-cyan-400 font-bold">${msg.user}</span> <span class="text-slate-400">${msg.time}</span><br><span class="text-slate-200">${msg.text}</span>`;
-    chatEl.appendChild(msgEl);
-  });
-  chatEl.scrollTop = chatEl.scrollHeight;
-}
-
-function renderRankTiers() {
-  const list = document.getElementById('rank-list');
-  list.innerHTML = '';
-  const currentRank = getRankTier(userState.xp);
-  
-  RANK_TIERS.forEach((tier) => {
-    const isActive = currentRank === tier;
-    const el = document.createElement('div');
-    el.className = `p-3 rounded-xl border ${tier.color} text-xs ${isActive ? 'ring-2 ring-cyan-400' : ''}`;
-    el.innerHTML = `
-      <div class="flex justify-between items-center">
-        <span class="font-bold text-white">${tier.name}</span>
-        <span class="text-[10px] text-slate-400">${tier.xpMin.toLocaleString()} - ${tier.xpMax === Infinity ? '∞' : tier.xpMax.toLocaleString()} XP</span>
-      </div>
-      <div class="mt-1 w-full bg-slate-800 rounded-full h-1 overflow-hidden">
-        <div class="bg-gradient-to-r from-cyan-500 to-violet-500 h-full" style="width: ${isActive ? '75%' : '0%'}"></div>
-      </div>
-    `;
-    list.appendChild(el);
-  });
-}
-
-function renderTasks() {
-  const list = document.getElementById('tasks-list');
-  list.innerHTML = '';
-  TASKS.forEach(task => {
-    const done = userState.completedTasks.includes(task.id);
-    const el = document.createElement('div');
-    el.className = `p-2 rounded-lg bg-slate-900/80 border border-slate-800 text-xs flex justify-between items-center`;
-    el.innerHTML = `
-      <span>${task.icon} ${task.name}</span>
-      <button onclick="completeTask('${task.id}', ${task.xp}, '${task.name}')" class="${done ? 'text-slate-500 cursor-default' : 'text-emerald-400 cursor-pointer hover:text-emerald-300'}">
-        ${done ? '✓ Wykonane' : `+${task.xp} XP`}
-      </button>
-    `;
-    list.appendChild(el);
-  });
-}
-
-function completeTask(taskId, xp, name) {
-  if (userState.completedTasks.includes(taskId)) return showToast('Zadanie już wykonane!');
-  userState.completedTasks.push(taskId);
-  addXP(xp, name);
-  saveUser();
-  renderTasks();
-  checkBadgeUnlocks();
-}
-
-function renderBadges() {
-  const list = document.getElementById('badges-list');
-  list.innerHTML = '';
-  BADGES.forEach(badge => {
-    const unlocked = userState.xp >= badge.xp || userState.unlockedBadges.includes(badge.id);
-    if (unlocked && !userState.unlockedBadges.includes(badge.id)) {
-      userState.unlockedBadges.push(badge.id);
-      saveUser();
-    }
-    const el = document.createElement('div');
-    el.className = `text-center p-2 rounded-lg ${unlocked ? 'bg-amber-900/30 border border-amber-700' : 'bg-slate-900/50 border border-slate-800 opacity-50'}`;
-    el.innerHTML = `<div class="text-2xl">${badge.icon}</div><div class="text-[9px] font-bold text-slate-200 mt-1">${badge.name}</div><div class="text-[8px] text-slate-400">${badge.xp} XP</div>`;
-    list.appendChild(el);
-  });
-}
-
-function checkBadgeUnlocks() {
-  BADGES.forEach(badge => {
-    if (userState.xp >= badge.xp && !userState.unlockedBadges.includes(badge.id)) {
-      userState.unlockedBadges.push(badge.id);
-      showToast(`🎖️ Odznaka odblokowana: ${badge.name}`);
-    }
-  });
-  saveUser();
-}
-
-function generateReferralLink() {
-  const baseUrl = window.location.origin + window.location.pathname;
-  return `${baseUrl}?ref=${currentUserId}`;
-}
-
-function copyReferralLink() {
-  const link = document.getElementById('referral-link').value;
-  navigator.clipboard.writeText(link).then(() => showToast('Link skopiowany!'));
-}
-
-function changeAvatar(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    userState.avatar = e.target.result;
-    saveUser();
-    document.getElementById('avatar-preview').src = userState.avatar;
-    document.getElementById('profile-avatar').src = userState.avatar;
-    showToast('Avatar zmieniony!');
+  const post = {
+    id: Date.now(),
+    author: 'Admin',
+    text,
+    media,
+    date: new Date().toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' }),
+    likes: 0,
+    comments: 0
   };
-  reader.readAsDataURL(file);
+
+  userState.posts.unshift(post);
+  saveUserState();
+  renderChannelFeed();
+  document.getElementById('admin-post-input').value = '';
+  document.getElementById('admin-media-url').value = '';
+  showToast('Post opublikowany');
 }
 
-function connectTONKeeper() {
-  showToast('🔗 Integracja TON Keeper dostępna po starcie mainnet');
-}
-
-function show(tab, title) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
-  document.getElementById(`screen-${tab}`)?.classList.remove('hidden');
-  document.getElementById('header-title').textContent = title;
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.textContent.includes(title)));
-  if (tab === 'home') renderChannelFeed();
-  if (tab === 'rewards') { renderRankTiers(); renderTasks(); renderBadges(); }
-}
-
-function showToast(msg) {
+function showToast(message) {
   const toast = document.getElementById('toast');
-  toast.textContent = msg;
+  if (!toast) return;
+  toast.textContent = message;
   toast.classList.remove('hidden');
   clearTimeout(window.toastTimer);
   window.toastTimer = setTimeout(() => toast.classList.add('hidden'), 2200);
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  const userId = getTelegramUserId();
-  initUser(userId);
-  
-  if (TelegramApp?.initDataUnsafe?.user) {
-    const user = TelegramApp.initDataUnsafe.user;
-    const name = user.username ? `@${user.username}` : `${user.first_name || 'User'} ${user.last_name || ''}`.trim();
-    document.getElementById('profile-name').textContent = name;
-    document.getElementById('profile-username').textContent = `@${user.username || 'user'}`;
-    document.getElementById('profile-id').textContent = `TG ID: #${user.id}`;
-    document.getElementById('show-tg-id').textContent = user.id;
-    
-    const ADMIN_ID = '7777540542';
-    if (String(user.id) === ADMIN_ID) {
-      document.getElementById('admin-panel').classList.remove('hidden');
-    }
+function showScreen(screen, title) {
+  document.querySelectorAll('.screen').forEach(el => el.classList.add('hidden'));
+  document.getElementById(`screen-${screen}`)?.classList.remove('hidden');
+  document.getElementById('header-title').textContent = title;
+  document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+  const activeBtn = [...document.querySelectorAll('.nav-btn')].find(btn => btn.textContent.includes(title.split(' ')[0]));
+  if (activeBtn) activeBtn.classList.add('active');
+}
+
+function copyReferral() {
+  const input = document.getElementById('referral-link');
+  input.select();
+  navigator.clipboard.writeText(input.value).then(() => showToast('Link skopiowany')).catch(() => showToast('Kopiowanie nie działa'));
+}
+
+function initApp() {
+  loadUserState();
+  const currentUser = TelegramApp?.initDataUnsafe?.user;
+  const userName = currentUser?.username || currentUser?.first_name || 'user';
+  const displayName = userName.startsWith('@') ? userName : `@${userName}`;
+  window.profileUsername = displayName;
+
+  document.getElementById('profile-name').textContent = displayName;
+  document.getElementById('profile-username').textContent = displayName;
+  document.getElementById('profile-username-inline').textContent = displayName;
+  document.getElementById('profile-id').textContent = `TG ID: #${currentUser?.id || currentUserId}`;
+  document.getElementById('show-id').textContent = currentUser?.id || currentUserId;
+  document.getElementById('referral-link').value = `${window.location.origin}${window.location.pathname}?ref=${currentUserId}`;
+
+  if (String(currentUserId) === String(TELEGRAM_ADMIN_ID)) {
+    document.getElementById('admin-panel').classList.remove('hidden');
   }
-  
-  if (userState.avatar) {
-    document.getElementById('avatar-preview').src = userState.avatar;
-    document.getElementById('profile-avatar').src = userState.avatar;
-  }
-  
-  document.getElementById('referred-count').textContent = userState.referrals.length;
-  document.getElementById('referral-link').value = generateReferralLink();
-  
-  updateXPDisplay();
-  renderChannelFeed();
-  renderRankTiers();
+
+  renderStats();
+  renderRanks();
   renderTasks();
   renderBadges();
-  renderChat();
-  checkBadgeUnlocks();
-  setInterval(renderChat, 2000);
+  renderChannelFeed();
+  checkBadges();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  initApp();
+  showScreen('home', 'Start');
 });
+
+if (TelegramApp) {
+  TelegramApp.ready();
+  TelegramApp.expand();
+}
+
+window.showToast = showToast;
+window.publishAdminPost = publishAdminPost;
+window.showScreen = showScreen;
+window.copyReferral = copyReferral;
+window.completeTask = completeTask;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+n
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+n
+
+
+n
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+n
+
+
+
+
+
+
+
+n
+
+
+
+n
+
+
+n
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+n
+
+
+
+
+
+
+
+n
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+n
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+n
+
+
+n
+n
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+n
+
+n
+
+
+
+
+
+
+
+n
+
+
+
+n
+
+
+
+
+
+
+
+n
+
+
+n
+
+
+
+
+
+
+
+
+n
+
+
+n
+
+
+
+
+
+
+
+
+
+
+
+
+n
+
+
+
+
+
+
+
+n
+
+
+
+
+
+
+
+
+n
+
+
+
+n
+
+
+
+
+
+
+
+
+
+
+
+n
+
+
+
+
+
+
+n
+
+
+
+
+
+
+
+
+n
+
+
+n
+n
+
+n
+
+
+n
+
+n
+
+
+n
+
+n
+
+
+n
+
+n
+
+
+n
+
+n
+
+
+n
+
+n
+
+
+n
+
+n
+
+
+n
+
+n
+
+n
+
+n
+n
+
+n
+n
+
+n
+n
+
+n
+n
+n
+
+n
+
+
+
+
+
+
+n
+
+
+
+n
+
+
+n
+
+
+
+
+n
+
+
+
+n
+
+
+
+n
+
+n
+
+n
+
+n
+
+n
+
+n
+
+n
+n
+
+n
+n
+
+n
+
+n
+
+n
+
+
+n
+
+
+
+
+n
+
+n
+n
+n
+
+n
+n
+
+n
+
+n
+
+n
+
+n
+n
+
+n
+
+n
+
+n
+n
+
+n
+n
+
+n
+
+n
+
+n
+n
+
+n
+
+n
+
+n
+
+n
+
+n
+
+n
+
+n
+
+n
+
+n
+
+n
+
+n
+
+n
+
+n
+n
+"}]} one of the files is malformed due to huge whitespace? Need ensure valid JSON. The tool likely accepted but content huge and maybe malformed due to extra whitespace. But since commentary tool should accept string content. It's okay. After that, we need final answer maybe say 
