@@ -1,346 +1,335 @@
+const TelegramApp = window.Telegram?.WebApp;
+if (TelegramApp) {
+  TelegramApp.ready();
+  TelegramApp.expand();
+}
+
+const RANK_TIERS = [
+  { name: '🥉 Brązowy Rekrut', icon: '📍', xpMin: 0, xpMax: 999, color: 'bg-amber-900/30 border-amber-800', badge: 'BR' },
+  { name: '🥈 Srebrny Operat', icon: '⚙️', xpMin: 1000, xpMax: 4999, color: 'bg-slate-800/30 border-slate-600', badge: 'SR' },
+  { name: '🥇 Złoty Mistrz', icon: '👑', xpMin: 5000, xpMax: 19999, color: 'bg-yellow-900/30 border-yellow-700', badge: 'ZM' },
+  { name: '💎 Diamentowy Lider', icon: '🔷', xpMin: 20000, xpMax: Infinity, color: 'bg-cyan-900/30 border-cyan-700', badge: 'DL' }
+];
+
+const TASKS = [
+  { id: 'daily_login', name: 'Zaloguj się codziennie', xp: 25, icon: '📱' },
+  { id: 'chat_msg', name: 'Wyślij wiadomość w czacie', xp: 10, icon: '💬' },
+  { id: 'invite_3', name: 'Zaproś 3 osoby', xp: 50, icon: '🔗' },
+  { id: 'claim_badge', name: 'Odblokuj odznakę', xp: 100, icon: '🎖️' }
+];
+
+const BADGES = [
+  { id: 'early_adopter', name: 'Pionier', icon: '🚀', xp: 0 },
+  { id: 'chat_master', name: 'Master Czatu', icon: '💬', xp: 100 },
+  { id: 'referral_king', name: 'Referral King', icon: '👑', xp: 500 },
+  { id: 'ton_connector', name: 'TON Partner', icon: '⛓️', xp: 1000 },
+  { id: 'legendary', name: 'Legenda', icon: '⭐', xp: 50000 }
+];
+
+let currentUserId = null;
+let userState = {};
+
 function getTelegramUserId() {
-  const tg = window.Telegram?.WebApp;
-  if (tg?.initDataUnsafe?.user?.id) {
-    return String(tg.initDataUnsafe.user.id);
+  if (TelegramApp?.initDataUnsafe?.user?.id) {
+    return String(TelegramApp.initDataUnsafe.user.id);
   }
-
-  const saved = localStorage.getItem('tp_last_tg_user_id');
-  if (saved) {
-    return String(saved);
-  }
-
-  return 'guest';
+  const saved = localStorage.getItem('tp_last_user_id');
+  return saved || 'guest';
 }
 
-function getUserStorageKey(key) {
-  const userId = getTelegramUserId();
-  return `tp_user_${userId}_${key}`;
-}
-
-function initializeUserState(userId = getTelegramUserId()) {
-  const initializedKey = `tp_user_${userId}_initialized`;
-  if (localStorage.getItem(initializedKey) === 'true') {
-    return;
+function initUser(userId) {
+  currentUserId = userId;
+  const key = `tp_user_${userId}`;
+  if (!localStorage.getItem(key + '_initialized')) {
+    userState = {
+      xp: 0,
+      chatMessages: [],
+      adminPosts: [],
+      completedTasks: [],
+      unlockedBadges: [],
+      referrals: [],
+      tonBalance: 0,
+      avatar: null
+    };
+    localStorage.setItem(key + '_data', JSON.stringify(userState));
+    localStorage.setItem(key + '_initialized', 'true');
+  } else {
+    userState = JSON.parse(localStorage.getItem(key + '_data') || '{}');
   }
-
-  localStorage.setItem(`tp_user_${userId}_xp`, '0');
-  localStorage.setItem(`tp_user_${userId}_posts`, JSON.stringify([]));
-  localStorage.setItem(`tp_user_${userId}_tasks`, JSON.stringify([]));
-  localStorage.setItem(`tp_user_${userId}_reward_logs`, JSON.stringify([]));
-  localStorage.setItem(`tp_user_${userId}_lastClaimTime`, '0');
-  localStorage.setItem(`tp_user_${userId}_initialized`, 'true');
-  localStorage.setItem('tp_last_tg_user_id', String(userId));
+  localStorage.setItem('tp_last_user_id', userId);
 }
 
-function getXP() {
-  const userId = getTelegramUserId();
-  initializeUserState(userId);
-  return Number(localStorage.getItem(`tp_user_${userId}_xp`) || 0);
-}
-
-function updateXPDisplay() {
-  const xp = getXP();
-  const xpTotal = document.getElementById('xp-total');
-  const xpProgressText = document.getElementById('xp-progress-text');
-  const rankDisplay = document.getElementById('rank-xp-display');
-  const progressBar = document.getElementById('xp-progress-bar');
-  const pointsEl = document.getElementById('user-points');
-
-  if (xpTotal) xpTotal.textContent = xp.toLocaleString('pl-PL');
-  if (xpProgressText) xpProgressText.textContent = `${xp.toLocaleString('pl-PL')} / 3 000 XP`;
-  if (rankDisplay) rankDisplay.textContent = `${xp.toLocaleString('pl-PL')} XP`;
-  if (pointsEl) pointsEl.textContent = xp.toLocaleString('pl-PL');
-
-  if (progressBar) {
-    const percentage = Math.min((xp / 3000) * 100, 100);
-    progressBar.style.width = `${percentage}%`;
-  }
+function saveUser() {
+  localStorage.setItem(`tp_user_${currentUserId}_data`, JSON.stringify(userState));
 }
 
 function addXP(amount, reason) {
-  const userId = getTelegramUserId();
-  const current = getXP();
-  const updated = current + amount;
-
-  localStorage.setItem(`tp_user_${userId}_xp`, String(updated));
-
-  const logs = JSON.parse(localStorage.getItem(`tp_user_${userId}_reward_logs`) || '[]');
-  logs.unshift({ reason, amount, date: new Date().toLocaleString('pl-PL') });
-  localStorage.setItem(`tp_user_${userId}_reward_logs`, JSON.stringify(logs.slice(0, 100)));
-
+  userState.xp += amount;
+  saveUser();
+  showToast(`+${amount} XP: ${reason}`);
   updateXPDisplay();
-
-  if (typeof window.showToast === 'function') {
-    window.showToast(`+${amount} XP: ${reason}`);
-  }
-
-  return updated;
 }
 
-function createNewPost() {
-  const input = document.getElementById('post-input');
-  const content = input?.value.trim();
-  if (!content) return window.showToast?.('Wpisz treść posta przed publikacją.');
-
-  const userId = getTelegramUserId();
-  const posts = JSON.parse(localStorage.getItem(`tp_user_${userId}_posts`) || '[]');
-  posts.unshift({ content, date: new Date().toLocaleString('pl-PL') });
-  localStorage.setItem(`tp_user_${userId}_posts`, JSON.stringify(posts));
-  input.value = '';
-  renderPosts();
-  window.showToast?.('Post został pomyślnie opublikowany.');
+function getRankTier(xp) {
+  return RANK_TIERS.find(t => xp >= t.xpMin && xp < t.xpMax) || RANK_TIERS[3];
 }
 
-function renderPosts() {
-  const feed = document.getElementById('posts-feed');
-  if (!feed) return;
+function getLevel(xp) {
+  return Math.floor(xp / 1000) + 1;
+}
 
-  const userId = getTelegramUserId();
-  const posts = JSON.parse(localStorage.getItem(`tp_user_${userId}_posts`) || '[]');
+function updateXPDisplay() {
+  const level = getLevel(userState.xp);
+  const rank = getRankTier(userState.xp);
+  document.getElementById('xp-display').textContent = userState.xp.toLocaleString();
+  document.getElementById('level-display').textContent = level;
+  document.getElementById('profile-xp').textContent = userState.xp.toLocaleString();
+  document.getElementById('profile-level').textContent = level;
+}
 
-  if (!posts.length) {
-    feed.innerHTML = '<div class="panel p-4 text-center text-xs muted">Brak postów. Bądź pierwszy!</div>';
-    return;
-  }
+function publishAdminPost() {
+  const content = document.getElementById('admin-post-input').value.trim();
+  const media = document.getElementById('admin-media-url').value.trim();
+  if (!content) return showToast('Wpisz treść postu');
+  
+  const post = {
+    id: Date.now(),
+    author: document.getElementById('profile-name').textContent,
+    content,
+    media,
+    date: new Date().toLocaleString('pl-PL'),
+    likes: 0,
+    comments: []
+  };
+  
+  userState.adminPosts.unshift(post);
+  saveUser();
+  document.getElementById('admin-post-input').value = '';
+  document.getElementById('admin-media-url').value = '';
+  renderChannelFeed();
+  showToast('Post opublikowany!');
+}
 
-  feed.innerHTML = posts.map((p, idx) => `
-    <article class="panel p-4 space-y-2">
-      <div class="flex justify-between items-center text-xs">
-        <span class="font-bold text-violet-300">TechnixUser</span>
-        <span class="text-[10px] muted">${p.date}</span>
+function renderChannelFeed() {
+  const feed = document.getElementById('channel-feed');
+  feed.innerHTML = '';
+  
+  userState.adminPosts.forEach(post => {
+    const postEl = document.createElement('div');
+    postEl.className = 'panel p-4 space-y-2';
+    postEl.innerHTML = `
+      <div class="flex justify-between items-center">
+        <span class="font-bold text-sm text-cyan-400">${post.author}</span>
+        <span class="text-[10px] text-slate-400">${post.date}</span>
       </div>
-      <p class="text-xs text-slate-200 whitespace-pre-wrap leading-relaxed">${String(p.content).replace(/[&<>"']/g, match => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[match]))}</p>
-      <div class="flex justify-end pt-1">
-        <button onclick="removePost(${idx})" class="text-[10px] text-slate-500 hover:text-red-400 transition">
-          <i class="fa-regular fa-trash-can"></i> Usuń
+      <p class="text-xs text-slate-200">${post.content}</p>
+      ${post.media ? `<img src="${post.media}" class="rounded-lg max-h-40 w-full object-cover" onerror="this.style.display='none'">` : ''}
+      <div class="flex gap-4 pt-2 text-xs">
+        <button onclick="likePost(${post.id})" class="text-slate-400 hover:text-pink-400 cursor-pointer">
+          <i class="fa-heart"></i> ${post.likes}
         </button>
-      </div>
-    </article>
-  `).join('');
-}
-
-function removePost(index) {
-  const userId = getTelegramUserId();
-  const posts = JSON.parse(localStorage.getItem(`tp_user_${userId}_posts`) || '[]');
-  posts.splice(index, 1);
-  localStorage.setItem(`tp_user_${userId}_posts`, JSON.stringify(posts));
-  renderPosts();
-  window.showToast?.('Post usunięty.');
-}
-
-function claimReward(name, amount) {
-  const userId = getTelegramUserId();
-  const claimedKey = `tp_user_${userId}_claimed_${name.replace(/\s+/g, '_')}`;
-
-  if (localStorage.getItem(claimedKey)) {
-    return window.showToast?.('Ta nagroda została już odebrana.');
-  }
-
-  localStorage.setItem(claimedKey, 'true');
-  addXP(amount, name);
-}
-
-function renderTaskList() {
-  const userId = getTelegramUserId();
-  const completed = JSON.parse(localStorage.getItem(`tp_user_${userId}_tasks`) || '[]');
-  const tasks = [
-    ['login', 'Zaloguj się codziennie', 25],
-    ['post', 'Opublikuj post w Grupie', 50],
-    ['visit_info', 'Odwiedź zakładkę Info', 25]
-  ];
-
-  const taskList = document.getElementById('task-list');
-  if (!taskList) return;
-
-  taskList.innerHTML = tasks.map(t => {
-    const isDone = completed.includes(t[0]);
-    return `
-      <div class="flex items-center justify-between bg-slate-900/80 p-3 rounded-xl border border-slate-800 text-xs">
-        <div class="flex items-center gap-2.5">
-          <i class="fa-solid ${isDone ? 'fa-circle-check text-emerald-400' : 'fa-circle text-slate-700'} text-sm"></i>
-          <div>
-            <span class="block font-bold text-slate-200">${t[1]}</span>
-            <span class="text-[10px] muted">+${t[2]} XP</span>
-          </div>
-        </div>
-        <button onclick="triggerTaskAction('${t[0]}', ${t[2]}, '${t[1]}')" class="text-[11px] font-semibold ${isDone ? 'muted cursor-default' : 'text-violet-400 hover:text-violet-300'}">
-          ${isDone ? 'Wykonane' : 'Wykonaj'}
+        <button onclick="showToast('Komentarze wkrótce')" class="text-slate-400 hover:text-cyan-400 cursor-pointer">
+          <i class="fa-comment"></i> ${post.comments.length}
         </button>
       </div>
     `;
-  }).join('');
+    feed.appendChild(postEl);
+  });
 }
 
-function triggerTaskAction(id, xpVal = 50, title = 'Zadanie') {
-  const userId = getTelegramUserId();
-  const completed = JSON.parse(localStorage.getItem(`tp_user_${userId}_tasks`) || '[]');
-  if (completed.includes(id)) return window.showToast?.('Zadanie zostało już zaliczone.');
-
-  completed.push(id);
-  localStorage.setItem(`tp_user_${userId}_tasks`, JSON.stringify(completed));
-  addXP(xpVal, title);
-  renderTaskList();
-}
-
-function renderRewardHistory() {
-  const userId = getTelegramUserId();
-  const logs = JSON.parse(localStorage.getItem(`tp_user_${userId}_reward_logs`) || '[]');
-  const container = document.getElementById('reward-log');
-  if (!container) return;
-
-  if (!logs.length) {
-    container.innerHTML = '<p class="text-xs muted">Brak odnotowanej aktywności XP.</p>';
-    return;
+function likePost(postId) {
+  const post = userState.adminPosts.find(p => p.id === postId);
+  if (post) {
+    post.likes++;
+    saveUser();
+    renderChannelFeed();
   }
+}
 
-  container.innerHTML = logs.slice(0, 10).map(l => `
-    <div class="flex justify-between items-center bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 text-xs">
-      <div>
-        <span class="block font-semibold text-slate-200">${String(l.reason).replace(/[&<>"']/g, match => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[match]))}</span>
-        <span class="text-[9px] muted">${l.date}</span>
+function sendChatMessage() {
+  const input = document.getElementById('chat-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+  
+  userState.chatMessages.push({
+    user: document.getElementById('profile-name').textContent,
+    text: msg,
+    time: new Date().toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })
+  });
+  
+  saveUser();
+  input.value = '';
+  addXP(10, 'Wiadomość w czacie');
+  renderChat();
+}
+
+function renderChat() {
+  const chatEl = document.getElementById('chat-messages');
+  chatEl.innerHTML = '';
+  userState.chatMessages.slice(-20).forEach(msg => {
+    const msgEl = document.createElement('div');
+    msgEl.className = 'chat-message bg-slate-900/80 p-2 rounded-lg text-xs';
+    msgEl.innerHTML = `<span class="text-cyan-400 font-bold">${msg.user}</span> <span class="text-slate-400">${msg.time}</span><br><span class="text-slate-200">${msg.text}</span>`;
+    chatEl.appendChild(msgEl);
+  });
+  chatEl.scrollTop = chatEl.scrollHeight;
+}
+
+function renderRankTiers() {
+  const list = document.getElementById('rank-list');
+  list.innerHTML = '';
+  const currentRank = getRankTier(userState.xp);
+  const currentLevel = getLevel(userState.xp);
+  
+  RANK_TIERS.forEach((tier, idx) => {
+    const isActive = currentRank === tier;
+    const el = document.createElement('div');
+    el.className = `p-3 rounded-xl border ${tier.color} text-xs ${isActive ? 'ring-2 ring-cyan-400' : ''}`;
+    el.innerHTML = `
+      <div class="flex justify-between items-center">
+        <span class="font-bold text-white">${tier.name}</span>
+        <span class="text-[10px] text-slate-400">${tier.xpMin.toLocaleString()} - ${tier.xpMax === Infinity ? '∞' : tier.xpMax.toLocaleString()} XP</span>
       </div>
-      <span class="font-bold text-emerald-400">+${l.amount} XP</span>
-    </div>
-  `).join('');
+      <div class="mt-1 w-full bg-slate-800 rounded-full h-1 overflow-hidden">
+        <div class="bg-gradient-to-r from-cyan-500 to-violet-500 h-full" style="width: ${isActive ? '75%' : '0%'}"></div>
+      </div>
+    `;
+    list.appendChild(el);
+  });
 }
 
-function initBonusTimer() {
-  const userId = getTelegramUserId();
-  const button = document.getElementById('claim-bonus-btn');
-  const timer = document.getElementById('bonus-timer');
-  if (!button || !timer) return;
+function renderTasks() {
+  const list = document.getElementById('tasks-list');
+  list.innerHTML = '';
+  TASKS.forEach(task => {
+    const done = userState.completedTasks.includes(task.id);
+    const el = document.createElement('div');
+    el.className = `p-2 rounded-lg bg-slate-900/80 border border-slate-800 text-xs flex justify-between items-center`;
+    el.innerHTML = `
+      <span>${task.icon} ${task.name}</span>
+      <button onclick="completeTask('${task.id}', ${task.xp}, '${task.name}')" class="${done ? 'text-slate-500 cursor-default' : 'text-emerald-400 cursor-pointer hover:text-emerald-300'}">
+        ${done ? '✓ Wykonane' : `+${task.xp} XP`}
+      </button>
+    `;
+    list.appendChild(el);
+  });
+}
 
-  const key = `tp_user_${userId}_lastClaimTime`;
-  const CLAIM_INTERVAL = 4 * 60 * 60 * 1000;
+function completeTask(taskId, xp, name) {
+  if (userState.completedTasks.includes(taskId)) return showToast('Zadanie już wykonane!');
+  userState.completedTasks.push(taskId);
+  addXP(xp, name);
+  saveUser();
+  renderTasks();
+  checkBadgeUnlocks();
+}
 
-  function updateBonusTimer() {
-    const lastClaim = Number(localStorage.getItem(key) || 0);
-    const now = Date.now();
-    const remaining = CLAIM_INTERVAL - (now - lastClaim);
-
-    if (remaining <= 0) {
-      timer.textContent = '00:00:00';
-      button.disabled = false;
-      button.classList.remove('bg-slate-700', 'text-slate-400', 'cursor-not-allowed');
-      button.classList.add('bg-cyan-500', 'hover:bg-cyan-400', 'text-slate-950', 'shadow-lg', 'shadow-cyan-500/20');
-      button.textContent = 'Odbierz +50 TechnixCoins';
-      return;
+function renderBadges() {
+  const list = document.getElementById('badges-list');
+  list.innerHTML = '';
+  BADGES.forEach(badge => {
+    const unlocked = userState.xp >= badge.xp || userState.unlockedBadges.includes(badge.id);
+    if (unlocked && !userState.unlockedBadges.includes(badge.id)) {
+      userState.unlockedBadges.push(badge.id);
+      saveUser();
     }
-
-    const hours = Math.floor(remaining / (1000 * 60 * 60));
-    const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
-
-    const pad = (value) => String(value).padStart(2, '0');
-    timer.textContent = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
-    button.disabled = true;
-    button.classList.add('bg-slate-700', 'text-slate-400', 'cursor-not-allowed');
-    button.classList.remove('bg-cyan-500', 'hover:bg-cyan-400', 'text-slate-950', 'shadow-lg', 'shadow-cyan-500/20');
-    button.textContent = `Dostępne za ${pad(hours)}h ${pad(minutes)}m`;
-  }
-
-  button.addEventListener('click', () => {
-    if (button.disabled) return;
-    localStorage.setItem(key, String(Date.now()));
-    addXP(50, 'Bonus Czasowy');
-    updateBonusTimer();
+    const el = document.createElement('div');
+    el.className = `text-center p-2 rounded-lg ${unlocked ? 'bg-amber-900/30 border border-amber-700' : 'bg-slate-900/50 border border-slate-800 opacity-50'}`;
+    el.innerHTML = `<div class="text-2xl">${badge.icon}</div><div class="text-[9px] font-bold text-slate-200 mt-1">${badge.name}</div><div class="text-[8px] text-slate-400">${badge.xp} XP</div>`;
+    list.appendChild(el);
   });
-
-  updateBonusTimer();
-  setInterval(updateBonusTimer, 1000);
 }
 
-function displayPoints(userId = getTelegramUserId()) {
-  if (!userId || userId === 'guest') {
-    updateXPDisplay();
-    return 0;
-  }
-
-  initializeUserState(userId);
-  localStorage.setItem('tp_last_tg_user_id', String(userId));
-
-  const xp = getXP();
-  const pointsEl = document.getElementById('user-points');
-  if (pointsEl) {
-    pointsEl.textContent = xp.toLocaleString('pl-PL');
-  }
-
-  const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
-  const userName = tgUser?.username
-    ? `@${tgUser.username}`
-    : `${tgUser?.first_name || 'User'} ${tgUser?.last_name || ''}`.trim();
-
-  const telegramUsername = document.getElementById('telegram-username');
-  const profileName = document.getElementById('profile-name');
-  const profileId = document.getElementById('profile-id');
-  const rankUserLabel = document.getElementById('rank-user-label');
-
-  if (telegramUsername) telegramUsername.textContent = userName || '@User';
-  if (profileName) profileName.textContent = userName || 'TechnixUser';
-  if (profileId) profileId.textContent = `TG ID: #${userId}`;
-  if (rankUserLabel) rankUserLabel.textContent = `12. ${userName || 'User'}`;
-
-  updateXPDisplay();
-  return xp;
+function checkBadgeUnlocks() {
+  BADGES.forEach(badge => {
+    if (userState.xp >= badge.xp && !userState.unlockedBadges.includes(badge.id)) {
+      userState.unlockedBadges.push(badge.id);
+      showToast(`🎖️ Odznaka odblokowana: ${badge.name}`);
+    }
+  });
+  saveUser();
 }
 
-window.getTelegramUserId = getTelegramUserId;
-window.getUserStorageKey = getUserStorageKey;
-window.initializeUserState = initializeUserState;
-window.getXP = getXP;
-window.updateXPDisplay = updateXPDisplay;
-window.addXP = addXP;
-window.createNewPost = createNewPost;
-window.renderPosts = renderPosts;
-window.removePost = removePost;
-window.claimReward = claimReward;
-window.renderTaskList = renderTaskList;
-window.triggerTaskAction = triggerTaskAction;
-window.renderRewardHistory = renderRewardHistory;
-window.initBonusTimer = initBonusTimer;
-window.displayPoints = displayPoints;
+function generateReferralLink() {
+  const baseUrl = window.location.origin + window.location.pathname;
+  return `${baseUrl}?ref=${currentUserId}`;
+}
 
-window.TechnixDebug = {
-  getTelegramUserId,
-  getUserStorageKey,
-  initializeUserState,
-  getXP,
-  updateXPDisplay,
-  addXP,
-  resetUserPoints: () => {
-    const userId = getTelegramUserId();
-    localStorage.setItem(`tp_user_${userId}_xp`, '0');
-    localStorage.setItem(`tp_user_${userId}_posts`, JSON.stringify([]));
-    localStorage.setItem(`tp_user_${userId}_tasks`, JSON.stringify([]));
-    localStorage.setItem(`tp_user_${userId}_reward_logs`, JSON.stringify([]));
-    localStorage.setItem(`tp_user_${userId}_lastClaimTime`, '0');
-    localStorage.setItem(`tp_user_${userId}_initialized`, 'true');
-    updateXPDisplay();
-    return true;
-  },
-  displayPoints
-};
+function copyReferralLink() {
+  const link = document.getElementById('referral-link').value;
+  navigator.clipboard.writeText(link).then(() => showToast('Link skopiowany!'));
+}
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    const userId = getTelegramUserId();
-    initializeUserState(userId);
-    updateXPDisplay();
-    renderPosts();
-    renderTaskList();
-    renderRewardHistory();
-    initBonusTimer();
-    displayPoints(userId);
-  });
-} else {
+function changeAvatar(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    userState.avatar = e.target.result;
+    saveUser();
+    document.getElementById('avatar-preview').src = userState.avatar;
+    document.getElementById('profile-avatar').src = userState.avatar;
+    showToast('Avatar zmieniony!');
+  };
+  reader.readAsDataURL(file);
+}
+
+function connectTONKeeper() {
+  showToast('🔗 Integracja TON Keeper dostępna po starcie mainnet');
+}
+
+function show(tab, title) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+  document.getElementById(`screen-${tab}`)?.classList.remove('hidden');
+  document.getElementById('header-title').textContent = title;
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.textContent.includes(title)));
+  if (tab === 'home') renderChannelFeed();
+  if (tab === 'rewards') { renderRankTiers(); renderTasks(); renderBadges(); }
+}
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.remove('hidden');
+  clearTimeout(window.toastTimer);
+  window.toastTimer = setTimeout(() => toast.classList.add('hidden'), 2200);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
   const userId = getTelegramUserId();
-  initializeUserState(userId);
+  initUser(userId);
+  
+  if (TelegramApp?.initDataUnsafe?.user) {
+    const user = TelegramApp.initDataUnsafe.user;
+    const name = user.username ? `@${user.username}` : `${user.first_name || 'User'} ${user.last_name || ''}`.trim();
+    document.getElementById('profile-name').textContent = name;
+    document.getElementById('profile-username').textContent = `@${user.username || 'user'}`;
+    document.getElementById('profile-id').textContent = `TG ID: #${user.id}`;
+    document.getElementById('show-tg-id').textContent = user.id;
+    
+    // Check if this is admin (SET YOUR TELEGRAM ID HERE)
+    const ADMIN_ID = '123456789'; // ZMIEŃ NA SWOJE ID
+    if (String(user.id) === ADMIN_ID) {
+      document.getElementById('admin-panel').classList.remove('hidden');
+    }
+  }
+  
+  if (userState.avatar) {
+    document.getElementById('avatar-preview').src = userState.avatar;
+    document.getElementById('profile-avatar').src = userState.avatar;
+  }
+  
+  document.getElementById('referred-count').textContent = userState.referrals.length;
+  document.getElementById('referral-link').value = generateReferralLink();
+  
   updateXPDisplay();
-  renderPosts();
-  renderTaskList();
-  renderRewardHistory();
-  initBonusTimer();
-  displayPoints(userId);
-}
-
-console.log('[TechnixPro] Per-user points system loaded.');
+  renderChannelFeed();
+  renderRankTiers();
+  renderTasks();
+  renderBadges();
+  renderChat();
+  checkBadgeUnlocks();
+  
+  // Chat auto-scroll
+  setInterval(renderChat, 2000);
+});
