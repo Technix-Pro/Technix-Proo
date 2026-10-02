@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="pl" class="dark">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#080b14">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#080b14" />
   <title>TechnixPro — Core Engine</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
   <script>
@@ -41,9 +41,9 @@
       user-select: none;
     }
 
-    body {
+    html, body {
       margin: 0;
-      background-color: #080b14;
+      background: #080b14;
       color: #eef2ff;
       font-family: 'Inter', sans-serif;
       overflow-x: hidden;
@@ -68,10 +68,7 @@
       transition: all 0.2s ease;
     }
 
-    .active-sub {
-      color: #b9a4ff;
-      border-color: #8b5cf6;
-    }
+    .active-sub { color: #b9a4ff; border-color: #8b5cf6; }
 
     .nav-btn {
       color: #93a0b8;
@@ -128,7 +125,6 @@
     .dot:nth-child(2) { animation-delay: 0.4s; }
     .dot:nth-child(3) { animation-delay: 0.8s; }
 
-    /* WŁASNY CPU INTERFEJS TECHNIXPRO MINERA */
     .tp-cpu-card {
       background: #000000;
       border: 2px solid #22d3ee;
@@ -137,20 +133,10 @@
       transition: transform 0.05s ease;
     }
 
-    .tp-cpu-card:active {
-      transform: scale(0.97);
-    }
+    .tp-cpu-card:active { transform: scale(0.97); }
+    .tp-pin { background: #8b5cf6; box-shadow: 0 0 8px #8b5cf6; }
+    .tp-pulse-ring { animation: tpPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
 
-    .tp-pin {
-      background: #8b5cf6;
-      box-shadow: 0 0 8px #8b5cf6;
-    }
-
-    .tp-pulse-ring {
-      animation: tpPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-    }
-
-    /* ANIMACJA CZĄSTECZEK OD KLIKANIA */
     .click-particle {
       position: absolute;
       pointer-events: none;
@@ -160,6 +146,313 @@
       text-shadow: 0 0 8px rgba(34,211,238,0.8);
       animation: floatUp 0.6s ease-out forwards;
       z-index: 50;
+    }
+
+    .tech-screen-shell {
+      position: relative;
+      overflow: hidden;
+      border-radius: 26px;
+      background: radial-gradient(circle at center, rgba(15,23,42,0.95), rgba(2,6,23,1) 58%);
+      border: 1px solid rgba(148,163,184,0.18);
+      box-shadow: inset 0 0 22px rgba(34,211,238,0.08), inset 0 0 26px rgba(168,85,247,0.08), 0 16px 36px rgba(2,6,23,0.7);
+      min-height: 230px;
+      padding: 18px 10px 14px;
+    }
+
+    .tech-screen-shell::before {
+      content: "";
+      position: absolute;
+      inset: 8% 12%;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(34,211,238,0.15), rgba(168,85,247,0.06), transparent 70%);
+      filter: blur(18px);
+      z-index: 0;
+    }
+
+    .tech-circuit {
+      position: absolute;
+      inset: 10% 10%;
+      border-radius: 50%;
+      background:
+        linear-gradient(120deg, transparent 0 20%, rgba(34,211,238,0.72) 20% 21%, transparent 21% 26%, rgba(168,85,247,0.72) 26% 27%, transparent 27% 32%, rgba(34,211,238,0.68) 32% 33%, transparent 33% 40%, rgba(168,85,247,0.7) 40% 41%, transparent 41% 48%, rgba(34,211,238,0.7) 48% 49%, transparent 49% 56%, rgba(168,85,247,0.66) 56% 57%, transparent 57% 64%, rgba(34,211,238,0.72) 64% 65%, transparent 65% 72%, rgba(168,85,247,0.72) 72% 73%, transparent 73% 100%),
+        linear-gradient(30deg, transparent 0 14%, rgba(168,85,247,0.72) 14% 15%, transparent 15% 20%, rgba(34,211,238,0.72) 20% 21%, transparent 21% 30%, rgba(168,85,247,0.72) 30% 31%, transparent 31% 42%, rgba(34,211,238,0.76) 42% 43%, transparent 43% 54%, rgba(34,211,238,0.7) 54% 55%, transparent 55% 66%, rgba(168,85,247,0.7) 66% 67%, transparent 67% 78%, rgba(34,211,238,0.72) 78% 79%, transparent 79% 100%);
+      opacity: 0.9;
+      filter: drop-shadow(0 0 8px rgba(34,211,238,0.5)) drop-shadow(0 0 10px rgba(168,85,247,0.4));
+      animation: circuitPulse 7s ease-in-out infinite alternate;
+      z-index: 0;
+    }
+
+    .tech-circuit::before, .tech-circuit::after {
+      content: "";
+      position: absolute;
+      inset: 8% 12%;
+      border-radius: 50%;
+      border: 2px solid rgba(34,211,238,0.07);
+      border-left-color: rgba(34,211,238,0.28);
+      border-right-color: rgba(168,85,247,0.28);
+      transform: rotate(18deg);
+    }
+
+    .tech-circuit::after {
+      inset: 16% 18%;
+      border-color: rgba(168,85,247,0.08);
+      border-top-color: rgba(168,85,247,0.35);
+      border-bottom-color: rgba(34,211,238,0.35);
+      transform: rotate(-14deg);
+    }
+
+    .tech-core {
+      position: relative;
+      z-index: 2;
+      width: 150px;
+      height: 150px;
+      margin: 28px auto 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: radial-gradient(circle at center, rgba(90,110,255,0.16), rgba(15,23,42,0.94) 60%, rgba(2,6,23,1) 100%);
+      border: 1px solid rgba(180,193,220,0.65);
+      box-shadow: 0 0 0 8px rgba(148,163,184,0.04), 0 0 30px rgba(34,211,238,0.2), 0 0 50px rgba(168,85,247,0.16);
+    }
+
+    .tech-logo {
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 52px;
+      font-weight: 900;
+      color: transparent;
+      background-image: linear-gradient(135deg, #8de7ff, #ba7bff 35%, #f0abff 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      text-shadow: 0 0 16px rgba(34,211,238,0.2), 0 0 22px rgba(168,85,247,0.25);
+      filter: drop-shadow(0 0 10px rgba(34,211,238,0.3));
+      transform: skewX(-8deg);
+    }
+
+    .tech-capsule {
+      position: absolute;
+      right: 18px;
+      bottom: 18px;
+      width: 118px;
+      height: 38px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148,163,184,0.32);
+      box-shadow: inset 0 0 16px rgba(8,11,20,0.8), 0 0 18px rgba(34,211,238,0.12);
+      overflow: hidden;
+      z-index: 2;
+    }
+
+    .tech-capsule-fill {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 0%;
+      background: linear-gradient(90deg, rgba(34,211,238,0.7), rgba(168,85,247,0.72), rgba(236,72,153,0.7));
+      box-shadow: inset 0 0 12px rgba(255,255,255,0.1), 0 0 18px rgba(34,211,238,0.3);
+      transition: width 0.25s ease;
+    }
+
+    .tech-capsule span {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      color: #ecfeff;
+      text-shadow: 0 0 8px rgba(34,211,238,0.5);
+      z-index: 1;
+    }
+
+    .tech-token {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #e9f7ff, #7dd3fc 28%, #8b5cf6 70%, #1f293d 100%);
+      box-shadow: 0 0 10px rgba(34,211,238,0.7), 0 0 18px rgba(168,85,247,0.5);
+      opacity: 0.85;
+      z-index: 1;
+      animation: floatToken 4s ease-in-out infinite;
+    }
+
+    .tech-token:nth-child(1) { left: 12%; top: 34%; animation-delay: 0.2s; }
+    .tech-token:nth-child(2) { left: 72%; top: 20%; animation-delay: 1s; }
+    .tech-token:nth-child(3) { left: 66%; top: 60%; animation-delay: 1.8s; }
+    .tech-token:nth-child(4) { left: 32%; top: 72%; animation-delay: 2.5s; }
+    .tech-token:nth-child(5) { left: 48%; top: 26%; animation-delay: 3.1s; }
+    .tech-token:nth-child(6) { left: 18%; top: 62%; animation-delay: 0.8s; }
+    .tech-token:nth-child(7) { left: 80%; top: 43%; animation-delay: 2.1s; }
+    .tech-token:nth-child(8) { left: 58%; top: 74%; animation-delay: 1.3s; }
+
+    .tech-mini-card {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 14px;
+      padding: 10px 12px;
+      box-shadow: inset 0 0 18px rgba(15, 23, 42, 0.75);
+    }
+
+    .tech-mini-card span {
+      display: block;
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #94a3b8;
+    }
+
+    .tech-mini-card strong {
+      display: block;
+      margin-top: 5px;
+      font-size: 15px;
+      font-weight: 800;
+      color: white;
+    }
+
+    .rig-station {
+      position: relative;
+      min-height: 200px;
+      border-radius: 22px;
+      border: 1px solid rgba(148,163,184,0.16);
+      background: linear-gradient(180deg, rgba(2,6,23,0.9), rgba(15,23,42,0.9));
+      overflow: hidden;
+      padding: 14px;
+    }
+
+    .rig-station::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center, rgba(34,211,238,0.12), transparent 48%);
+      pointer-events: none;
+    }
+
+    .station-motherboard {
+      position: relative;
+      width: 100%;
+      height: 120px;
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(17,24,39,0.9), rgba(15,23,42,0.7));
+      border: 1px solid rgba(148,163,184,0.2);
+      box-shadow: inset 0 0 20px rgba(34,211,238,0.04);
+      margin-top: 8px;
+    }
+
+    .station-part {
+      position: absolute;
+      opacity: 0;
+      transform: translateY(12px) scale(0.9);
+      transition: all 0.42s ease;
+      pointer-events: none;
+    }
+
+    .station-part.active {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+    }
+
+    .station-mouse { left: 12%; top: 30%; width: 38px; height: 30px; }
+    .station-keyboard { left: 32%; top: 26%; width: 78px; height: 34px; }
+    .station-monitor { left: 62%; top: 10%; width: 82px; height: 56px; }
+    .station-case { left: 18%; bottom: 10%; width: 70px; height: 52px; }
+    .station-ram { left: 46%; bottom: 18%; width: 50px; height: 36px; }
+    .station-gpu { right: 12%; bottom: 12%; width: 70px; height: 70px; }
+
+    .rig-part-box {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      border-radius: 12px;
+      background: linear-gradient(145deg, rgba(17,24,39,0.9), rgba(34,211,238,0.12));
+      border: 1px solid rgba(34,211,238,0.22);
+      box-shadow: 0 0 20px rgba(34,211,238,0.08);
+      font-size: 18px;
+      color: #8de7ff;
+    }
+
+    .rig-shop {
+      display: grid;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .shop-item {
+      display: grid;
+      grid-template-columns: 42px 1fr auto;
+      align-items: center;
+      gap: 10px;
+      background: rgba(15, 23, 42, 0.72);
+      border: 1px solid rgba(148,163,184,0.14);
+      border-radius: 14px;
+      padding: 10px 10px;
+    }
+
+    .shop-item-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, rgba(34,211,238,0.12), rgba(168,85,247,0.12));
+      border: 1px solid rgba(34,211,238,0.2);
+      color: #a5f3fc;
+      font-size: 17px;
+    }
+
+    .shop-item button {
+      min-width: 96px;
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .energy-bar {
+      height: 12px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(15,23,42,0.9);
+      border: 1px solid rgba(148,163,184,0.12);
+      box-shadow: inset 0 0 12px rgba(15,23,42,0.8);
+    }
+
+    .energy-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #22d3ee, #a855f7, #f59e0b);
+      transition: width 0.35s ease;
+      box-shadow: 0 0 18px rgba(34,211,238,0.26);
+    }
+
+    .score-glow {
+      text-shadow: 0 0 12px rgba(34,211,238,0.35);
+    }
+
+    .tp-level-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(168,85,247,0.12);
+      border: 1px solid rgba(168,85,247,0.25);
+      color: #d8b4fe;
+      border-radius: 999px;
+      padding: 5px 9px;
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-weight: 700;
     }
 
     @keyframes floatUp {
@@ -190,17 +483,26 @@
       0%, 100% { opacity: 0.2; transform: scale(0.8); }
       50% { opacity: 1; transform: scale(1.1); }
     }
+
+    @keyframes circuitPulse {
+      0% { opacity: 0.64; filter: drop-shadow(0 0 4px rgba(34,211,238,0.5)); }
+      100% { opacity: 1; filter: drop-shadow(0 0 10px rgba(168,85,247,0.7)); }
+    }
+
+    @keyframes floatToken {
+      0%, 100% { transform: translateY(0px) scale(0.9); opacity: 0.6; }
+      50% { transform: translateY(-12px) scale(1.1); opacity: 1; }
+    }
   </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between">
 
   <main class="max-w-md mx-auto w-full min-h-screen bg-[#080b14] flex flex-col relative pb-28 border-x border-slate-900/60 shadow-2xl">
 
-    <!-- HEADER -->
     <header class="sticky top-0 z-30 flex items-center justify-between px-4 py-3 bg-[#080b14]/90 backdrop-blur-xl border-b border-slate-800/80">
       <div class="flex items-center gap-3">
-        <button onclick="show('profile','Profil')" class="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 via-indigo-600 to-cyan-400 p-[1.5px] transition active:scale-95 shadow-lg shadow-violet-500/50">
-          <div class="w-full h-full bg-[#080b14] rounded-[10.5px] flex items-center justify-center font-black text-transparent bg-clip-text bg-gradient-to-tr from-violet-400 to-cyan-300 text-lg tracking-tighter">TP</div>
+        <button onclick="show('profile','Profil')" class="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 via-indigo-600 to-cyan-400 p-[1.5px] transition active:scale-95 shadow-lg shadow-violet-500/30">
+          <div class="w-full h-full bg-[#080b14] rounded-[10.5px] flex items-center justify-center font-black text-transparent bg-clip-text bg-gradient-to-tr from-violet-400 to-cyan-300 text-lg tracking-tight">TP</div>
         </button>
         <div>
           <p class="text-[9px] uppercase tracking-[0.25em] text-cyan-400 font-bold">TechnixPro</p>
@@ -219,7 +521,6 @@
       </div>
     </header>
 
-    <!-- PASEK PODZAKŁADEK DLA START -->
     <div id="home-subtabs" class="flex relative sticky top-[65px] z-20 bg-[#080b14]/95 backdrop-blur-md border-b border-slate-800/80">
       <button class="subtab py-2.5 text-xs font-semibold text-center text-[#b9a4ff]" onclick="sub('home','channel',this)">Kanał</button>
       <button class="subtab py-2.5 muted text-xs font-semibold text-center" onclick="sub('home','group',this)">Grupa</button>
@@ -227,7 +528,6 @@
       <div id="subtab-indicator" class="subtab-indicator"></div>
     </div>
 
-    <!-- PASEK PODZAKŁADEK DLA BONUSÓW -->
     <div id="gift-subtabs" class="hidden overflow-x-auto whitespace-nowrap scroll-none sticky top-[65px] z-20 bg-[#080b14]/95 backdrop-blur-md border-b border-slate-800/80 px-2">
       <button class="inline-block active-sub py-2.5 px-4 border-b-2 text-xs font-semibold" onclick="rewardTab('overview',this)">Przegląd</button>
       <button class="inline-block py-2.5 px-4 border-b-2 border-transparent muted text-xs font-semibold" onclick="rewardTab('events',this)">Eventy Live</button>
@@ -239,10 +539,8 @@
       <button class="inline-block py-2.5 px-4 border-b-2 border-transparent muted text-xs font-semibold" onclick="rewardTab('ranks',this)">Rangi</button>
     </div>
 
-    <!-- ZAWARTOŚĆ STRONY -->
     <div id="app-content" class="p-4 space-y-4 flex-1">
 
-      <!-- EKRAN GŁÓWNY (START) -->
       <section id="screen-home" class="screen space-y-4">
         <div id="home-channel" class="sub space-y-4">
           <div class="panel p-3.5 flex items-center justify-between">
@@ -259,9 +557,9 @@
               <span class="text-[10px] muted">Publikuj na Kanał</span>
             </div>
             <textarea id="admin-post-input" rows="3" class="w-full rounded-xl bg-[#080b14] border border-slate-700/80 p-3 text-xs text-slate-200 focus:outline-none focus:border-violet-500 resize-none" placeholder="Co nowego w TechnixPro?..."></textarea>
-            <input id="admin-media-input" type="text" class="w-full rounded-xl bg-[#080b14] border border-slate-700/80 p-2.5 text-xs text-slate-200 focus:outline-none focus:border-violet-500" placeholder="Opcjonalny link do grafiki/wideo (URL)..." />
+            <input id="admin-media-input" type="text" class="w-full rounded-xl bg-[#080b14] border border-slate-700/80 p-2.5 text-xs text-slate-200 focus:outline-none focus:border-violet-500" placeholder="Opcjonalny link do grafiki/wideo (...)" />
             <div class="flex justify-end">
-              <button onclick="publishChannelPost()" class="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition active:scale-95 flex items-center gap-2 shadow-lg shadow-violet-600/30">
+              <button onclick="publishChannelPost()" class="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition active:scale-95 flex items-center gap-2">
                 <i class="fa-solid fa-paper-plane text-[10px]"></i> Opublikuj Post
               </button>
             </div>
@@ -276,15 +574,15 @@
               <i class="fa-regular font-bold fa-clock text-lg"></i>
               <span id="bonus-timer">04:00:00</span>
             </div>
-            <button id="claim-bonus-btn" onclick="claimTimeBonus()" disabled class="w-full py-2.5 px-4 text-xs font-semibold rounded-lg bg-slate-700 text-slate-400 cursor-not-allowed transition-all duration-200">Odbierz +50 TechnixCoins</button>
+            <button id="claim-bonus-btn" disabled class="w-full py-2.5 px-4 text-xs font-semibold rounded-lg bg-slate-700 text-slate-400 cursor-not-allowed transition-all duration-200">Odbierz +50 TechnixCoins</button>
           </div>
         </div>
 
         <div id="home-group" class="sub hidden space-y-4">
           <div class="panel p-4 space-y-3">
             <h2 class="font-bold text-sm text-slate-200">Społeczność & Dyskusja</h2>
-            <p class="text-xs muted">Twoje wpisy są automatycznie zapisywane na tym urządzeniu.</p>
-            <textarea id="post-input" rows="3" class="w-full rounded-xl bg-[#080b14] border border-slate-700/80 p-3 text-xs text-slate-200 focus:outline-none focus:border-violet-500 resize-none" placeholder="Napisz wiadomość..."></textarea>
+            <p class="text-xs muted">Twoje wpisy są automatycznie zapisywane na tym urządzeniu (zabezpieczone Anti-XSS).</p>
+            <textarea id="post-input" rows="3" class="w-full rounded-xl bg-[#080b14] border border-slate-700/80 p-3 text-xs text-slate-200 focus:outline-none focus:border-violet-500 resize-none" placeholder="Napisz coś..."></textarea>
             <div class="flex justify-end">
               <button onclick="createNewPost()" class="bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition active:scale-95 flex items-center gap-2">
                 <i class="fa-solid fa-paper-plane text-[10px]"></i> Opublikuj
@@ -306,10 +604,18 @@
             <h2 class="text-xl font-extrabold text-white mt-1">TechnixPro Vision</h2>
             <p class="text-xs text-slate-300 max-w-xs mt-1">Niezależny procesor sprzętowy, cyfrowe aktywa i społeczność deweloperów.</p>
           </div>
+
+          <div class="panel p-4 space-y-3">
+            <h3 class="text-sm font-bold text-violet-300">Od rdzenia do całego ekosystemu</h3>
+            <p class="text-xs muted leading-relaxed">TechnixPro łączy innowacje sprzętowe z rynkiem krypto w komunikatorze Telegram. Zbieraj punkty XP, wykonuj zadania deweloperskie i przygotuj się do airdropu.</p>
+            <div class="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200 flex gap-2">
+              <i class="fa-solid fa-triangle-exclamation text-amber-400 mt-0.5"></i>
+              <span>Projekt w fazie stealth. Wszystkie dane demo zostaną zsynchronizowane po starcie backendu.</span>
+            </div>
+          </div>
         </div>
       </section>
 
-      <!-- EKRAN BONUSÓW -->
       <section id="screen-gift" class="screen hidden space-y-4">
         <div id="reward-overview" class="reward-view space-y-4">
           <div class="panel p-4 relative overflow-hidden bg-gradient-to-br from-violet-900/40 via-slate-900 to-cyan-900/30">
@@ -339,11 +645,30 @@
                 <div id="xp-progress-bar" class="bg-gradient-to-r from-violet-500 to-cyan-400 h-full transition-all duration-500" style="width: 0%"></div>
               </div>
             </div>
+
+            <div class="grid grid-cols-3 gap-2 pt-2 text-center">
+              <div class="bg-slate-900/80 rounded-xl p-2.5 border border-slate-800">
+                <span class="block text-sm font-bold text-cyan-400">0 dni</span>
+                <span class="text-[9px] muted">Streak</span>
+              </div>
+              <div class="bg-slate-900/80 rounded-xl p-2.5 border border-slate-800">
+                <span class="block text-sm font-bold text-violet-400">0</span>
+                <span class="text-[9px] muted">Nagrody</span>
+              </div>
+              <div class="bg-slate-900/80 rounded-xl p-2.5 border border-slate-800">
+                <span class="block text-sm font-bold text-emerald-400">100%</span>
+                <span class="text-[9px] muted">Aktywność</span>
+              </div>
+            </div>
           </div>
         </div>
 
         <div id="reward-events" class="reward-view hidden space-y-3">
           <div class="panel p-4 space-y-3">
+            <div class="flex justify-between items-center">
+              <span class="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full">AKTYWNY EVENT</span>
+              <span class="text-[10px] muted">Koniec za: 4 dni</span>
+            </div>
             <h3 class="text-base font-bold text-white">Cyber Week — Community Sprint</h3>
             <p class="text-xs muted">Wykonuj zadania społecznościowe, zbieraj punkty XP oraz odblokuj limitowaną odznakę.</p>
             <button onclick="triggerTaskAction('event',50,'Event')" class="w-full bg-violet-600 hover:bg-violet-500 text-white font-semibold text-xs py-2.5 rounded-xl transition active:scale-95">Dołącz do Sprintu</button>
@@ -360,9 +685,20 @@
         <div id="reward-referrals" class="reward-view hidden space-y-4">
           <div class="panel p-4 space-y-3">
             <h3 class="font-bold text-sm text-slate-200">Zapraszaj znajomych</h3>
+            <p class="text-xs muted">Zyskaj +100 XP za każdego nowego użytkownika dołączającego z Twojego linku polecającego.</p>
             <div class="flex items-center gap-2">
-              <input id="ref-link-input" type="text" readonly value="https://t.me/TechnixProBot?start=ref_user" class="w-full bg-[#080b14] border border-slate-700/80 rounded-xl p-2.5 text-xs font-mono text-cyan-400 focus:outline-none" />
+              <input id="ref-link-input" type="text" readonly value="https://t.me/TechnixProBot?start=ref_user" class="w-full bg-[#080b14] border border-slate-700/80 rounded-xl p-2.5 text-xs font-mono text-cyan-300 focus:outline-none" />
               <button onclick="copyReferralLink()" class="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs px-4 py-2.5 rounded-xl transition active:scale-95 shrink-0">Kopiuj</button>
+            </div>
+            <div class="pt-2 border-t border-slate-800 space-y-2">
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-slate-300">Poleceni gracze:</span>
+                <span class="font-bold text-violet-400">0 osób</span>
+              </div>
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-slate-300">Zdobyte XP z poleceń:</span>
+                <span class="font-bold text-emerald-400">+0 XP</span>
+              </div>
             </div>
           </div>
         </div>
@@ -375,8 +711,17 @@
                 <div>
                   <i class="fa-solid fa-gift text-cyan-400 text-lg"></i>
                   <span class="block font-bold text-xs mt-2">Bonus Dzienny</span>
+                  <span class="text-[10px] muted">+25 XP za logowanie</span>
                 </div>
                 <button onclick="claimReward('Bonus Dzienny', 25)" class="mt-3 text-xs text-violet-400 font-semibold text-left">Odbierz &rarr;</button>
+              </div>
+              <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-3 flex flex-col justify-between opacity-60">
+                <div>
+                  <i class="fa-solid fa-award text-amber-400 text-lg"></i>
+                  <span class="block font-bold text-xs mt-2">Odznaka Pioniera</span>
+                  <span class="text-[10px] muted">Za udział w Faza Stealth</span>
+                </div>
+                <span class="mt-3 text-[10px] text-slate-500">Zablokowana</span>
               </div>
             </div>
           </div>
@@ -385,7 +730,8 @@
         <div id="reward-leaderboard" class="reward-view hidden space-y-3">
           <div class="panel p-4">
             <h3 class="font-bold text-sm text-slate-200">Ranking Społeczności</h3>
-            <div id="leaderboard-list" class="space-y-2 mt-3">
+            <p class="text-[10px] muted mb-3">Ranking odzwierciedla Twoje aktualne punkty XP w lokalnej sesji.</p>
+            <div class="space-y-2">
               <div class="flex items-center justify-between bg-violet-900/30 p-2.5 rounded-xl border border-violet-500/30 text-xs font-semibold">
                 <span id="rank-user-label">Ty (@User)</span>
                 <span id="rank-xp-display" class="font-bold text-violet-300">0 XP</span>
@@ -404,159 +750,255 @@
         <div id="reward-ranks" class="reward-view hidden space-y-4">
           <div class="panel p-4">
             <h3 class="text-base font-bold text-white mb-2">Poziomy i Rangi</h3>
-            <p class="text-xs text-slate-400 mb-4">Zbieraj Punkty Doświadczenia (XP), aby odblokowywać wyższe rangi.</p>
-            <div id="ranks-list" class="space-y-2"></div>
+            <p class="text-xs text-slate-400 mb-4">Zbieraj Punkty Doświadczenia (XP), aby odblokowywać wyższe rangi i unikalne profity.</p>
+            <div class="space-y-3">
+              <div class="p-3 bg-slate-900/80 border border-amber-800/40 rounded-xl flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-lg bg-amber-900/30 text-amber-600 flex items-center justify-center font-bold text-sm border border-amber-800/30">BR</div>
+                  <div>
+                    <h4 class="text-sm font-semibold text-white">Brązowy Rekrut</h4>
+                    <p class="text-[10px] text-slate-400">Od 0 XP</p>
+                  </div>
+                </div>
+                <span class="text-xs font-semibold text-amber-500">Poziom 1</span>
+              </div>
+
+              <div class="p-3 bg-slate-900/80 border border-slate-700/40 rounded-xl flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-lg bg-slate-800 text-slate-300 flex items-center justify-center font-bold text-sm border border-slate-600/30">SR</div>
+                  <div>
+                    <h4 class="text-sm font-semibold text-white">Srebrny Operat</h4>
+                    <p class="text-[10px] text-slate-400">Od 1 000 XP</p>
+                  </div>
+                </div>
+                <span class="text-xs font-semibold text-slate-400">Poziom 2</span>
+              </div>
+
+              <div class="p-3 bg-slate-900/80 border border-yellow-600/40 rounded-xl flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-lg bg-yellow-900/30 text-yellow-500 flex items-center justify-center font-bold text-sm border border-yellow-600/30">ZL</div>
+                  <div>
+                    <h4 class="text-sm font-semibold text-white">Złoty Mistrz</h4>
+                    <p class="text-[10px] text-slate-400">Od 5 000 XP</p>
+                  </div>
+                </div>
+                <span class="text-xs font-semibold text-yellow-500">Poziom 3</span>
+              </div>
+
+              <div class="p-3 bg-slate-900/80 border border-cyan-500/40 rounded-xl flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-lg bg-cyan-950 text-cyan-400 flex items-center justify-center font-bold text-sm border border-cyan-500/30">DM</div>
+                  <div>
+                    <h4 class="text-sm font-semibold text-white">Diamentowy Lider</h4>
+                    <p class="text-[10px] text-slate-400">Od 20 000 XP</p>
+                  </div>
+                </div>
+                <span class="text-xs font-semibold text-cyan-400">Poziom 4</span>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      <!-- ZAKŁADKA TECHNIXPRO MINING (HIGH-SPEED PROCESOR) -->
       <section id="screen-crypto" class="screen hidden space-y-4">
-        <div class="flex justify-between items-center">
-          <div class="flex items-center gap-2">
-            <i class="fa-solid fa-microchip text-cyan-400 text-xl"></i>
-            <h2 class="text-lg font-bold text-white">TechnixPro Miner</h2>
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-[9px] uppercase tracking-[0.25em] text-cyan-300 font-bold">Mining Engine</p>
+            <h2 class="text-lg font-bold text-white">TechnixPro Treasury</h2>
           </div>
-          <span class="text-[10px] text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20 font-mono">TURBO MODE</span>
-        </div>
-
-        <!-- KLIKALNY INTERAKTYWNY CPU -->
-        <div id="tp-cpu-trigger" onclick="manualMine(event)" class="tp-cpu-card rounded-2xl p-6 relative flex flex-col items-center justify-center min-h-[220px] overflow-hidden">
-          <div class="absolute top-0 inset-x-6 h-1.5 flex justify-between">
-            <div class="tp-pin w-3 h-full rounded-b"></div>
-            <div class="tp-pin w-3 h-full rounded-b"></div>
-            <div class="tp-pin w-3 h-full rounded-b"></div>
-            <div class="tp-pin w-3 h-full rounded-b"></div>
-            <div class="tp-pin w-3 h-full rounded-b"></div>
-          </div>
-
-          <div class="absolute w-36 h-36 rounded-full bg-cyan-500/10 tp-pulse-ring"></div>
-          <div class="relative z-10 w-24 h-24 rounded-2xl bg-[#080b14] border-2 border-cyan-400 flex flex-col items-center justify-center shadow-lg shadow-cyan-500/30">
-            <i class="fa-solid fa-microchip text-3xl text-cyan-300"></i>
-            <span class="text-[9px] font-mono text-violet-400 mt-1 uppercase font-bold">STUKAJ!</span>
-          </div>
-
-          <div class="relative z-10 mt-4 text-center">
-            <p class="text-[10px] muted font-mono uppercase tracking-widest">Szybkość wydobycia</p>
-            <p id="tp-hashrate" class="text-xs font-bold text-cyan-300">1.00 TP/s</p>
-            <p id="tp-combo" class="text-[10px] font-black text-amber-400 mt-1 hidden animate-bounce">COMBO MULTIPLIER x1.0!</p>
-          </div>
+          <span class="text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">60D cycle</span>
         </div>
 
         <div class="panel p-4 space-y-4">
-          <div class="flex justify-between items-center bg-slate-900/80 p-3 rounded-xl border border-slate-800">
-            <div>
-              <span class="text-[10px] muted block">Wykopane Tokeny TP</span>
-              <span id="tp-mined-tokens" class="text-2xl font-black text-white tracking-wider">0.0000</span>
+          <div class="tech-screen-shell">
+            <div class="tech-circuit"></div>
+            <div class="tech-token"></div>
+            <div class="tech-token"></div>
+            <div class="tech-token"></div>
+            <div class="tech-token"></div>
+            <div class="tech-token"></div>
+            <div class="tech-token"></div>
+            <div class="tech-token"></div>
+            <div class="tech-token"></div>
+
+            <div class="tech-core">
+              <div class="tech-logo">TP</div>
             </div>
-            <span id="tp-status-badge" class="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded-full">Kopanie Aktywne</span>
+
+            <div class="tech-capsule">
+              <div id="tech-capsule-fill" class="tech-capsule-fill"></div>
+              <span id="tech-token-count">0</span>
+            </div>
           </div>
 
           <div class="grid grid-cols-2 gap-2">
-            <button id="tp-toggle-btn" onclick="toggleMining()" class="w-full bg-slate-800 hover:bg-slate-700 text-cyan-400 font-bold text-xs py-3 rounded-xl transition active:scale-95 border border-cyan-500/30">
-              Wstrzymaj CPU
-            </button>
-            <button onclick="turboUpgrade()" class="w-full bg-gradient-to-r from-violet-600 to-cyan-500 hover:from-violet-500 hover:to-cyan-400 text-slate-950 font-black text-xs py-3 rounded-xl transition active:scale-95 shadow-lg shadow-cyan-500/20">
-              PRZYSPIESZ (+2.0/s)
-            </button>
+            <div class="tech-mini-card">
+              <span>Limit</span>
+              <strong id="tech-supply-limit">100,000,000</strong>
+            </div>
+            <div class="tech-mini-card">
+              <span>Wydobyto</span>
+              <strong id="tech-mined-value">0</strong>
+            </div>
           </div>
+
+          <div class="space-y-2">
+            <div class="flex justify-between text-[10px] muted">
+              <span>Emission progress</span>
+              <span id="tech-progress-text">0 / 100,000,000</span>
+            </div>
+            <div class="energy-bar">
+              <div id="tech-progress-fill" class="energy-fill"></div>
+            </div>
+            <div class="flex justify-between text-[9px] muted">
+              <span>Remaining cycle</span>
+              <span id="tech-remaining-time">60d 00:00:00</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div class="tech-mini-card">
+              <span>Per day</span>
+              <strong id="tech-daily-rate">1,666,667</strong>
+            </div>
+            <div class="tech-mini-card">
+              <span>Status</span>
+              <strong id="tech-status-word">Syncing</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-[9px] uppercase tracking-[0.25em] text-violet-300 font-bold">Zasoby</p>
+              <h3 class="text-lg font-bold text-white">TechnixPro Mining</h3>
+            </div>
+            <span class="tp-level-pill">TP <span id="tpBalance">0</span></span>
+          </div>
+
+          <div class="flex items-center justify-between text-[10px] muted">
+            <span>Energia</span>
+            <span><span id="energyValue">1000</span> / <span id="energyMax">1000</span></span>
+          </div>
+          <div class="energy-bar">
+            <div id="energyFill" class="energy-fill" style="width: 100%;"></div>
+          </div>
+
+          <div class="flex gap-2">
+            <button onclick="mineTP()" class="flex-1 bg-gradient-to-r from-cyan-500 to-violet-600 text-slate-950 font-bold text-xs py-2.5 rounded-xl transition active:scale-95">+ TP</button>
+            <button onclick="boostEnergy()" class="flex-1 bg-slate-800 border border-slate-700 text-slate-200 font-bold text-xs py-2.5 rounded-xl transition active:scale-95">+ Energia</button>
+          </div>
+        </div>
+
+        <div class="panel p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-[9px] uppercase tracking-[0.25em] text-cyan-300 font-bold">RIG Builder</p>
+              <h3 class="text-base font-bold text-white">Budowa stanowiska</h3>
+            </div>
+            <span class="text-[10px] muted">Faza 1</span>
+          </div>
+
+          <div class="rig-station">
+            <div class="station-motherboard">
+              <div class="station-part station-mouse" data-part="mouse"><div class="rig-part-box"><i class="fa-solid fa-computer-mouse"></i></div></div>
+              <div class="station-part station-keyboard" data-part="keyboard"><div class="rig-part-box"><i class="fa-solid fa-keyboard"></i></div></div>
+              <div class="station-part station-monitor" data-part="monitor"><div class="rig-part-box"><i class="fa-solid fa-display"></i></div></div>
+              <div class="station-part station-case" data-part="case"><div class="rig-part-box"><i class="fa-solid fa-cube"></i></div></div>
+              <div class="station-part station-ram" data-part="ram"><div class="rig-part-box"><i class="fa-solid fa-memory"></i></div></div>
+              <div class="station-part station-gpu" data-part="gpu"><div class="rig-part-box"><i class="fa-solid fa-microchip"></i></div></div>
+            </div>
+          </div>
+
+          <div class="rig-shop" id="rig-shop"></div>
         </div>
       </section>
 
-      <!-- PORTFEL -->
       <section id="screen-wallet" class="screen hidden space-y-4">
         <h2 class="text-lg font-bold text-white">Portfel Cyfrowy</h2>
         <div class="panel p-5 text-center space-y-3">
-          <p class="text-xs muted">Saldo TechnixCoins</p>
-          <div id="wallet-coins-balance" class="text-3xl font-extrabold text-cyan-400 tracking-tight">0 TC</div>
-          <p class="text-xs muted pt-2 border-t border-slate-800/80">Wykopane Tokeny TP</p>
-          <div id="wallet-tp-balance" class="text-xl font-bold text-violet-400">0.0000 TP</div>
+          <p class="text-xs muted">Saldo demonstracyjne sieci TON</p>
+          <div class="text-3xl font-extrabold text-white tracking-tight">0,00 PLN</div>
+          <div class="flex justify-center gap-2 pt-2">
+            <button onclick="showToast('Funkcja wpłaty zostanie odblokowana w Fazie 3')" class="bg-violet-600 text-xs font-semibold px-4 py-2 rounded-xl">Wpłać</button>
+            <button onclick="showToast('Funkcja wypłaty zostanie odblokowana w Fazie 3')" class="bg-slate-800 border border-slate-700 text-xs font-semibold px-4 py-2 rounded-xl">Wypłać</button>
+          </div>
+        </div>
+
+        <div class="panel p-4 space-y-3">
+          <h3 class="text-sm font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-link text-cyan-400"></i> Połączenie TON Keeper
+          </h3>
+          <p class="text-xs muted">Podłącz swój portfel Web3, aby przygotować się do odbioru airdropa $TECHNIX.</p>
+          <button onclick="showToast('Moduł TON Connect zostanie zintegrowany w Fazie 3')" class="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold py-2.5 rounded-xl transition active:scale-95">Połącz portfel</button>
         </div>
       </section>
 
-      <!-- PROFIL -->
       <section id="screen-profile" class="screen hidden space-y-4">
         <div class="panel p-5 text-center space-y-3">
-          <div class="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-violet-600 to-cyan-400 p-0.5 shadow-lg">
+          <div class="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-violet-600 to-cyan-400 p-0.5 shadow-lg shadow-violet-500/30">
             <div id="profile-avatar" class="w-full h-full bg-[#080b14] rounded-full flex items-center justify-center text-2xl text-cyan-400 font-bold">
               <i class="fa-solid fa-user"></i>
             </div>
           </div>
           <div>
-            <h2 id="profile-name" class="font-bold text-base text-white">Użytkownik</h2>
+            <h2 id="profile-name" class="font-bold text-base text-white">Gostek</h2>
             <p id="profile-id" class="text-xs muted">TG ID: brak danych</p>
           </div>
-          <div class="pt-3 border-t border-slate-800/80 flex justify-around text-xs">
-            <div>
-              <span class="block text-slate-400 text-[10px] uppercase">Poziom</span>
-              <span id="profile-level" class="font-bold text-violet-400">1</span>
-            </div>
-            <div>
-              <span class="block text-slate-400 text-[10px] uppercase">Punkty XP</span>
-              <span id="profile-xp" class="font-bold text-cyan-400">0</span>
-            </div>
+        </div>
+
+        <div class="panel p-4 space-y-2">
+          <div class="flex justify-between items-center text-xs py-1">
+            <span class="muted">Twój Poziom:</span>
+            <span id="profile-level" class="font-bold text-violet-400">Level 1</span>
           </div>
+          <div class="flex justify-between items-center text-xs py-1">
+            <span class="muted">Punkty XP:</span>
+            <span id="profile-xp" class="font-bold text-cyan-400">0 XP</span>
+          </div>
+        </div>
+
+        <div class="panel divide-y divide-slate-800/80 text-xs">
+          <button onclick="showToast('Informacje o koncie aktywne')" class="w-full p-3.5 text-left flex justify-between items-center text-slate-300">
+            <span>Ustawienia Profilu</span>
+            <i class="fa-solid fa-chevron-right text-[10px] muted"></i>
+          </button>
+          <button onclick="showToast('Bezpieczeństwo: Połączenie Telegram SSL')" class="w-full p-3.5 text-left flex justify-between items-center text-slate-300">
+            <span>Bezpieczeństwo & Dostęp</span>
+            <i class="fa-solid fa-chevron-right text-[10px] muted"></i>
+          </button>
         </div>
       </section>
 
-      <!-- MENU -->
       <section id="screen-menu" class="screen hidden space-y-4">
         <h2 class="text-lg font-bold text-white">Menu Główne</h2>
-        <div class="grid grid-cols-2 gap-3">
-          <button onclick="show('home','Sieć społeczna')" class="panel p-4 text-left space-y-2 hover:border-cyan-500/50 transition">
-            <i class="fa-solid fa-house text-cyan-400 text-xl"></i>
-            <span class="block text-xs font-bold text-white">Start</span>
-          </button>
-          <button onclick="show('gift','Rewards Hub')" class="panel p-4 text-left space-y-2 hover:border-cyan-500/50 transition">
-            <i class="fa-solid fa-gift text-cyan-400 text-xl"></i>
-            <span class="block text-xs font-bold text-white">Bonusy</span>
-          </button>
-          <button onclick="show('crypto','TechnixPro')" class="panel p-4 text-left space-y-2 hover:border-cyan-500/50 transition">
-            <i class="fa-solid fa-microchip text-cyan-400 text-xl"></i>
-            <span class="block text-xs font-bold text-white">Koparka TP</span>
-          </button>
-          <button onclick="show('wallet','Portfel')" class="panel p-4 text-left space-y-2 hover:border-cyan-500/50 transition">
-            <i class="fa-solid fa-wallet text-cyan-400 text-xl"></i>
-            <span class="block text-xs font-bold text-white">Portfel</span>
-          </button>
+        <div class="panel p-4 space-y-2 text-xs">
+          <button onclick="show('info','O Projekcie')" class="w-full p-2.5 rounded-xl bg-slate-900/60 text-left text-slate-200">O TechnixPro</button>
+          <button onclick="showToast('Kontakt: support@technix-pro.app')" class="w-full p-2.5 rounded-xl bg-slate-900/60 text-left text-slate-200">Wsparcie & Kontakt</button>
         </div>
       </section>
 
-      <!-- WYSZUKIWARKA -->
       <section id="screen-search" class="screen hidden space-y-4">
-        <div class="relative">
-          <input id="search-input" oninput="performSearch()" class="panel w-full p-3 text-xs bg-[#080b14] text-white border border-slate-700 rounded-xl focus:outline-none focus:border-cyan-400" placeholder="Szukaj w TechnixPro...">
-        </div>
-        <div id="search-results" class="space-y-2"></div>
+        <input class="panel w-full p-3 text-xs bg-[#080b14] text-white border border-slate-700 rounded-xl focus:outline-none" placeholder="Szukaj w TechnixPro..." />
       </section>
 
-      <!-- POWIADOMIENIA -->
       <section id="screen-notifications" class="screen hidden space-y-4">
-        <h2 class="text-lg font-bold text-white">Powiadomienia</h2>
-        <div id="notifications-list" class="space-y-2">
-          <div class="panel p-4 text-xs space-y-1">
-            <div class="font-bold text-white flex justify-between">
-              <span>Powiadomienie Systemowe</span>
-              <span class="text-[10px] muted">Teraz</span>
-            </div>
-            <p class="muted">Witaj w TechnixPro Core Engine!</p>
-          </div>
+        <div class="panel p-4 text-xs space-y-2">
+          <div class="font-bold text-white">Powiadomienie Systemowe</div>
+          <p class="muted">Witaj w TechnixPro! Połączyliśmy Twoje konto z interfejsem Telegram Mini App.</p>
         </div>
       </section>
 
-      <!-- KOMENTARZE / ODP -->
       <section id="screen-comments" class="screen hidden space-y-4">
-        <div class="flex items-center gap-2">
-          <button onclick="show('home','Sieć społeczna')" class="text-xs text-cyan-400 font-semibold">&larr; Wróć</button>
-          <h2 class="text-base font-bold text-white">Komentarze</h2>
-        </div>
-        <div id="comments-container" class="space-y-3"></div>
+        <h2 class="text-base font-bold text-white">Komentarze</h2>
+        <textarea class="panel w-full p-3 text-xs bg-[#080b14] border border-slate-700 rounded-xl focus:outline-none" rows="3" placeholder="Dodaj komentarz..."></textarea>
+        <button onclick="showToast('Komentarz został wysłany!')" class="bg-violet-600 text-xs font-semibold px-4 py-2 rounded-xl">Wyślij</button>
       </section>
 
     </div>
 
-    <!-- DOLNY PASEK NAWIGACJI (SPÓJNA IKONA MICROCHIP) -->
-    <nav class="fixed bottom-0 left-0 right-0 z-40 max-w-md mx-auto bg-[#080b14]/95 backdrop-blur-xl border-t border-slate-800/80 px-2 pt-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))] flex justify-around">
+    <nav class="fixed bottom-0 left-0 right-0 z-40 max-w-md mx-auto bg-[#080b14]/95 backdrop-blur-xl border-t border-slate-800/80 px-2 pt-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))] flex justify-between items-center gap-2">
       <button class="nav-btn active flex flex-col items-center" data-tab="home" onclick="show('home','Sieć społeczna')">
         <i class="fa-solid fa-house text-base"></i>
         <span>Start</span>
@@ -566,7 +1008,7 @@
         <span>Bonusy</span>
       </button>
       <button class="nav-btn flex flex-col items-center" data-tab="crypto" onclick="show('crypto','TechnixPro')">
-        <i class="fa-solid fa-microchip text-base"></i>
+        <div class="tech-nav-mark" style="width:22px;height:22px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(34,211,238,0.22),rgba(168,85,247,0.18));border:1px solid rgba(34,211,238,0.45);box-shadow:0 0 15px rgba(34,211,238,0.22), 0 0 18px rgba(168,85,247,0.18);color:#b7f4ff;margin-bottom:2px;">TP</div>
         <span>TechnixPro</span>
       </button>
       <button class="nav-btn flex flex-col items-center" data-tab="wallet" onclick="show('wallet','Portfel')">
@@ -586,7 +1028,6 @@
 
   <div id="toast" class="hidden fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-slate-800/90 border border-slate-700/80 text-slate-100 text-xs font-medium px-4 py-2.5 rounded-xl shadow-xl backdrop-blur-md"></div>
 
-  <!-- JAVASCRIPT: LOGIKA APLIKACJI -->
   <script>
     const TelegramApp = window.Telegram?.WebApp;
     if (TelegramApp) {
@@ -594,354 +1035,115 @@
       TelegramApp.expand();
     }
 
-    // SYSTEM HIGH-SPEED KOPANIA
-    let tpMined = parseFloat(localStorage.getItem('tp_mined_tokens') || '0');
-    let tpsRate = parseFloat(localStorage.getItem('tp_rate') || '1.0');
-    let comboMultiplier = 1.0;
-    let lastClickTime = Date.now();
-    let isMining = true;
-    let minerInterval = null;
+    const PARTS = {
+      mouse: { name: 'Myszka', icon: 'fa-computer-mouse', price: 120, stars: 0, unlock: 'Ułatwia mining i dodaje +4% do wydobycia.' },
+      keyboard: { name: 'Klawiatura', icon: 'fa-keyboard', price: 260, stars: 0, unlock: 'Wspiera interakcję i daje +6% do XP.' },
+      monitor: { name: 'Monitor', icon: 'fa-display', price: 500, stars: 0, unlock: 'Zwiększa widoczność Pasy Wydobycia i +8% TP.' },
+      case: { name: 'Obudowa', icon: 'fa-cube', price: 760, stars: 0, unlock: 'Uruchamia stabilne podwojenie wydobycia.' },
+      ram: { name: 'Płyta + RAM', icon: 'fa-memory', price: 1100, stars: 0, unlock: 'Odblokowuje Tier 2 i +12% do odbierania XP.' },
+      gpu: { name: 'Karta Graficzna', icon: 'fa-microchip', price: 1800, stars: 30, unlock: 'Kluczowy moduł rozwoju. Wspiera Fazy 2 i Telegram Stars.' }
+    };
 
-    // SYSTEM XP, NAGRÓD I PORTFELA
-    let userCoins = parseInt(localStorage.getItem('tp_user_coins') || '0');
-    let userXP = parseInt(localStorage.getItem('tp_user_xp') || '0');
-    let lastBonusClaim = parseInt(localStorage.getItem('tp_last_bonus') || '0');
-    const BONUS_INTERVAL = 4 * 60 * 60 * 1000; // 4 godziny
-
-    // DANE ZADAŃ
-    const defaultTasks = [
-      { id: 't1', title: 'Polub post na kanale', xp: 20, done: false },
-      { id: 't2', title: 'Napisz wiadomość w Grupie', xp: 30, done: false },
-      { id: 't3', title: 'Uruchom koparkę CPU', xp: 50, done: false }
-    ];
-
-    // GŁÓWNA PĘTLA WYDOBYCIA (ODŚWIEŻANIE CO 50ms)
-    function startMiningLogic() {
-      if (minerInterval) clearInterval(minerInterval);
-      minerInterval = setInterval(() => {
-        if (isMining) {
-          tpMined += (tpsRate * comboMultiplier) * 0.05;
-          localStorage.setItem('tp_mined_tokens', tpMined.toString());
-          const minedElem = document.getElementById('tp-mined-tokens');
-          if (minedElem) minedElem.textContent = tpMined.toFixed(4);
-        }
-
-        // REDUKCJA COMBO Z CZASEM BEZ KLIKANIA
-        if (Date.now() - lastClickTime > 800 && comboMultiplier > 1.0) {
-          comboMultiplier = Math.max(1.0, comboMultiplier - 0.1);
-          updateComboUI();
-        }
-      }, 50);
-    }
-
-    // MANULANE STUKANIE / KLIKANIE PROCESORA
-    function manualMine(event) {
-      if (!isMining) return;
-
-      const now = Date.now();
-      if (now - lastClickTime < 300) {
-        comboMultiplier = Math.min(10.0, comboMultiplier + 0.2);
-      }
-      lastClickTime = now;
-
-      const reward = (tpsRate * 0.5) * comboMultiplier;
-      tpMined += reward;
-
-      updateComboUI();
-      createParticle(event, `+${reward.toFixed(2)}`);
-    }
-
-    function updateComboUI() {
-      const comboElem = document.getElementById('tp-combo');
-      if (!comboElem) return;
-
-      if (comboMultiplier > 1.1) {
-        comboElem.classList.remove('hidden');
-        comboElem.textContent = `COMBO MULTIPLIER x${comboMultiplier.toFixed(1)}!`;
-      } else {
-        comboElem.classList.add('hidden');
-      }
-    }
-
-    function createParticle(e, text) {
-      const container = document.getElementById('tp-cpu-trigger');
-      if (!container) return;
-
-      const particle = document.createElement('div');
-      particle.className = 'click-particle';
-      particle.textContent = text;
-
-      const rect = container.getBoundingClientRect();
-      const x = (e ? e.clientX - rect.left : rect.width / 2) - 15;
-      const y = (e ? e.clientY - rect.top : rect.height / 2) - 10;
-
-      particle.style.left = `${x}px`;
-      particle.style.top = `${y}px`;
-
-      container.appendChild(particle);
-      setTimeout(() => particle.remove(), 600);
-    }
-
-    // HIGH-SPEED UPGRADE
-    function turboUpgrade() {
-      tpsRate += 2.0;
-      localStorage.setItem('tp_rate', tpsRate.toString());
-      const hashrateElem = document.getElementById('tp-hashrate');
-      if (hashrateElem) hashrateElem.textContent = `${tpsRate.toFixed(2)} TP/s`;
-      showToast(`🔥 TURBO PRZYSPIESZENIE! Nowa moc: ${tpsRate.toFixed(2)} TP/s`);
-    }
-
-    function toggleMining() {
-      isMining = !isMining;
-      const toggleBtn = document.getElementById('tp-toggle-btn');
-      const badge = document.getElementById('tp-status-badge');
-
-      if (isMining) {
-        if (toggleBtn) toggleBtn.textContent = 'Wstrzymaj CPU';
-        if (badge) {
-          badge.textContent = 'Kopanie Aktywne';
-          badge.className = 'text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded-full';
-        }
-      } else {
-        if (toggleBtn) toggleBtn.textContent = 'Uruchom CPU';
-        if (badge) {
-          badge.textContent = 'CPU Wstrzymane';
-          badge.className = 'text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-1 rounded-full';
-        }
-      }
-    }
-
-    // LOGIKA BONUSU CZASOWEGO (4h)
-    function updateBonusTimer() {
-      const now = Date.now();
-      const diff = BONUS_INTERVAL - (now - lastBonusClaim);
-      const btn = document.getElementById('claim-bonus-btn');
-      const timerElem = document.getElementById('bonus-timer');
-
-      if (diff <= 0) {
-        if (timerElem) timerElem.textContent = "00:00:00";
-        if (btn) {
-          btn.disabled = false;
-          btn.className = "w-full py-2.5 px-4 text-xs font-semibold rounded-lg bg-gradient-to-r from-cyan-500 to-violet-600 text-slate-950 font-bold cursor-pointer transition-all duration-200 shadow-lg shadow-cyan-500/20 active:scale-95";
-        }
-      } else {
-        if (btn) {
-          btn.disabled = true;
-          btn.className = "w-full py-2.5 px-4 text-xs font-semibold rounded-lg bg-slate-700 text-slate-400 cursor-not-allowed transition-all duration-200";
-        }
-        const hrs = Math.floor(diff / (1000 * 60 * 60)).toString().padStart(2, '0');
-        const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, '0');
-        const secs = Math.floor((diff % (1000 * 60)) / 1000).toString().padStart(2, '0');
-        if (timerElem) timerElem.textContent = `${hrs}:${mins}:${secs}`;
-      }
-    }
-
-    function claimTimeBonus() {
-      const now = Date.now();
-      if (now - lastBonusClaim >= BONUS_INTERVAL) {
-        lastBonusClaim = now;
-        localStorage.setItem('tp_last_bonus', lastBonusClaim.toString());
-        userCoins += 50;
-        localStorage.setItem('tp_user_coins', userCoins.toString());
-        addXP(25, "Odbiór bonusu czasowego");
-        updateWalletUI();
-        showToast("🎁 Odebrano +50 TechnixCoins oraz +25 XP!");
-        updateBonusTimer();
-      }
-    }
-
-    // LOGIKA XP I POZIOMÓW
-    function addXP(amount, source) {
-      userXP += amount;
-      localStorage.setItem('tp_user_xp', userXP.toString());
-      logRewardHistory(source, amount);
-      updateXPUI();
-    }
-
-    function updateXPUI() {
-      const level = Math.floor(userXP / 1000) + 1;
-      const currentXPProgress = userXP % 1000;
-      const progressPercent = (currentXPProgress / 1000) * 100;
-
-      const xpTotal = document.getElementById('xp-total');
-      const levelBadge = document.getElementById('user-level-badge');
-      const progressText = document.getElementById('xp-progress-text');
-      const progressBar = document.getElementById('xp-progress-bar');
-      const rankXpDisplay = document.getElementById('rank-xp-display');
-      const profileLevel = document.getElementById('profile-level');
-      const profileXp = document.getElementById('profile-xp');
-
-      if (xpTotal) xpTotal.textContent = userXP;
-      if (levelBadge) levelBadge.textContent = `LEVEL ${level}`;
-      if (progressText) progressText.textContent = `${currentXPProgress} / 1 000 XP`;
-      if (progressBar) progressBar.style.width = `${progressPercent}%`;
-      if (rankXpDisplay) rankXpDisplay.textContent = `${userXP} XP`;
-      if (profileLevel) profileLevel.textContent = level;
-      if (profileXp) profileXp.textContent = userXP;
-
-      renderRanks();
-    }
-
-    function logRewardHistory(title, xp) {
-      const history = JSON.parse(localStorage.getItem('tp_reward_history') || '[]');
-      history.unshift({ title, xp, date: new Date().toLocaleTimeString('pl-PL') });
-      localStorage.setItem('tp_reward_history', JSON.stringify(history));
-      renderHistory();
-    }
-
-    function renderHistory() {
-      const logContainer = document.getElementById('reward-log');
-      if (!logContainer) return;
-      const history = JSON.parse(localStorage.getItem('tp_reward_history') || '[]');
-      if (history.length === 0) {
-        logContainer.innerHTML = `<p class="text-xs muted">Brak historii aktywności.</p>`;
-        return;
-      }
-      logContainer.innerHTML = history.slice(0, 10).map(item => `
-        <div class="flex justify-between items-center bg-slate-900/60 p-2.5 rounded-xl border border-slate-800 text-xs">
-          <div>
-            <span class="font-semibold text-slate-200 block">${sanitize(item.title)}</span>
-            <span class="text-[10px] muted">${item.date}</span>
-          </div>
-          <span class="font-bold text-violet-400">+${item.xp} XP</span>
-        </div>
-      `).join('');
-    }
-
-    // SYSTEM ZADAŃ
-    function renderTasks() {
-      const taskList = document.getElementById('task-list');
-      if (!taskList) return;
-      let tasks = JSON.parse(localStorage.getItem('tp_user_tasks') || 'null');
-      if (!tasks) {
-        tasks = defaultTasks;
-        localStorage.setItem('tp_user_tasks', JSON.stringify(tasks));
-      }
-
-      taskList.innerHTML = tasks.map(t => `
-        <div class="flex justify-between items-center bg-slate-900/80 p-3 rounded-xl border border-slate-800 text-xs">
-          <div>
-            <span class="font-bold text-slate-200 block">${sanitize(t.title)}</span>
-            <span class="text-violet-400 font-semibold">+${t.xp} XP</span>
-          </div>
-          <button onclick="completeTask('${t.id}')" ${t.done ? 'disabled' : ''} class="${t.done ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950'} font-bold px-3 py-1.5 rounded-lg transition active:scale-95 text-[11px]">
-            ${t.done ? 'Ukończono' : 'Wykonaj'}
-          </button>
-        </div>
-      `).join('');
-    }
-
-    function completeTask(taskId) {
-      let tasks = JSON.parse(localStorage.getItem('tp_user_tasks') || '[]');
-      const task = tasks.find(t => t.id === taskId);
-      if (task && !task.done) {
-        task.done = true;
-        localStorage.setItem('tp_user_tasks', JSON.stringify(tasks));
-        addXP(task.xp, `Zadanie: ${task.title}`);
-        showToast(`✅ Zadanie ukończone! (+${task.xp} XP)`);
-        renderTasks();
-      }
-    }
-
-    function triggerTaskAction(type, xp, title) {
-      addXP(xp, `Akcja: ${title}`);
-      showToast(`⚡ Dołączono do wydarzenia! (+${xp} XP)`);
-    }
-
-    function claimReward(name, xp) {
-      addXP(xp, `Odebranie nagrody: ${name}`);
-      showToast(`🎁 Odebrano: ${name} (+${xp} XP)`);
-    }
-
-    function copyReferralLink() {
-      const input = document.getElementById('ref-link-input');
-      if (input) {
-        input.select();
-        navigator.clipboard.writeText(input.value);
-        showToast("📋 Skopiowano link polecający!");
-      }
-    }
-
-    function renderRanks() {
-      const ranksContainer = document.getElementById('ranks-list');
-      if (!ranksContainer) return;
-      const currentLevel = Math.floor(userXP / 1000) + 1;
-      const ranks = [
-        { lvl: 1, title: 'Novice Core', desc: 'Początkujący użytkownik sieci' },
-        { lvl: 2, title: 'Cyber Miner', desc: 'Odblokowano wyższą wydajność CPU' },
-        { lvl: 3, title: 'Engine Master', desc: 'Pełny dostęp do węzła TechnixPro' },
-        { lvl: 5, title: 'Network Legend', desc: 'Elitarny status społeczności' }
-      ];
-
-      ranksContainer.innerHTML = ranks.map(r => `
-        <div class="flex items-center justify-between bg-slate-900/80 p-3 rounded-xl border ${currentLevel >= r.lvl ? 'border-violet-500/50 bg-violet-950/20' : 'border-slate-800 opacity-60'} text-xs">
-          <div>
-            <div class="flex items-center gap-2">
-              <span class="font-bold text-white">${r.title}</span>
-              <span class="text-[9px] bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded">Lvl ${r.lvl}</span>
-            </div>
-            <span class="text-[10px] muted block mt-0.5">${r.desc}</span>
-          </div>
-          ${currentLevel >= r.lvl ? '<i class="fa-solid fa-circle-check text-emerald-400 text-base"></i>' : '<i class="fa-solid fa-lock text-slate-600 text-base"></i>'}
-        </div>
-      `).join('');
-    }
-
-    function updateWalletUI() {
-      const coinsElem = document.getElementById('wallet-coins-balance');
-      const tpElem = document.getElementById('wallet-tp-balance');
-      if (coinsElem) coinsElem.textContent = `${userCoins} TC`;
-      if (tpElem) tpElem.textContent = `${tpMined.toFixed(4)} TP`;
-    }
-
-    // SYSTEM WYSZUKIWARKI
-    function performSearch() {
-      const query = document.getElementById('search-input').value.toLowerCase().trim();
-      const resultsContainer = document.getElementById('search-results');
-      if (!resultsContainer) return;
-
-      if (!query) {
-        resultsContainer.innerHTML = '';
-        return;
-      }
-
-      const channelPosts = JSON.parse(localStorage.getItem('tp_channel_posts') || '[]');
-      const groupPosts = JSON.parse(localStorage.getItem(getUserStorageKey('posts')) || '[]');
-
-      const matchedChannel = channelPosts.filter(p => p.content.toLowerCase().includes(query));
-      const matchedGroup = groupPosts.filter(p => p.content.toLowerCase().includes(query));
-
-      let html = '';
-
-      if (matchedChannel.length > 0) {
-        html += `<p class="text-[10px] font-bold uppercase text-violet-400 mt-2">Wpisy z Kanału</p>`;
-        matchedChannel.forEach(p => {
-          html += `<div class="panel p-3 text-xs space-y-1"><p class="text-slate-200">${sanitize(p.content)}</p><span class="text-[9px] muted">${p.date}</span></div>`;
-        });
-      }
-
-      if (matchedGroup.length > 0) {
-        html += `<p class="text-[10px] font-bold uppercase text-cyan-400 mt-2">Wpisy z Grupy</p>`;
-        matchedGroup.forEach(p => {
-          html += `<div class="panel p-3 text-xs space-y-1"><p class="text-slate-200">${sanitize(p.content)}</p><span class="text-[9px] muted">${p.date}</span></div>`;
-        });
-      }
-
-      if (matchedChannel.length === 0 && matchedGroup.length === 0) {
-        html = `<p class="text-xs muted text-center py-4">Brak wyników dla "${sanitize(query)}".</p>`;
-      }
-
-      resultsContainer.innerHTML = html;
-    }
+    const STORAGE_KEYS = {
+      tp: 'tp_balance',
+      xp: 'tp_xp',
+      energy: 'tp_energy',
+      energyMax: 'tp_energy_max',
+      parts: 'tp_parts',
+      logs: 'tp_logs',
+      posts: 'tp_group_posts',
+      channelPosts: 'tp_channel_posts',
+      tasks: 'tp_tasks',
+      rewards: 'tp_rewards',
+      level: 'tp_level'
+    };
 
     function getUserStorageKey(suffix) {
       const userId = TelegramApp?.initDataUnsafe?.user?.id;
       return userId ? `tp_${suffix}_${userId}` : `tp_${suffix}_guest`;
     }
 
+    function readJSON(key, fallback) {
+      try { return JSON.parse(localStorage.getItem(key) || 'null') ?? fallback; }
+      catch { return fallback; }
+    }
+
+    function writeJSON(key, value) {
+      localStorage.setItem(key, JSON.stringify(value));
+    }
+
+    function getTPBalance() {
+      return Number(localStorage.getItem(STORAGE_KEYS.tp) || 0);
+    }
+
+    function setTPBalance(value) {
+      localStorage.setItem(STORAGE_KEYS.tp, String(value));
+      updateBalanceUI();
+    }
+
+    function getXP() {
+      return Number(localStorage.getItem(STORAGE_KEYS.xp) || 0);
+    }
+
+    function setXP(value) {
+      localStorage.setItem(STORAGE_KEYS.xp, String(value));
+      updateXPDisplay();
+    }
+
+    function getEnergy() {
+      return Number(localStorage.getItem(STORAGE_KEYS.energy) || 1000);
+    }
+
+    function setEnergy(value) {
+      const max = getEnergyMax();
+      localStorage.setItem(STORAGE_KEYS.energy, String(Math.max(0, Math.min(value, max))));
+      updateEnergyUI();
+    }
+
+    function getEnergyMax() {
+      return Number(localStorage.getItem(STORAGE_KEYS.energyMax) || 1000);
+    }
+
+    function setEnergyMax(value) {
+      localStorage.setItem(STORAGE_KEYS.energyMax, String(value));
+      updateEnergyUI();
+    }
+
+    function getParts() {
+      return readJSON(STORAGE_KEYS.parts, {});
+    }
+
+    function setParts(obj) {
+      writeJSON(STORAGE_KEYS.parts, obj);
+      renderRigShop();
+      renderRigParts();
+    }
+
+    function getPartOwned(id) {
+      return Boolean(getParts()[id]);
+    }
+
+    function addLog(reason, amount, type = 'xp') {
+      const logs = readJSON(STORAGE_KEYS.logs, []);
+      logs.unshift({ reason, amount, type, date: new Date().toLocaleString('pl-PL') });
+      writeJSON(STORAGE_KEYS.logs, logs.slice(0, 20));
+    }
+
     function show(tab, title) {
       const homeTabs = document.getElementById('home-subtabs');
       const giftTabs = document.getElementById('gift-subtabs');
+
+      if (tab === 'info') {
+        document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+        document.getElementById('screen-home')?.classList.remove('hidden');
+        homeTabs?.classList.remove('hidden');
+        giftTabs?.classList.add('hidden');
+        document.getElementById('header-title').textContent = title;
+        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === 'home'));
+        sub('home', 'info', document.querySelector('#home-subtabs .subtab:last-child'));
+        window.scrollTo(0, 0);
+        return;
+      }
 
       document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
       const activeScreen = document.getElementById('screen-' + tab);
@@ -954,12 +1156,24 @@
         btn.classList.toggle('active', btn.dataset.tab === tab);
       });
 
-      if (homeTabs) homeTabs.classList.toggle('hidden', tab !== 'home');
-      if (giftTabs) giftTabs.classList.toggle('hidden', tab !== 'gift');
+      if (homeTabs) {
+        if (tab === 'home') homeTabs.classList.remove('hidden');
+        else homeTabs.classList.add('hidden');
+      }
 
-      if (tab === 'wallet') updateWalletUI();
+      if (giftTabs) {
+        if (tab === 'gift') giftTabs.classList.remove('hidden');
+        else giftTabs.classList.add('hidden');
+      }
 
       window.scrollTo(0, 0);
+    }
+
+    function updateSubtabIndicator(btn) {
+      const indicator = document.getElementById('subtab-indicator');
+      if (!indicator || !btn) return;
+      indicator.style.width = `${btn.offsetWidth}px`;
+      indicator.style.left = `${btn.offsetLeft}px`;
     }
 
     function sub(parent, id, btn) {
@@ -974,6 +1188,7 @@
         });
         btn.classList.remove('muted');
         btn.classList.add('text-[#b9a4ff]');
+        updateSubtabIndicator(btn);
       }
 
       if (id === 'group') renderPosts();
@@ -990,9 +1205,8 @@
         btn.classList.add('active-sub');
       }
 
-      if (id === 'tasks') renderTasks();
-      if (id === 'history') renderHistory();
-      if (id === 'ranks') renderRanks();
+      if (id === 'tasks') renderTaskList();
+      if (id === 'history') renderRewardHistory();
     }
 
     function showToast(message) {
@@ -1002,6 +1216,22 @@
       toast.classList.remove('hidden');
       clearTimeout(window.toastTimer);
       window.toastTimer = setTimeout(() => toast.classList.add('hidden'), 2200);
+    }
+
+    function toggleLike(btn) {
+      const icon = btn.querySelector('i');
+      const count = btn.querySelector('span');
+      const val = parseInt(count.textContent, 10) || 0;
+
+      if (icon.classList.contains('fa-regular')) {
+        icon.classList.replace('fa-regular', 'fa-solid');
+        btn.classList.add('text-pink-400');
+        count.textContent = String(val + 1);
+      } else {
+        icon.classList.replace('fa-solid', 'fa-regular');
+        btn.classList.remove('text-pink-400');
+        count.textContent = String(val - 1);
+      }
     }
 
     function sanitize(str) {
@@ -1014,91 +1244,497 @@
       const input = document.getElementById('admin-post-input');
       const mediaInput = document.getElementById('admin-media-input');
       const content = input.value.trim();
-      if (!content) return showToast('Wpisz treść ogłoszenia.');
+      const mediaUrl = mediaInput.value.trim();
 
-      const posts = JSON.parse(localStorage.getItem('tp_channel_posts') || '[]');
-      posts.unshift({ content, mediaUrl: mediaInput.value.trim(), date: new Date().toLocaleString('pl-PL'), id: posts.length + 1 });
-      localStorage.setItem('tp_channel_posts', JSON.stringify(posts));
-      input.value = ''; mediaInput.value = '';
+      if (!content) return showToast('Wpisz treść ogłoszenia przed publikacją.');
+
+      const posts = readJSON(STORAGE_KEYS.channelPosts, []);
+      posts.unshift({
+        content,
+        mediaUrl,
+        date: new Date().toLocaleString('pl-PL'),
+        id: posts.length + 2
+      });
+
+      writeJSON(STORAGE_KEYS.channelPosts, posts);
+      input.value = '';
+      mediaInput.value = '';
       renderChannelPosts();
-      showToast('Opublikowano post!');
+      showToast('Post został pomyślnie opublikowany na kanale!');
     }
 
     function renderChannelPosts() {
       const feed = document.getElementById('channel-feed');
       if (!feed) return;
-      const customPosts = JSON.parse(localStorage.getItem('tp_channel_posts') || '[]');
-      feed.innerHTML = customPosts.map(p => `
+
+      const customPosts = readJSON(STORAGE_KEYS.channelPosts, []);
+      const defaultPostHTML = `
         <div class="panel p-4 space-y-3">
           <div class="flex justify-between items-center">
-            <span class="text-[10px] uppercase font-mono text-violet-400 bg-violet-500/10 px-2 py-0.5 rounded border border-violet-500/20">Post #${p.id}</span>
+            <span class="text-[10px] uppercase font-mono text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">Oficjalny Post #001</span>
+            <span class="text-[10px] muted">Dzisiaj, 02:18</span>
+          </div>
+          <h2 class="font-bold text-base text-slate-100">TechnixPro wchodzi w Fazę Stealth v2.6</h2>
+          <p class="text-xs muted leading-relaxed">Zbieraj TechnixCoins, wspinaj się po szczeblach poziomów i odblokuj unikalne rangi w ekosystemie TechnixPro. Nowe moduły społecznościowe są już aktywne.</p>
+          <div class="flex items-center gap-4 pt-2 text-xs border-t border-slate-800/60">
+            <button onclick="toggleLike(this)" class="flex items-center gap-1.5 muted hover:text-pink-400 transition active:scale-95">
+              <i class="fa-regular fa-heart"></i>
+              <span class="text-[11px]">142</span>
+            </button>
+            <button onclick="show('comments','Komentarze')" class="flex items-center gap-1.5 muted hover:text-cyan-400 transition active:scale-95">
+              <i class="fa-regular fa-comment"></i>
+              <span class="text-[11px]">98</span>
+            </button>
+          </div>
+        </div>
+      `;
+
+      const renderedCustom = customPosts.map((p) => `
+        <div class="panel p-4 space-y-3">
+          <div class="flex justify-between items-center">
+            <span class="text-[10px] uppercase font-mono text-violet-400 bg-violet-500/10 px-2 py-0.5 rounded border border-violet-500/20">Oficjalny Post #${String(p.id).padStart(3, '0')}</span>
             <span class="text-[10px] muted">${p.date}</span>
           </div>
-          ${p.mediaUrl ? `<img src="${sanitize(p.mediaUrl)}" class="w-full h-auto rounded-xl max-h-48 object-cover border border-slate-800" alt="Media" />` : ''}
-          <p class="text-xs text-slate-200 whitespace-pre-wrap">${sanitize(p.content)}</p>
+          <p class="text-xs text-slate-200 whitespace-pre-wrap leading-relaxed">${sanitize(p.content)}</p>
+          ${p.mediaUrl ? `<div class="rounded-xl overflow-hidden border border-slate-800"><img src="${sanitize(p.mediaUrl)}" class="w-full h-auto object-cover max-h-52" alt="Post media" onerror="this.style.display='none'"></div>` : ''}
+          <div class="flex items-center justify-between pt-2 text-xs border-t border-slate-800/60">
+            <div class="flex items-center gap-4">
+              <button onclick="toggleLike(this)" class="flex items-center gap-1.5 muted hover:text-pink-400 transition active:scale-95">
+                <i class="fa-regular fa-heart"></i>
+                <span class="text-[11px]">0</span>
+              </button>
+              <button onclick="show('comments','Komentarze')" class="flex items-center gap-1.5 muted hover:text-cyan-400 transition active:scale-95">
+                <i class="fa-regular fa-comment"></i>
+                <span class="text-[11px]">0</span>
+              </button>
+            </div>
+          </div>
         </div>
       `).join('');
+
+      feed.innerHTML = renderedCustom + defaultPostHTML;
     }
 
     function createNewPost() {
       const input = document.getElementById('post-input');
       const content = input.value.trim();
-      if (!content) return;
+      if (!content) return showToast('Wpisz treść posta przed publikacją.');
+
       const key = getUserStorageKey('posts');
-      const posts = JSON.parse(localStorage.getItem(key) || '[]');
-      posts.unshift({ author: 'Użytkownik', content, date: new Date().toLocaleString('pl-PL') });
-      localStorage.setItem(key, JSON.stringify(posts));
+      const posts = readJSON(key, []);
+      const username = TelegramApp?.initDataUnsafe?.user?.first_name || 'Użytkownik';
+      posts.unshift({ author: username, content, date: new Date().toLocaleString('pl-PL') });
+      writeJSON(key, posts);
       input.value = '';
       renderPosts();
+      showToast('Post został pomyślnie opublikowany.');
     }
 
     function renderPosts() {
       const feed = document.getElementById('posts-feed');
       if (!feed) return;
+
       const key = getUserStorageKey('posts');
-      const posts = JSON.parse(localStorage.getItem(key) || '[]');
-      feed.innerHTML = posts.map(p => `
+      const posts = readJSON(key, []);
+      if (!posts.length) {
+        feed.innerHTML = '<div class="panel p-4 text-center text-xs muted">Brak postów. Bądź pierwszy!</div>';
+        return;
+      }
+
+      feed.innerHTML = posts.map((p, idx) => `
         <article class="panel p-4 space-y-2">
           <div class="flex justify-between items-center text-xs">
-            <span class="font-bold text-violet-300">${sanitize(p.author)}</span>
+            <span class="font-bold text-violet-300">${sanitize(p.author || 'TechnixUser')}</span>
             <span class="text-[10px] muted">${p.date}</span>
           </div>
-          <p class="text-xs text-slate-200">${sanitize(p.content)}</p>
+          <p class="text-xs text-slate-200 whitespace-pre-wrap leading-relaxed">${sanitize(p.content)}</p>
+          <div class="flex justify-end pt-1">
+            <button onclick="removePost(${idx})" class="text-[10px] text-slate-500 hover:text-red-400 transition">
+              <i class="fa-regular fa-trash-can"></i> Usuń
+            </button>
+          </div>
         </article>
       `).join('');
     }
 
-    // INICJALIZACJA APLIKACJI
-    document.addEventListener('DOMContentLoaded', () => {
+    function removePost(index) {
+      const key = getUserStorageKey('posts');
+      const posts = readJSON(key, []);
+      posts.splice(index, 1);
+      writeJSON(key, posts);
+      renderPosts();
+      showToast('Post usunięty.');
+    }
+
+    function copyReferralLink() {
+      const input = document.getElementById('ref-link-input');
+      if (!input) return;
+      input.select();
+      navigator.clipboard.writeText(input.value).then(() => {
+        showToast('Link polecający został skopiowany!');
+      }).catch(() => {
+        showToast('Skopiowano do schowka.');
+      });
+    }
+
+    function getXP() {
+      return Number(localStorage.getItem(STORAGE_KEYS.xp) || 0);
+    }
+
+    function addXP(amount, reason) {
+      const current = getXP();
+      const updated = current + amount;
+      localStorage.setItem(STORAGE_KEYS.xp, String(updated));
+      addLog(reason, amount, 'xp');
+      updateXPDisplay();
+      showToast(`+${amount} XP: ${reason}`);
+    }
+
+    function updateXPDisplay() {
+      const xp = getXP();
+      const xpTotal = document.getElementById('xp-total');
+      const xpProgressText = document.getElementById('xp-progress-text');
+      const rankDisplay = document.getElementById('rank-xp-display');
+      const progressBar = document.getElementById('xp-progress-bar');
+      const profileXp = document.getElementById('profile-xp');
+      const userLevelBadge = document.getElementById('user-level-badge');
+      const profileLevel = document.getElementById('profile-level');
+
+      let level = 1;
+      if (xp >= 20000) level = 4;
+      else if (xp >= 5000) level = 3;
+      else if (xp >= 1000) level = 2;
+
+      if (xpTotal) xpTotal.textContent = xp.toLocaleString();
+      if (xpProgressText) xpProgressText.textContent = `${xp.toLocaleString()} / 1 000 XP`;
+      if (rankDisplay) rankDisplay.textContent = `${xp.toLocaleString()} XP`;
+      if (profileXp) profileXp.textContent = `${xp.toLocaleString()} XP`;
+      if (userLevelBadge) userLevelBadge.textContent = `LEVEL ${level}`;
+      if (profileLevel) profileLevel.textContent = `Level ${level}`;
+
+      if (progressBar) {
+        const percentage = Math.min((xp / 1000) * 100, 100);
+        progressBar.style.width = `${percentage}%`;
+      }
+    }
+
+    function claimReward(name, amount) {
+      const claimedKey = getUserStorageKey('claimed_' + name);
+      if (localStorage.getItem(claimedKey)) return showToast('Ta nagroda została już odebrana.');
+
+      localStorage.setItem(claimedKey, 'true');
+      addXP(amount, name);
+    }
+
+    function renderTaskList() {
+      const taskKey = getUserStorageKey('tasks');
+      const completed = readJSON(taskKey, []);
+      const tasks = [
+        ['login', 'Zaloguj się codziennie', 25],
+        ['post', 'Opublikuj post w Grupie', 50],
+        ['visit_info', 'Odwiedź zakładkę Info', 25]
+      ];
+
+      const taskList = document.getElementById('task-list');
+      if (!taskList) return;
+
+      taskList.innerHTML = tasks.map(([id, label, xp]) => {
+        const done = completed.includes(id);
+        return `
+          <div class="flex items-center justify-between bg-slate-900/70 border border-slate-800 rounded-xl p-2.5">
+            <div>
+              <div class="text-[11px] text-slate-100 font-medium">${label}</div>
+              <div class="text-[10px] text-violet-300">+${xp} XP</div>
+            </div>
+            <button onclick="triggerTaskAction('${id}', ${xp}, '${label}')" class="text-[10px] ${done ? 'text-emerald-400' : 'text-cyan-300'} font-semibold">
+              ${done ? 'Gotowe' : 'Wykonaj'}
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function triggerTaskAction(taskId, xp, label) {
+      const key = getUserStorageKey('tasks');
+      const completed = readJSON(key, []);
+      if (completed.includes(taskId)) return showToast('To zadanie jest już ukończone.');
+
+      completed.push(taskId);
+      writeJSON(key, completed);
+      addXP(xp, label);
+      renderTaskList();
+    }
+
+    function renderRewardHistory() {
+      const log = document.getElementById('reward-log');
+      if (!log) return;
+
+      const key = getUserStorageKey('reward_logs');
+      const logs = readJSON(key, []);
+
+      if (!logs.length) {
+        log.innerHTML = '<div class="text-[10px] muted text-center py-3">Brak historii nagród.</div>';
+        return;
+      }
+
+      log.innerHTML = logs.map(item => `
+        <div class="flex justify-between items-center bg-slate-900/70 border border-slate-800 rounded-xl p-2.5 text-[10px]">
+          <span class="text-slate-200">${item.reason}</span>
+          <span class="font-bold text-emerald-400">+${item.amount} XP</span>
+        </div>
+      `).join('');
+    }
+
+    function formatNumberShort(value) {
+      const n = Number(value) || 0;
+      if (n >= 1000000) return `${(n / 1000000).toFixed(2).replace(/\.00$/, '')}M`;
+      if (n >= 1000) return `${(n / 1000).toFixed(2).replace(/\.00$/, '')}K`;
+      return n.toLocaleString('pl-PL');
+    }
+
+    function updateBalanceUI() {
+      const balance = document.getElementById('tpBalance');
+      if (balance) balance.textContent = getTPBalance().toLocaleString('pl-PL');
+    }
+
+    function updateEnergyUI() {
+      const energyValue = document.getElementById('energyValue');
+      const energyMax = document.getElementById('energyMax');
+      const energyFill = document.getElementById('energyFill');
+      const energy = getEnergy();
+      const max = getEnergyMax();
+
+      if (energyValue) energyValue.textContent = energy;
+      if (energyMax) energyMax.textContent = max;
+      if (energyFill) energyFill.style.width = `${(energy / max) * 100}%`;
+    }
+
+    function onMineClick() {
+      const parts = getParts();
+      let multiplier = 1;
+      if (parts.mouse) multiplier += 0.04;
+      if (parts.keyboard) multiplier += 0.06;
+      if (parts.monitor) multiplier += 0.08;
+      if (parts.case) multiplier += 0.12;
+      if (parts.ram) multiplier += 0.16;
+      if (parts.gpu) multiplier += 0.22;
+
+      const energy = getEnergy();
+      if (energy <= 0) {
+        showToast('Brakuje energii. Odśwież ją po chwili.');
+        return;
+      }
+
+      const amount = Math.max(1, Math.round(6 * multiplier));
+      const tp = getTPBalance() + amount;
+      setTPBalance(tp);
+      localStorage.setItem(STORAGE_KEYS.tp, String(tp));
+      setEnergy(energy - 1);
+      setXP(getXP() + Math.max(1, Math.round(amount * 0.6)));
+      addLog(`Mining ${amount} TP`, amount, 'tp');
+      createParticleBurst();
+      showToast(`+${amount} TP`);
+    }
+
+    function mineTP() {
+      onMineClick();
+    }
+
+    function boostEnergy() {
+      const current = getEnergy();
+      const max = getEnergyMax();
+      if (current >= max) {
+        showToast('Energia jest już pełna.');
+        return;
+      }
+      const refill = Math.min(200, max - current);
+      setEnergy(current + refill);
+      showToast(`+${refill} energii`);
+    }
+
+    function createParticleBurst() {
+      const target = document.querySelector('#screen-crypto .tech-screen-shell');
+      if (!target) return;
+      for (let i = 0; i < 12; i++) {
+        const particle = document.createElement('span');
+        particle.className = 'click-particle';
+        particle.textContent = '+TP';
+        particle.style.left = `${Math.random() * 80 + 10}%`;
+        particle.style.top = `${Math.random() * 80 + 10}%`;
+        particle.style.transform = `translate(${Math.random() * 30 - 15}px, 0)`;
+        target.appendChild(particle);
+        setTimeout(() => particle.remove(), 600);
+      }
+    }
+
+    function renderRigShop() {
+      const el = document.getElementById('rig-shop');
+      if (!el) return;
+
+      const parts = getParts();
+      const rows = Object.entries(PARTS).map(([id, item]) => {
+        const owned = !!parts[id];
+        const price = item.price;
+        const stars = item.stars;
+        const label = owned ? 'Kupione' : stars > 0 ? `⭐ ${stars}` : `${price} TP`;
+        const buttonColor = owned ? 'bg-emerald-600/20 text-emerald-300 border border-emerald-500/30' : 'bg-cyan-500 text-slate-950';
+        const buyAction = stars > 0 ? `buyWithStars('${id}')` : `buyPart('${id}')`;
+
+        return `
+          <div class="shop-item">
+            <div class="shop-item-icon"><i class="fa-solid ${item.icon}"></i></div>
+            <div>
+              <div class="text-xs font-bold text-white">${item.name}</div>
+              <div class="text-[10px] muted">${item.unlock}</div>
+            </div>
+            <button onclick="${buyAction}" class="${buttonColor} ${owned ? 'cursor-default' : ''}" ${owned ? 'disabled' : ''}>${owned ? 'Gotowe' : label}</button>
+          </div>
+        `;
+      }).join('');
+
+      el.innerHTML = rows;
+    }
+
+    function renderRigParts() {
+      const parts = getParts();
+      document.querySelectorAll('.station-part').forEach(part => {
+        const key = part.dataset.part;
+        part.classList.toggle('active', Boolean(parts[key]));
+      });
+    }
+
+    function buyPart(partId) {
+      const item = PARTS[partId];
+      const balance = getTPBalance();
+      const parts = getParts();
+
+      if (parts[partId]) {
+        showToast(`${item.name} jest już zakupione.`);
+        return;
+      }
+
+      if (balance < item.price) {
+        showToast(`Brakuje TP. Potrzebujesz ${item.price} TP.`);
+        return;
+      }
+
+      const newBalance = balance - item.price;
+      setTPBalance(newBalance);
+      parts[partId] = true;
+      setParts(parts);
+      addXP(25, `Zakup: ${item.name}`);
+      showToast(`${item.name} dodane do stanowiska.`);
+    }
+
+    function buyWithStars(partId) {
+      const item = PARTS[partId];
+      const parts = getParts();
+
+      if (parts[partId]) {
+        showToast(`${item.name} jest już zakupione.`);
+        return;
+      }
+
+      if (window.Telegram && Telegram.WebApp && typeof Telegram.WebApp.openInvoice === 'function') {
+        const invoice = {
+          title: `${item.name} · TechnixPro`,
+          description: 'Telegram Stars purchase for GPU and advanced development module',
+          payload: `technixpro_${partId}_stars`,
+          provider_token: '',
+          currency: 'XTR',
+          total_amount: item.stars * 100
+        };
+
+        try {
+          Telegram.WebApp.openInvoice(invoice);
+          parts[partId] = true;
+          setParts(parts);
+          showToast(`${item.name} aktywowane. (Demo Stars Integration)`);
+          return;
+        } catch (error) {
+          console.log(error);
+        }
+      }
+
+      showToast('Stars module ready — demo activation enabled.');
+      parts[partId] = true;
+      setParts(parts);
+    }
+
+    function updateGlobalMiningStats() {
+      const TOTAL_SUPPLY = 100000000;
+      const CYCLE_MS = 60 * 24 * 60 * 60 * 1000;
+      const START_TIMESTAMP = Date.now() - (8 * 24 * 60 * 60 * 1000);
+
+      const tokenCount = document.getElementById('tech-token-count');
+      const minedValue = document.getElementById('tech-mined-value');
+      const fill = document.getElementById('tech-capsule-fill');
+      const progressFill = document.getElementById('tech-progress-fill');
+      const progressText = document.getElementById('tech-progress-text');
+      const remainingTime = document.getElementById('tech-remaining-time');
+      const statusWord = document.getElementById('tech-status-word');
+      const dailyRate = document.getElementById('tech-daily-rate');
+
+      if (!tokenCount || !minedValue || !fill || !progressFill || !progressText || !remainingTime || !statusWord || !dailyRate) return;
+
+      const emissionPerDay = TOTAL_SUPPLY / 60;
+      dailyRate.textContent = Math.floor(emissionPerDay).toLocaleString('pl-PL');
+
+      const now = Date.now();
+      const elapsed = now - START_TIMESTAMP;
+      const mined = Math.min((elapsed / CYCLE_MS) * TOTAL_SUPPLY, TOTAL_SUPPLY);
+      const percent = Math.min((mined / TOTAL_SUPPLY) * 100, 100);
+      const remainingDuration = Math.max(CYCLE_MS - elapsed, 0);
+
+      const days = Math.floor(remainingDuration / (24 * 60 * 60 * 1000));
+      const hours = Math.floor((remainingDuration % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+      const minutes = Math.floor((remainingDuration % (60 * 60 * 1000)) / (60 * 1000));
+      const seconds = Math.floor((remainingDuration % (60 * 1000)) / 1000);
+
+      tokenCount.textContent = Math.floor(mined).toLocaleString('pl-PL');
+      minedValue.textContent = Math.floor(mined).toLocaleString('pl-PL');
+      progressText.textContent = `${Math.floor(mined).toLocaleString('pl-PL')} / ${TOTAL_SUPPLY.toLocaleString('pl-PL')}`;
+      remainingTime.textContent = `${days}d ${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
+      fill.style.width = `${percent}%`;
+      progressFill.style.width = `${percent}%`;
+
+      if (percent < 25) statusWord.textContent = 'Warm-up';
+      else if (percent < 50) statusWord.textContent = 'Scaling';
+      else if (percent < 75) statusWord.textContent = 'Mining';
+      else if (percent < 100) statusWord.textContent = 'Peak';
+      else statusWord.textContent = 'Closed';
+    }
+
+    function tickEnergyRegen() {
+      const energyValue = getEnergy();
+      const max = getEnergyMax();
+      if (energyValue < max) {
+        setEnergy(Math.min(max, energyValue + 1));
+      }
+    }
+
+    function initApp() {
+      if (!localStorage.getItem(STORAGE_KEYS.tp)) localStorage.setItem(STORAGE_KEYS.tp, '0');
+      if (!localStorage.getItem(STORAGE_KEYS.xp)) localStorage.setItem(STORAGE_KEYS.xp, '0');
+      if (!localStorage.getItem(STORAGE_KEYS.energy)) localStorage.setItem(STORAGE_KEYS.energy, '1000');
+      if (!localStorage.getItem(STORAGE_KEYS.energyMax)) localStorage.setItem(STORAGE_KEYS.energyMax, '1000');
+      if (!localStorage.getItem(STORAGE_KEYS.parts)) writeJSON(STORAGE_KEYS.parts, {});
+
+      updateBalanceUI();
+      updateXPDisplay();
+      updateEnergyUI();
       renderPosts();
       renderChannelPosts();
-      startMiningLogic();
-      updateXPUI();
-      updateWalletUI();
-      updateBonusTimer();
-      setInterval(updateBonusTimer, 1000);
+      renderTaskList();
+      renderRewardHistory();
+      renderRigShop();
+      renderRigParts();
+      updateGlobalMiningStats();
+      setInterval(updateGlobalMiningStats, 1000);
+      setInterval(tickEnergyRegen, 4200);
+    }
 
-      const minedElem = document.getElementById('tp-mined-tokens');
-      if (minedElem) minedElem.textContent = tpMined.toFixed(4);
-
-      const hashrateElem = document.getElementById('tp-hashrate');
-      if (hashrateElem) hashrateElem.textContent = `${tpsRate.toFixed(2)} TP/s`;
-
-      if (TelegramApp && TelegramApp.initDataUnsafe?.user) {
-        const user = TelegramApp.initDataUnsafe.user;
-        const profileName = document.getElementById('profile-name');
-        const profileId = document.getElementById('profile-id');
-        const tgUsername = document.getElementById('telegram-username');
-        const rankUserLabel = document.getElementById('rank-user-label');
-
-        const usernameText = user.username ? `@${user.username}` : (user.first_name || 'Użytkownik');
-
-        if (profileName) profileName.textContent = user.first_name || 'Użytkownik';
-        if (profileId) profileId.textContent = `TG ID: #${user.id}`;
-        if (tgUsername) tgUsername.textContent = usernameText;
-        if (rankUserLabel) rankUserLabel.textContent = `Ty (${usernameText})`;
-      }
-    });
+    initApp();
   </script>
 </body>
 </html>
