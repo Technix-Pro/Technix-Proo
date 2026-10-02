@@ -5,117 +5,434 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#080b14">
   <title>TechnixPro — Core Engine</title>
+
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              bg: '#080b14',
+              panel: '#111827',
+              border: '#1f293d',
+              accent: '#8b5cf6',
+              cyan: '#22d3ee',
+              pink: '#ec4899'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+
   <style>
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    body { margin: 0; background: #080b14; color: #eef2ff; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      background-color: #080b14;
+      color: #eef2ff;
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+
     .muted { color: #93a0b8; }
-    .panel { background: linear-gradient(145deg, rgba(21,29,46,.72), rgba(13,19,32,.92)); border: 1px solid rgba(39,52,77,.7); backdrop-filter: blur(12px); box-shadow: 0 12px 32px rgba(0,0,0,.35); border-radius: 18px; }
-    .screen { animation: fadeIn .25s cubic-bezier(.4,0,.2,1); }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-    .nav-btn.active { color: #c4b5fd; transform: translateY(-2px); }
-    .chat-item { animation: slideIn .2s ease; }
-    @keyframes slideIn { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: translateX(0); } }
+
+    .panel {
+      background: linear-gradient(145deg, rgba(21, 29, 46, 0.72), rgba(13, 19, 32, 0.92));
+      border: 1px solid rgba(39, 52, 77, 0.7);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+      border-radius: 18px;
+    }
+
+    .screen {
+      animation: fadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .subtab {
+      min-width: 33.333%;
+      transition: all 0.2s ease;
+    }
+
+    .active-sub {
+      color: #b9a4ff;
+      border-color: #8b5cf6;
+    }
+
+    .nav-btn {
+      color: #93a0b8;
+      transition: all 0.2s ease;
+    }
+
+    .nav-btn.active {
+      color: #c4b5fd;
+      transform: translateY(-2px);
+    }
+
+    .nav-btn span {
+      font-size: 10px;
+      margin-top: 3px;
+      font-weight: 500;
+    }
+
+    .scroll-none::-webkit-scrollbar { display: none; }
+    .scroll-none { -ms-overflow-style: none; scrollbar-width: none; }
+
+    .processor {
+      position: relative;
+      overflow: hidden;
+      background: radial-gradient(circle at center, #164e63 0%, #111827 45%, #080b14 80%);
+      border: 1px solid rgba(34, 211, 238, 0.3);
+    }
+
+    .processor::before, .processor::after {
+      content: "";
+      position: absolute;
+      border-radius: 50%;
+      inset: 10%;
+      border: 1px solid rgba(34, 211, 238, 0.25);
+      animation: spin 10s linear infinite;
+    }
+
+    .processor::after {
+      inset: 4%;
+      border-color: rgba(139, 92, 246, 0.25);
+      animation-direction: reverse;
+      animation-duration: 14s;
+    }
+
+    .chip {
+      z-index: 2;
+      animation: pulseGlow 3s ease-in-out infinite;
+      box-shadow: 0 0 30px rgba(34, 211, 238, 0.4), 0 0 60px rgba(139, 92, 246, 0.3);
+    }
+
+    .dot {
+      animation: blink 1.8s infinite;
+    }
+
+    .dot:nth-child(2) { animation-delay: 0.4s; }
+    .dot:nth-child(3) { animation-delay: 0.8s; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { transform: scale(1); filter: brightness(1); }
+      50% { transform: scale(1.05); filter: brightness(1.25); }
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 0.2; transform: scale(0.8); }
+      50% { opacity: 1; transform: scale(1.1); }
+    }
   </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between">
+
   <main class="max-w-md mx-auto w-full min-h-screen bg-[#080b14] flex flex-col relative pb-28 border-x border-slate-900/60 shadow-2xl">
+
+    <!-- NAGŁÓWEK -->
     <header class="sticky top-0 z-30 flex items-center justify-between px-4 py-3 bg-[#080b14]/90 backdrop-blur-xl border-b border-slate-800/80">
       <div class="flex items-center gap-3">
-        <button onclick="showScreen('profile', 'Profil')" class="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 via-indigo-600 to-cyan-400 p-[1.5px] transition active:scale-95">
-          <div class="w-full h-full bg-[#080b14] rounded-[10.5px] flex items-center justify-center text-lg font-black text-transparent bg-clip-text bg-gradient-to-tr from-violet-400 to-cyan-300">TP</div>
+        <button onclick="showScreen('profile','Profil')" class="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 via-indigo-600 to-cyan-400 p-[1.5px] transition active:scale-95 shadow-lg shadow-violet-500/50">
+          <div class="w-full h-full bg-[#080b14] rounded-[10.5px] flex items-center justify-center font-black text-transparent bg-clip-text bg-gradient-to-tr from-violet-400 to-cyan-300 text-lg tracking-tighter">TP</div>
         </button>
         <div>
           <p class="text-[9px] uppercase tracking-[0.25em] text-cyan-400 font-bold">TechnixPro</p>
-          <h1 id="header-title" class="text-base font-bold text-white tracking-wide">Start</h1>
+          <h1 id="header-title" class="text-base font-bold text-white tracking-wide">Sieć społeczna</h1>
         </div>
       </div>
-      <button onclick="showScreen('notifications', 'Powiadomienia')" class="w-9 h-9 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-center text-slate-300">
-        <i class="fa-regular fa-bell text-xs"></i>
-      </button>
+      <div class="flex items-center gap-3 muted">
+        <button onclick="showScreen('search','Wyszukiwarka')" class="w-9 h-9 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-center hover:text-white transition active:scale-95">
+          <i class="fa-solid fa-magnifying-glass text-xs"></i>
+        </button>
+        <button onclick="showScreen('notifications','Powiadomienia')" class="w-9 h-9 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-center hover:text-white relative transition active:scale-95">
+          <i class="fa-regular fa-bell text-xs"></i>
+          <span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+          <span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-cyan-400"></span>
+        </button>
+      </div>
     </header>
 
+    <!-- SUBTABY DLA STRONY GŁÓWNEJ (HOME) -->
+    <div id="home-subtabs" class="flex relative sticky top-[65px] z-20 bg-[#080b14]/95 backdrop-blur-md border-b border-slate-800/80">
+      <button class="subtab py-2.5 text-xs font-semibold text-center text-[#b9a4ff]" onclick="sub('home','channel',this)">Kanał</button>
+      <button class="subtab py-2.5 muted text-xs font-semibold text-center" onclick="sub('home','group',this)">Grupa</button>
+      <button class="subtab py-2.5 muted text-xs font-semibold text-center" onclick="sub('home','info',this)">Info</button>
+    </div>
+
+    <!-- SUBTABY DLA BONUSÓW (GIFT / REWARDS) -->
+    <div id="gift-subtabs" class="hidden overflow-x-auto whitespace-nowrap scroll-none sticky top-[65px] z-20 bg-[#080b14]/95 backdrop-blur-md border-b border-slate-800/80 px-2">
+      <button class="inline-block active-sub py-2.5 px-4 border-b-2 text-xs font-semibold" onclick="rewardTab('overview',this)">Przegląd</button>
+      <button class="inline-block py-2.5 px-4 border-b-2 border-transparent muted text-xs font-semibold" onclick="rewardTab('events',this)">Eventy Live</button>
+      <button class="inline-block py-2.5 px-4 border-b-2 border-transparent muted text-xs font-semibold" onclick="rewardTab('tasks',this)">Zadania</button>
+      <button class="inline-block py-2.5 px-4 border-b-2 border-transparent muted text-xs font-semibold" onclick="rewardTab('referral',this)">Referral</button>
+      <button class="inline-block py-2.5 px-4 border-b-2 border-transparent muted text-xs font-semibold" onclick="rewardTab('rewards',this)">Nagrody</button>
+      <button class="inline-block py-2.5 px-4 border-b-2 border-transparent muted text-xs font-semibold" onclick="rewardTab('leaderboard',this)">Ranking</button>
+      <button class="inline-block py-2.5 px-4 border-b-2 border-transparent muted text-xs font-semibold" onclick="rewardTab('history',this)">Historia</button>
+      <button class="inline-block py-2.5 px-4 border-b-2 border-transparent muted text-xs font-semibold" onclick="rewardTab('ranks',this)">Rangi</button>
+    </div>
+
+    <!-- GŁÓWNA ZAWARTOŚĆ APLIKACJI -->
     <div id="app-content" class="p-4 space-y-4 flex-1 overflow-y-auto">
+
+      <!-- EKRAN: HOME (START) -->
       <section id="screen-home" class="screen space-y-4">
-        <div class="panel p-4">
-          <div class="flex justify-between items-center">
-            <span class="text-[10px] uppercase text-cyan-400 font-bold">Core Engine</span>
-            <span class="text-[10px] text-violet-400 font-mono">v2.6</span>
+        
+        <!-- SUBTAB 1: KANAŁ -->
+        <div id="home-channel" class="sub space-y-4">
+          <div class="panel p-3.5 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span class="text-xs font-medium text-slate-200">Core Engine Online</span>
+            </div>
+            <span class="text-[10px] text-violet-400 bg-violet-500/10 border border-violet-500/20 px-2 py-0.5 rounded-full font-mono">v2.6 Stealth</span>
           </div>
-          <h2 class="mt-2 text-xl font-extrabold text-white">TechnixPro Mini App</h2>
-          <p class="mt-2 text-xs leading-relaxed text-slate-300">Zbieraj XP, zdobywaj poziomy, rozwój profilu i publikuj posty tylko z konta admina.</p>
+
+          <!-- PANEL ADMINA -->
+          <div id="admin-panel" class="hidden panel p-4 border-2 border-amber-500/40 space-y-3">
+            <h3 class="text-sm font-bold text-amber-400 flex items-center gap-2"><i class="fa-solid fa-crown"></i> Panel administratora</h3>
+            <textarea id="admin-post-input" rows="3" class="w-full rounded-xl bg-[#080b14] border border-amber-500/30 p-3 text-xs text-slate-200 focus:outline-none focus:border-amber-500" placeholder="Treść posta..."></textarea>
+            <input id="admin-media-url" type="text" class="w-full rounded-xl bg-[#080b14] border border-amber-500/30 p-3 text-xs text-slate-200 focus:outline-none focus:border-amber-500" placeholder="Link do zdjęcia / wideo (opcjonalnie)">
+            <button onclick="publishAdminPost()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs py-2.5 rounded-xl transition active:scale-95 flex items-center justify-center gap-2">
+              <i class="fa-solid fa-paper-plane"></i> Opublikuj post
+            </button>
+          </div>
+
+          <div class="panel p-4 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-white">📢 Kanał Oficjalny</span>
+              <span id="channel-status" class="text-[10px] text-emerald-400">Live</span>
+            </div>
+            <div id="channel-feed" class="space-y-3"></div>
+          </div>
+
+          <!-- BONUS CZASOWY (LOKALNY ZEGAR) -->
+          <div class="panel p-4 text-center">
+            <h3 class="text-sm font-bold tracking-wider text-slate-300 uppercase mb-2">Bonus Czasowy</h3>
+            <p class="text-xs text-slate-400 mb-3">Odbieraj darmowe TechnixCoins co 4 godziny!</p>
+            <div class="flex items-center justify-center space-x-2 text-2xl font-mono text-cyan-400 mb-3">
+              <i class="fa-regular font-bold fa-clock text-lg"></i>
+              <span id="bonus-timer">04:00:00</span>
+            </div>
+            <button id="claim-bonus-btn" disabled class="w-full py-2.5 px-4 text-xs font-semibold rounded-lg bg-slate-700 text-slate-400 cursor-not-allowed transition-all duration-200">Odbierz +50 TechnixCoins</button>
+          </div>
         </div>
 
-        <div id="admin-panel" class="hidden panel p-4 border-2 border-amber-500/40 space-y-3">
-          <h3 class="text-sm font-bold text-amber-400"><i class="fa-solid fa-crown"></i> Panel administratora</h3>
-          <textarea id="admin-post-input" rows="3" class="w-full rounded-xl bg-[#080b14] border border-amber-500/30 p-3 text-xs text-slate-200 focus:outline-none" placeholder="Treść posta..."></textarea>
-          <input id="admin-media-url" type="text" class="w-full rounded-xl bg-[#080b14] border border-amber-500/30 p-3 text-xs text-slate-200 focus:outline-none" placeholder="Link do zdjęcia / wideo (opcjonalnie)">
-          <button onclick="publishAdminPost()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs py-2.5 rounded-xl"><i class="fa-solid fa-paper-plane"></i> Opublikuj post</button>
+        <!-- SUBTAB 2: GRUPA / SPOŁECZNOŚĆ -->
+        <div id="home-group" class="sub hidden space-y-4">
+          <div class="panel p-4 space-y-3">
+            <h2 class="font-bold text-sm text-slate-200">Społeczność & Dyskusja</h2>
+            <p class="text-xs muted">Dyskusje członków ekosystemu TechnixPro.</p>
+            <textarea id="post-input" rows="3" class="w-full rounded-xl bg-[#080b14] border border-slate-700/80 p-3 text-xs text-slate-200 focus:outline-none focus:border-violet-500 resize-none" placeholder="Napisz wiadomość..."></textarea>
+            <div class="flex justify-end">
+              <button onclick="createNewPost()" class="bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition active:scale-95 flex items-center gap-2">
+                <i class="fa-solid fa-paper-plane text-[10px]"></i> Opublikuj
+              </button>
+            </div>
+          </div>
+          <div id="posts-feed" class="space-y-3"></div>
         </div>
 
-        <div class="panel p-4 space-y-3">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-white">📢 Kanał</span>
-            <span id="channel-status" class="text-[10px] text-emerald-400">Online</span>
+        <!-- SUBTAB 3: INFO -->
+        <div id="home-info" class="sub hidden space-y-4">
+          <div class="processor rounded-2xl p-6 flex flex-col items-center text-center relative min-h-[240px] justify-center">
+            <i class="dot absolute top-6 left-8 w-1.5 h-1.5 rounded-full bg-cyan-400"></i>
+            <i class="dot absolute top-12 right-10 w-2 h-2 rounded-full bg-cyan-300"></i>
+            <i class="dot absolute bottom-8 left-12 w-1.5 h-1.5 rounded-full bg-violet-400"></i>
+            <div class="chip w-20 h-20 rounded-2xl bg-gradient-to-br from-cyan-400 to-violet-600 flex items-center justify-center text-3xl text-slate-900 shadow-lg">
+              <i class="fa-solid fa-microchip"></i>
+            </div>
+            <p class="text-[9px] uppercase tracking-[0.25em] text-cyan-300 font-bold mt-5">Core Engine · Architecture</p>
+            <h2 class="text-xl font-extrabold text-white mt-1">TechnixPro Vision</h2>
+            <p class="text-xs text-slate-300 max-w-xs mt-1">Niezależny procesor sprzętowy, cyfrowe aktywa i społeczność deweloperów.</p>
           </div>
-          <div id="channel-feed" class="space-y-3"></div>
+
+          <div class="panel p-4 space-y-3">
+            <h3 class="text-sm font-bold text-violet-300">Od rdzenia do całego ekosystemu</h3>
+            <p class="text-xs muted leading-relaxed">TechnixPro łączy innowacje sprzętowe z rynkiem krypto w komunikatorze Telegram. Zbieraj punkty XP, wykonuj zadania deweloperskie i przygotuj się na oficjalny token $TECHNIX.</p>
+          </div>
         </div>
       </section>
 
+      <!-- EKRAN: BONUSY (GIFT / REWARDS HUB) -->
       <section id="screen-rewards" class="screen hidden space-y-4">
-        <div class="panel p-4 bg-gradient-to-br from-violet-900/35 via-slate-900 to-cyan-900/25">
-          <div class="flex justify-between items-center">
-            <div>
-              <p id="profile-username" class="text-xs text-cyan-300">@user</p>
-              <div class="flex items-baseline gap-2 mt-1">
-                <span id="xp-display" class="text-3xl font-black text-white">0</span>
-                <span class="text-xs font-bold text-violet-400">XP</span>
+        
+        <div id="reward-overview" class="reward-view space-y-4">
+          <div class="panel p-4 relative overflow-hidden bg-gradient-to-br from-violet-900/40 via-slate-900 to-cyan-900/30">
+            <div class="flex justify-between items-center">
+              <div>
+                <p id="profile-username" class="text-xs font-semibold text-cyan-300">@user</p>
+                <div class="flex items-baseline gap-2 mt-1">
+                  <span id="xp-display" class="text-3xl font-black text-white">0</span>
+                  <span class="text-xs font-bold text-violet-400">XP</span>
+                </div>
+              </div>
+              <span id="level-badge" class="rounded-full border border-violet-500/40 bg-violet-600/20 px-3 py-1 text-[10px] font-bold text-violet-200">LEVEL 1</span>
+            </div>
+
+            <div class="mt-4 space-y-1">
+              <div class="flex justify-between text-[10px] text-slate-300">
+                <span>Postęp poziomu</span>
+                <span id="progress-text">0 / 3000 XP</span>
+              </div>
+              <div class="h-2 rounded-full bg-slate-800 overflow-hidden">
+                <div id="progress-bar" class="h-full rounded-full bg-gradient-to-r from-violet-500 to-cyan-400" style="width: 0%"></div>
               </div>
             </div>
-            <span id="level-badge" class="rounded-full border border-violet-500/40 bg-violet-600/20 px-3 py-1 text-[10px] font-bold text-violet-200">LEVEL 1</span>
           </div>
-          <div class="mt-4 space-y-1">
-            <div class="flex justify-between text-[10px] text-slate-300">
-              <span>Postęp poziomu</span>
-              <span id="progress-text">0 / 3000 XP</span>
+        </div>
+
+        <div id="reward-events" class="reward-view hidden space-y-3">
+          <div class="panel p-4 space-y-3">
+            <div class="flex justify-between items-center">
+              <span class="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full">AKTYWNY EVENT</span>
+              <span class="text-[10px] muted">Koniec za: 4 dni</span>
             </div>
-            <div class="h-2 rounded-full bg-slate-800 overflow-hidden">
-              <div id="progress-bar" class="h-full rounded-full bg-gradient-to-r from-violet-500 to-cyan-400" style="width: 0%"></div>
+            <h3 class="text-base font-bold text-white">Cyber Week — Community Sprint</h3>
+            <p class="text-xs muted">Wykonuj zadania społecznościowe, zbieraj punkty XP oraz odblokuj limitowaną odznakę.</p>
+            <button onclick="triggerTaskAction('event',50,'Event')" class="w-full bg-violet-600 hover:bg-violet-500 text-white font-semibold text-xs py-2.5 rounded-xl transition active:scale-95">Dołącz do Sprintu</button>
+          </div>
+        </div>
+
+        <div id="reward-tasks" class="reward-view hidden space-y-3">
+          <div class="panel p-4">
+            <h3 class="font-bold text-sm text-slate-200 mb-3">Zadania</h3>
+            <div id="task-list" class="space-y-2"></div>
+          </div>
+        </div>
+
+        <!-- REFERRAL LINK MODULE -->
+        <div id="reward-referral" class="reward-view hidden space-y-3">
+          <div class="panel p-4 space-y-3 border-emerald-500/30 border-2">
+            <h3 class="text-sm font-bold text-emerald-400 flex items-center gap-2"><i class="fa-solid fa-link"></i> Referral Link</h3>
+            <div class="flex gap-2">
+              <input id="referral-link" readonly class="flex-1 bg-slate-900/60 border border-emerald-500/20 text-[10px] text-emerald-300 rounded-lg p-2.5" value="loading...">
+              <button onclick="copyReferral()" class="bg-emerald-600 text-white text-xs font-bold px-3 py-2 rounded-lg transition active:scale-95">Kopiuj</button>
+            </div>
+            <p class="text-[10px] text-slate-400">10 osób = +100 XP • 20 = +300 XP • 50 = +1000 XP</p>
+          </div>
+        </div>
+
+        <div id="reward-rewards" class="reward-view hidden space-y-3">
+          <div class="panel p-4">
+            <h3 class="font-bold text-sm text-slate-200 mb-3">Dostępne Odznaki i Nagrody</h3>
+            <div id="badge-list" class="grid grid-cols-3 gap-2"></div>
+          </div>
+        </div>
+
+        <div id="reward-leaderboard" class="reward-view hidden space-y-3">
+          <div class="panel p-4">
+            <h3 class="font-bold text-sm text-slate-200">Ranking Społeczności</h3>
+            <p class="text-[10px] muted mb-3">Liderzy ekosystemu TechnixPro.</p>
+            <div class="space-y-2">
+              <div class="flex items-center justify-between bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 text-xs">
+                <span>🥇 CoreBuilder</span>
+                <span class="font-bold text-cyan-400">5 820 XP</span>
+              </div>
+              <div class="flex items-center justify-between bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 text-xs">
+                <span>🥈 CyberNova</span>
+                <span class="font-bold text-cyan-400">4 910 XP</span>
+              </div>
             </div>
           </div>
         </div>
 
-        <div class="panel p-4 space-y-3">
-          <h3 class="text-sm font-bold text-white">Rangi</h3>
-          <div id="rank-list" class="space-y-2"></div>
-        </div>
-
-        <div class="panel p-4 space-y-3">
-          <h3 class="text-sm font-bold text-white">Zadania</h3>
-          <div id="task-list" class="space-y-2"></div>
-        </div>
-
-        <div class="panel p-4 space-y-3 border-emerald-500/30 border-2">
-          <h3 class="text-sm font-bold text-emerald-400"><i class="fa-solid fa-link"></i> Referral Link</h3>
-          <div class="flex gap-2">
-            <input id="referral-link" readonly class="flex-1 bg-slate-900/60 border border-emerald-500/20 text-[10px] text-emerald-300 rounded-lg p-2.5" value="loading...">
-            <button onclick="copyReferral()" class="bg-emerald-600 text-white text-xs font-bold px-3 py-2 rounded-lg">Kopiuj</button>
+        <div id="reward-history" class="reward-view hidden space-y-3">
+          <div class="panel p-4">
+            <h3 class="font-bold text-sm text-slate-200 mb-3">Historia aktywności XP</h3>
+            <div id="reward-log" class="space-y-2"></div>
           </div>
-          <p class="text-[10px] text-slate-400">10 osób = +100 XP • 20 = +300 XP • 50 = +1000 XP</p>
         </div>
 
+        <div id="reward-ranks" class="reward-view hidden space-y-4">
+          <div class="panel p-4">
+            <h3 class="text-base font-bold text-white mb-2">Poziomy i Rangi</h3>
+            <div id="rank-list" class="space-y-3"></div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- EKRAN: KRYPTOWALUTY -->
+      <section id="screen-crypto" class="screen hidden space-y-4">
+        <div class="flex justify-between items-center">
+          <h2 class="text-lg font-bold text-white">Rynek Krypto</h2>
+          <span class="text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Live Sync</span>
+        </div>
         <div class="panel p-4 space-y-3">
-          <h3 class="text-sm font-bold text-white">Odznaki</h3>
-          <div id="badge-list" class="grid grid-cols-3 gap-2"></div>
+          <div id="crypto-container" class="space-y-2">
+            <div class="flex items-center justify-between py-2 border-b border-slate-800/60">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center font-bold text-amber-400">₿</div>
+                <div><span class="block text-xs font-bold text-white">Bitcoin</span><span class="text-[10px] muted font-mono">BTC</span></div>
+              </div>
+              <div class="text-right"><span class="block text-xs font-bold text-white">271 840 PLN</span><span class="text-[10px] text-emerald-400">+5.24%</span></div>
+            </div>
+            <div class="flex items-center justify-between py-2 border-b border-slate-800/60">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center font-bold text-indigo-400">Ξ</div>
+                <div><span class="block text-xs font-bold text-white">Ethereum</span><span class="text-[10px] muted font-mono">ETH</span></div>
+              </div>
+              <div class="text-right"><span class="block text-xs font-bold text-white">13 420 PLN</span><span class="text-[10px] text-emerald-400">+3.81%</span></div>
+            </div>
+            <div class="flex items-center justify-between py-2">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center font-bold text-cyan-400">💎</div>
+                <div><span class="block text-xs font-bold text-white">Toncoin</span><span class="text-[10px] muted font-mono">TON</span></div>
+              </div>
+              <div class="text-right"><span class="block text-xs font-bold text-white">24.50 PLN</span><span class="text-[10px] text-emerald-400">+8.15%</span></div>
+            </div>
+          </div>
         </div>
       </section>
 
+      <!-- EKRAN: PORTFEL -->
+      <section id="screen-wallet" class="screen hidden space-y-4">
+        <h2 class="text-lg font-bold text-white">Portfel Cyfrowy</h2>
+        <div class="panel p-5 text-center space-y-3">
+          <p class="text-xs muted">Saldo demonstracyjne sieci TON</p>
+          <div class="text-3xl font-extrabold text-white tracking-tight">24 680,42 PLN</div>
+          <div class="flex justify-center gap-2 pt-2">
+            <button onclick="showToast('Funkcja wpłaty zostanie odblokowana w Fazie 3')" class="bg-violet-600 hover:bg-violet-500 text-xs font-semibold px-4 py-2 rounded-xl transition active:scale-95">Wpłać</button>
+            <button onclick="showToast('Funkcja wypłaty zostanie odblokowana w Fazie 3')" class="bg-slate-800 border border-slate-700 text-xs font-semibold px-4 py-2 rounded-xl transition active:scale-95">Wypłać</button>
+          </div>
+        </div>
+
+        <div class="panel p-4 space-y-3 border-blue-500/30 border-2">
+          <h3 class="text-sm font-bold text-blue-400 flex items-center gap-2"><i class="fa-brands fa-bitcoin"></i> Portfel TON</h3>
+          <div class="text-center">
+            <p class="text-2xl font-black text-white">0 TON</p>
+            <p class="text-[10px] text-slate-400">Saldo demonstracyjne</p>
+          </div>
+          <button onclick="showToast('Połączenie TON Keeper dostępne po integracji mainnet')" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs py-2.5 rounded-xl transition active:scale-95"><i class="fa-brands fa-bitcoin"></i> Połącz TON Keeper</button>
+        </div>
+      </section>
+
+      <!-- EKRAN: PROFIL -->
       <section id="screen-profile" class="screen hidden space-y-4">
         <div class="panel p-5 text-center space-y-4">
-          <div class="w-20 h-20 mx-auto rounded-full border-2 border-violet-500 overflow-hidden bg-slate-900">
+          <div class="w-20 h-20 mx-auto rounded-full border-2 border-violet-500 overflow-hidden bg-slate-900 shadow-xl">
             <img id="profile-avatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80'%3E%3Ccircle cx='40' cy='28' r='16' fill='%234F46E5'/%3E%3Cpath d='M18 68c0-14 10-22 22-22s22 8 22 22' fill='%234F46E5'/%3E%3C/svg%3E" class="w-full h-full object-cover">
           </div>
           <div>
@@ -130,37 +447,112 @@
           <div class="flex justify-between bg-slate-900/50 rounded-xl p-2.5"><span class="muted">Poziom</span><span id="profile-level" class="font-bold text-violet-400">1</span></div>
           <div class="flex justify-between bg-slate-900/50 rounded-xl p-2.5"><span class="muted">XP</span><span id="profile-xp" class="font-bold text-emerald-400">0</span></div>
         </div>
+      </section>
 
-        <div class="panel p-4 space-y-3 border-blue-500/30 border-2">
-          <h3 class="text-sm font-bold text-blue-400"><i class="fa-brands fa-bitcoin"></i> Portfel TON</h3>
-          <div class="text-center">
-            <p class="text-2xl font-black text-white">0 TON</p>
-            <p class="text-[10px] text-slate-400">Saldo demonstracyjne</p>
-          </div>
-          <button onclick="showToast('Połączenie TON Keeper dostępne po integracji mainnet')" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs py-2.5 rounded-xl"><i class="fa-brands fa-bitcoin"></i> Połącz TON Keeper</button>
-        </div>
+      <!-- DODATKOWE EKRANY (SEARCH, NOTIFICATIONS, MENU) -->
+      <section id="screen-search" class="screen hidden space-y-4">
+        <input class="panel w-full p-3 text-xs bg-[#080b14] text-white border border-slate-700 rounded-xl focus:outline-none" placeholder="Szukaj w TechnixPro...">
       </section>
 
       <section id="screen-notifications" class="screen hidden space-y-4">
         <div class="panel p-4 space-y-3">
           <h3 class="text-sm font-bold text-white">Powiadomienia</h3>
-          <div class="bg-slate-900/60 p-3 rounded-xl text-xs text-slate-300">
-            <p class="mb-2">✅ Witamy w TechnixPro!</p>
-            <p>Twoje konto jest aktywne i zapisane lokalnie dla tego urządzenia.</p>
+          <div class="bg-slate-900/60 p-3 rounded-xl text-xs text-slate-300 border border-slate-800">
+            <p class="mb-1 font-semibold text-white">✅ Witamy w TechnixPro!</p>
+            <p class="text-slate-400">Twoje konto jest aktywne i zsynchronizowane.</p>
           </div>
         </div>
       </section>
+
     </div>
 
+    <!-- DOLNA NAWIGACJA -->
     <nav class="fixed bottom-0 left-0 right-0 z-40 max-w-md mx-auto bg-[#080b14]/95 backdrop-blur-xl border-t border-slate-800/80 px-2 pt-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))] flex justify-around">
-      <button class="nav-btn active flex flex-col items-center text-[10px] gap-1 text-slate-400" onclick="showScreen('home','Start')"><i class="fa-solid fa-house text-base"></i><span>Start</span></button>
-      <button class="nav-btn flex flex-col items-center text-[10px] gap-1 text-slate-400" onclick="showScreen('rewards','Bonusy')"><i class="fa-solid fa-gift text-base"></i><span>Bonusy</span></button>
-      <button class="nav-btn flex flex-col items-center text-[10px] gap-1 text-slate-400" onclick="showScreen('profile','Profil')"><i class="fa-solid fa-user text-base"></i><span>Profil</span></button>
+      <button class="nav-btn active flex flex-col items-center" data-tab="home" onclick="showScreen('home','Start')">
+        <i class="fa-solid fa-house text-base"></i>
+        <span>Start</span>
+      </button>
+      <button class="nav-btn flex flex-col items-center" data-tab="rewards" onclick="showScreen('rewards','Bonusy')">
+        <i class="fa-solid fa-gift text-base"></i>
+        <span>Bonusy</span>
+      </button>
+      <button class="nav-btn flex flex-col items-center" data-tab="crypto" onclick="showScreen('crypto','Krypto')">
+        <i class="fa-brands fa-bitcoin text-base"></i>
+        <span>Krypto</span>
+      </button>
+      <button class="nav-btn flex flex-col items-center" data-tab="wallet" onclick="showScreen('wallet','Portfel')">
+        <i class="fa-solid fa-wallet text-base"></i>
+        <span>Portfel</span>
+      </button>
+      <button class="nav-btn flex flex-col items-center" data-tab="profile" onclick="showScreen('profile','Profil')">
+        <i class="fa-solid fa-user text-base"></i>
+        <span>Profil</span>
+      </button>
     </nav>
   </main>
 
-  <div id="toast" class="hidden fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-slate-800/90 border border-slate-700/80 text-xs text-slate-100 px-4 py-2 rounded-xl shadow-xl"></div>
+  <div id="toast" class="hidden fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-slate-800/90 border border-slate-700/80 text-xs text-slate-100 px-4 py-2 rounded-xl shadow-xl backdrop-blur-md"></div>
 
+  <!-- POMOCNICZE PRZEŁĄCZNIKI WBUDOWANE -->
+  <script>
+    function showScreen(tab, title) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+      const targetScreen = document.getElementById('screen-' + tab);
+      if (targetScreen) targetScreen.classList.remove('hidden');
+
+      const headerTitle = document.getElementById('header-title');
+      if (headerTitle) headerTitle.textContent = title;
+
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tab);
+      });
+
+      const homeTabs = document.getElementById('home-subtabs');
+      const giftTabs = document.getElementById('gift-subtabs');
+
+      if (homeTabs) homeTabs.classList.toggle('hidden', tab !== 'home');
+      if (giftTabs) giftTabs.classList.toggle('hidden', tab !== 'rewards');
+
+      window.scrollTo(0, 0);
+    }
+
+    function sub(parent, id, btn) {
+      document.querySelectorAll('.sub').forEach(s => s.classList.add('hidden'));
+      const activeSub = document.getElementById(parent + '-' + id);
+      if (activeSub) activeSub.classList.remove('hidden');
+
+      if (btn) {
+        btn.parentElement.querySelectorAll('button').forEach(b => {
+          b.classList.remove('text-[#b9a4ff]');
+          b.classList.add('muted');
+        });
+        btn.classList.remove('muted');
+        btn.classList.add('text-[#b9a4ff]');
+      }
+    }
+
+    function rewardTab(id, btn) {
+      document.querySelectorAll('.reward-view').forEach(v => v.classList.add('hidden'));
+      const activeView = document.getElementById('reward-' + id);
+      if (activeView) activeView.classList.remove('hidden');
+
+      if (btn) {
+        btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active-sub'));
+        btn.classList.add('active-sub');
+      }
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      if (!toast) return;
+      toast.textContent = message;
+      toast.classList.remove('hidden');
+      clearTimeout(window.toastTimer);
+      window.toastTimer = setTimeout(() => toast.classList.add('hidden'), 2200);
+    }
+  </script>
+
+  <!-- PODPIĘCIE GŁÓWNEGO SKRYPTU JS -->
   <script src="./script.js"></script>
 </body>
 </html>
