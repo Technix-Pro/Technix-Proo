@@ -276,7 +276,7 @@
               <i class="fa-regular font-bold fa-clock text-lg"></i>
               <span id="bonus-timer">04:00:00</span>
             </div>
-            <button id="claim-bonus-btn" disabled class="w-full py-2.5 px-4 text-xs font-semibold rounded-lg bg-slate-700 text-slate-400 cursor-not-allowed transition-all duration-200">Odbierz +50 TechnixCoins</button>
+            <button id="claim-bonus-btn" onclick="claimTimeBonus()" disabled class="w-full py-2.5 px-4 text-xs font-semibold rounded-lg bg-slate-700 text-slate-400 cursor-not-allowed transition-all duration-200">Odbierz +50 TechnixCoins</button>
           </div>
         </div>
 
@@ -385,7 +385,7 @@
         <div id="reward-leaderboard" class="reward-view hidden space-y-3">
           <div class="panel p-4">
             <h3 class="font-bold text-sm text-slate-200">Ranking Społeczności</h3>
-            <div class="space-y-2 mt-3">
+            <div id="leaderboard-list" class="space-y-2 mt-3">
               <div class="flex items-center justify-between bg-violet-900/30 p-2.5 rounded-xl border border-violet-500/30 text-xs font-semibold">
                 <span id="rank-user-label">Ty (@User)</span>
                 <span id="rank-xp-display" class="font-bold text-violet-300">0 XP</span>
@@ -405,6 +405,7 @@
           <div class="panel p-4">
             <h3 class="text-base font-bold text-white mb-2">Poziomy i Rangi</h3>
             <p class="text-xs text-slate-400 mb-4">Zbieraj Punkty Doświadczenia (XP), aby odblokowywać wyższe rangi.</p>
+            <div id="ranks-list" class="space-y-2"></div>
           </div>
         </div>
       </section>
@@ -466,8 +467,10 @@
       <section id="screen-wallet" class="screen hidden space-y-4">
         <h2 class="text-lg font-bold text-white">Portfel Cyfrowy</h2>
         <div class="panel p-5 text-center space-y-3">
-          <p class="text-xs muted">Saldo demonstracyjne</p>
-          <div class="text-3xl font-extrabold text-white tracking-tight">0,00 PLN</div>
+          <p class="text-xs muted">Saldo TechnixCoins</p>
+          <div id="wallet-coins-balance" class="text-3xl font-extrabold text-cyan-400 tracking-tight">0 TC</div>
+          <p class="text-xs muted pt-2 border-t border-slate-800/80">Wykopane Tokeny TP</p>
+          <div id="wallet-tp-balance" class="text-xl font-bold text-violet-400">0.0000 TP</div>
         </div>
       </section>
 
@@ -483,27 +486,71 @@
             <h2 id="profile-name" class="font-bold text-base text-white">Użytkownik</h2>
             <p id="profile-id" class="text-xs muted">TG ID: brak danych</p>
           </div>
+          <div class="pt-3 border-t border-slate-800/80 flex justify-around text-xs">
+            <div>
+              <span class="block text-slate-400 text-[10px] uppercase">Poziom</span>
+              <span id="profile-level" class="font-bold text-violet-400">1</span>
+            </div>
+            <div>
+              <span class="block text-slate-400 text-[10px] uppercase">Punkty XP</span>
+              <span id="profile-xp" class="font-bold text-cyan-400">0</span>
+            </div>
+          </div>
         </div>
       </section>
 
       <!-- MENU -->
       <section id="screen-menu" class="screen hidden space-y-4">
         <h2 class="text-lg font-bold text-white">Menu Główne</h2>
-      </section>
-
-      <section id="screen-search" class="screen hidden space-y-4">
-        <input class="panel w-full p-3 text-xs bg-[#080b14] text-white border border-slate-700 rounded-xl focus:outline-none" placeholder="Szukaj w TechnixPro...">
-      </section>
-
-      <section id="screen-notifications" class="screen hidden space-y-4">
-        <div class="panel p-4 text-xs space-y-2">
-          <div class="font-bold text-white">Powiadomienie Systemowe</div>
-          <p class="muted">Witaj w TechnixPro!</p>
+        <div class="grid grid-cols-2 gap-3">
+          <button onclick="show('home','Sieć społeczna')" class="panel p-4 text-left space-y-2 hover:border-cyan-500/50 transition">
+            <i class="fa-solid fa-house text-cyan-400 text-xl"></i>
+            <span class="block text-xs font-bold text-white">Start</span>
+          </button>
+          <button onclick="show('gift','Rewards Hub')" class="panel p-4 text-left space-y-2 hover:border-cyan-500/50 transition">
+            <i class="fa-solid fa-gift text-cyan-400 text-xl"></i>
+            <span class="block text-xs font-bold text-white">Bonusy</span>
+          </button>
+          <button onclick="show('crypto','TechnixPro')" class="panel p-4 text-left space-y-2 hover:border-cyan-500/50 transition">
+            <i class="fa-solid fa-microchip text-cyan-400 text-xl"></i>
+            <span class="block text-xs font-bold text-white">Koparka TP</span>
+          </button>
+          <button onclick="show('wallet','Portfel')" class="panel p-4 text-left space-y-2 hover:border-cyan-500/50 transition">
+            <i class="fa-solid fa-wallet text-cyan-400 text-xl"></i>
+            <span class="block text-xs font-bold text-white">Portfel</span>
+          </button>
         </div>
       </section>
 
+      <!-- WYSZUKIWARKA -->
+      <section id="screen-search" class="screen hidden space-y-4">
+        <div class="relative">
+          <input id="search-input" oninput="performSearch()" class="panel w-full p-3 text-xs bg-[#080b14] text-white border border-slate-700 rounded-xl focus:outline-none focus:border-cyan-400" placeholder="Szukaj w TechnixPro...">
+        </div>
+        <div id="search-results" class="space-y-2"></div>
+      </section>
+
+      <!-- POWIADOMIENIA -->
+      <section id="screen-notifications" class="screen hidden space-y-4">
+        <h2 class="text-lg font-bold text-white">Powiadomienia</h2>
+        <div id="notifications-list" class="space-y-2">
+          <div class="panel p-4 text-xs space-y-1">
+            <div class="font-bold text-white flex justify-between">
+              <span>Powiadomienie Systemowe</span>
+              <span class="text-[10px] muted">Teraz</span>
+            </div>
+            <p class="muted">Witaj w TechnixPro Core Engine!</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- KOMENTARZE / ODP -->
       <section id="screen-comments" class="screen hidden space-y-4">
-        <h2 class="text-base font-bold text-white">Komentarze</h2>
+        <div class="flex items-center gap-2">
+          <button onclick="show('home','Sieć społeczna')" class="text-xs text-cyan-400 font-semibold">&larr; Wróć</button>
+          <h2 class="text-base font-bold text-white">Komentarze</h2>
+        </div>
+        <div id="comments-container" class="space-y-3"></div>
       </section>
 
     </div>
@@ -539,7 +586,7 @@
 
   <div id="toast" class="hidden fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-slate-800/90 border border-slate-700/80 text-slate-100 text-xs font-medium px-4 py-2.5 rounded-xl shadow-xl backdrop-blur-md"></div>
 
-  <!-- JAVASCRIPT: HIGH-SPEED MINING LOGIC -->
+  <!-- JAVASCRIPT: LOGIKA APLIKACJI -->
   <script>
     const TelegramApp = window.Telegram?.WebApp;
     if (TelegramApp) {
@@ -555,7 +602,20 @@
     let isMining = true;
     let minerInterval = null;
 
-    // GŁÓWNA PĘTLA WYDOBYCIA (ODŚWIEŻANIE CO 50ms DLA PŁYNNIEJSZEGO ZIĘKSZANIA STATYSTYK)
+    // SYSTEM XP, NAGRÓD I PORTFELA
+    let userCoins = parseInt(localStorage.getItem('tp_user_coins') || '0');
+    let userXP = parseInt(localStorage.getItem('tp_user_xp') || '0');
+    let lastBonusClaim = parseInt(localStorage.getItem('tp_last_bonus') || '0');
+    const BONUS_INTERVAL = 4 * 60 * 60 * 1000; // 4 godziny
+
+    // DANE ZADAŃ
+    const defaultTasks = [
+      { id: 't1', title: 'Polub post na kanale', xp: 20, done: false },
+      { id: 't2', title: 'Napisz wiadomość w Grupie', xp: 30, done: false },
+      { id: 't3', title: 'Uruchom koparkę CPU', xp: 50, done: false }
+    ];
+
+    // GŁÓWNA PĘTLA WYDOBYCIA (ODŚWIEŻANIE CO 50ms)
     function startMiningLogic() {
       if (minerInterval) clearInterval(minerInterval);
       minerInterval = setInterval(() => {
@@ -580,7 +640,7 @@
 
       const now = Date.now();
       if (now - lastClickTime < 300) {
-        comboMultiplier = Math.min(10.0, comboMultiplier + 0.2); // COMBO RYSZCZĄCE AŻ DO x10!
+        comboMultiplier = Math.min(10.0, comboMultiplier + 0.2);
       }
       lastClickTime = now;
 
@@ -624,7 +684,7 @@
 
     // HIGH-SPEED UPGRADE
     function turboUpgrade() {
-      tpsRate += 2.0; // WIĘKSZY PRZYROST MOCY DLA ULTRA SZYBKOŚCI
+      tpsRate += 2.0;
       localStorage.setItem('tp_rate', tpsRate.toString());
       const hashrateElem = document.getElementById('tp-hashrate');
       if (hashrateElem) hashrateElem.textContent = `${tpsRate.toFixed(2)} TP/s`;
@@ -651,6 +711,229 @@
       }
     }
 
+    // LOGIKA BONUSU CZASOWEGO (4h)
+    function updateBonusTimer() {
+      const now = Date.now();
+      const diff = BONUS_INTERVAL - (now - lastBonusClaim);
+      const btn = document.getElementById('claim-bonus-btn');
+      const timerElem = document.getElementById('bonus-timer');
+
+      if (diff <= 0) {
+        if (timerElem) timerElem.textContent = "00:00:00";
+        if (btn) {
+          btn.disabled = false;
+          btn.className = "w-full py-2.5 px-4 text-xs font-semibold rounded-lg bg-gradient-to-r from-cyan-500 to-violet-600 text-slate-950 font-bold cursor-pointer transition-all duration-200 shadow-lg shadow-cyan-500/20 active:scale-95";
+        }
+      } else {
+        if (btn) {
+          btn.disabled = true;
+          btn.className = "w-full py-2.5 px-4 text-xs font-semibold rounded-lg bg-slate-700 text-slate-400 cursor-not-allowed transition-all duration-200";
+        }
+        const hrs = Math.floor(diff / (1000 * 60 * 60)).toString().padStart(2, '0');
+        const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, '0');
+        const secs = Math.floor((diff % (1000 * 60)) / 1000).toString().padStart(2, '0');
+        if (timerElem) timerElem.textContent = `${hrs}:${mins}:${secs}`;
+      }
+    }
+
+    function claimTimeBonus() {
+      const now = Date.now();
+      if (now - lastBonusClaim >= BONUS_INTERVAL) {
+        lastBonusClaim = now;
+        localStorage.setItem('tp_last_bonus', lastBonusClaim.toString());
+        userCoins += 50;
+        localStorage.setItem('tp_user_coins', userCoins.toString());
+        addXP(25, "Odbiór bonusu czasowego");
+        updateWalletUI();
+        showToast("🎁 Odebrano +50 TechnixCoins oraz +25 XP!");
+        updateBonusTimer();
+      }
+    }
+
+    // LOGIKA XP I POZIOMÓW
+    function addXP(amount, source) {
+      userXP += amount;
+      localStorage.setItem('tp_user_xp', userXP.toString());
+      logRewardHistory(source, amount);
+      updateXPUI();
+    }
+
+    function updateXPUI() {
+      const level = Math.floor(userXP / 1000) + 1;
+      const currentXPProgress = userXP % 1000;
+      const progressPercent = (currentXPProgress / 1000) * 100;
+
+      const xpTotal = document.getElementById('xp-total');
+      const levelBadge = document.getElementById('user-level-badge');
+      const progressText = document.getElementById('xp-progress-text');
+      const progressBar = document.getElementById('xp-progress-bar');
+      const rankXpDisplay = document.getElementById('rank-xp-display');
+      const profileLevel = document.getElementById('profile-level');
+      const profileXp = document.getElementById('profile-xp');
+
+      if (xpTotal) xpTotal.textContent = userXP;
+      if (levelBadge) levelBadge.textContent = `LEVEL ${level}`;
+      if (progressText) progressText.textContent = `${currentXPProgress} / 1 000 XP`;
+      if (progressBar) progressBar.style.width = `${progressPercent}%`;
+      if (rankXpDisplay) rankXpDisplay.textContent = `${userXP} XP`;
+      if (profileLevel) profileLevel.textContent = level;
+      if (profileXp) profileXp.textContent = userXP;
+
+      renderRanks();
+    }
+
+    function logRewardHistory(title, xp) {
+      const history = JSON.parse(localStorage.getItem('tp_reward_history') || '[]');
+      history.unshift({ title, xp, date: new Date().toLocaleTimeString('pl-PL') });
+      localStorage.setItem('tp_reward_history', JSON.stringify(history));
+      renderHistory();
+    }
+
+    function renderHistory() {
+      const logContainer = document.getElementById('reward-log');
+      if (!logContainer) return;
+      const history = JSON.parse(localStorage.getItem('tp_reward_history') || '[]');
+      if (history.length === 0) {
+        logContainer.innerHTML = `<p class="text-xs muted">Brak historii aktywności.</p>`;
+        return;
+      }
+      logContainer.innerHTML = history.slice(0, 10).map(item => `
+        <div class="flex justify-between items-center bg-slate-900/60 p-2.5 rounded-xl border border-slate-800 text-xs">
+          <div>
+            <span class="font-semibold text-slate-200 block">${sanitize(item.title)}</span>
+            <span class="text-[10px] muted">${item.date}</span>
+          </div>
+          <span class="font-bold text-violet-400">+${item.xp} XP</span>
+        </div>
+      `).join('');
+    }
+
+    // SYSTEM ZADAŃ
+    function renderTasks() {
+      const taskList = document.getElementById('task-list');
+      if (!taskList) return;
+      let tasks = JSON.parse(localStorage.getItem('tp_user_tasks') || 'null');
+      if (!tasks) {
+        tasks = defaultTasks;
+        localStorage.setItem('tp_user_tasks', JSON.stringify(tasks));
+      }
+
+      taskList.innerHTML = tasks.map(t => `
+        <div class="flex justify-between items-center bg-slate-900/80 p-3 rounded-xl border border-slate-800 text-xs">
+          <div>
+            <span class="font-bold text-slate-200 block">${sanitize(t.title)}</span>
+            <span class="text-violet-400 font-semibold">+${t.xp} XP</span>
+          </div>
+          <button onclick="completeTask('${t.id}')" ${t.done ? 'disabled' : ''} class="${t.done ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950'} font-bold px-3 py-1.5 rounded-lg transition active:scale-95 text-[11px]">
+            ${t.done ? 'Ukończono' : 'Wykonaj'}
+          </button>
+        </div>
+      `).join('');
+    }
+
+    function completeTask(taskId) {
+      let tasks = JSON.parse(localStorage.getItem('tp_user_tasks') || '[]');
+      const task = tasks.find(t => t.id === taskId);
+      if (task && !task.done) {
+        task.done = true;
+        localStorage.setItem('tp_user_tasks', JSON.stringify(tasks));
+        addXP(task.xp, `Zadanie: ${task.title}`);
+        showToast(`✅ Zadanie ukończone! (+${task.xp} XP)`);
+        renderTasks();
+      }
+    }
+
+    function triggerTaskAction(type, xp, title) {
+      addXP(xp, `Akcja: ${title}`);
+      showToast(`⚡ Dołączono do wydarzenia! (+${xp} XP)`);
+    }
+
+    function claimReward(name, xp) {
+      addXP(xp, `Odebranie nagrody: ${name}`);
+      showToast(`🎁 Odebrano: ${name} (+${xp} XP)`);
+    }
+
+    function copyReferralLink() {
+      const input = document.getElementById('ref-link-input');
+      if (input) {
+        input.select();
+        navigator.clipboard.writeText(input.value);
+        showToast("📋 Skopiowano link polecający!");
+      }
+    }
+
+    function renderRanks() {
+      const ranksContainer = document.getElementById('ranks-list');
+      if (!ranksContainer) return;
+      const currentLevel = Math.floor(userXP / 1000) + 1;
+      const ranks = [
+        { lvl: 1, title: 'Novice Core', desc: 'Początkujący użytkownik sieci' },
+        { lvl: 2, title: 'Cyber Miner', desc: 'Odblokowano wyższą wydajność CPU' },
+        { lvl: 3, title: 'Engine Master', desc: 'Pełny dostęp do węzła TechnixPro' },
+        { lvl: 5, title: 'Network Legend', desc: 'Elitarny status społeczności' }
+      ];
+
+      ranksContainer.innerHTML = ranks.map(r => `
+        <div class="flex items-center justify-between bg-slate-900/80 p-3 rounded-xl border ${currentLevel >= r.lvl ? 'border-violet-500/50 bg-violet-950/20' : 'border-slate-800 opacity-60'} text-xs">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-white">${r.title}</span>
+              <span class="text-[9px] bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded">Lvl ${r.lvl}</span>
+            </div>
+            <span class="text-[10px] muted block mt-0.5">${r.desc}</span>
+          </div>
+          ${currentLevel >= r.lvl ? '<i class="fa-solid fa-circle-check text-emerald-400 text-base"></i>' : '<i class="fa-solid fa-lock text-slate-600 text-base"></i>'}
+        </div>
+      `).join('');
+    }
+
+    function updateWalletUI() {
+      const coinsElem = document.getElementById('wallet-coins-balance');
+      const tpElem = document.getElementById('wallet-tp-balance');
+      if (coinsElem) coinsElem.textContent = `${userCoins} TC`;
+      if (tpElem) tpElem.textContent = `${tpMined.toFixed(4)} TP`;
+    }
+
+    // SYSTEM WYSZUKIWARKI
+    function performSearch() {
+      const query = document.getElementById('search-input').value.toLowerCase().trim();
+      const resultsContainer = document.getElementById('search-results');
+      if (!resultsContainer) return;
+
+      if (!query) {
+        resultsContainer.innerHTML = '';
+        return;
+      }
+
+      const channelPosts = JSON.parse(localStorage.getItem('tp_channel_posts') || '[]');
+      const groupPosts = JSON.parse(localStorage.getItem(getUserStorageKey('posts')) || '[]');
+
+      const matchedChannel = channelPosts.filter(p => p.content.toLowerCase().includes(query));
+      const matchedGroup = groupPosts.filter(p => p.content.toLowerCase().includes(query));
+
+      let html = '';
+
+      if (matchedChannel.length > 0) {
+        html += `<p class="text-[10px] font-bold uppercase text-violet-400 mt-2">Wpisy z Kanału</p>`;
+        matchedChannel.forEach(p => {
+          html += `<div class="panel p-3 text-xs space-y-1"><p class="text-slate-200">${sanitize(p.content)}</p><span class="text-[9px] muted">${p.date}</span></div>`;
+        });
+      }
+
+      if (matchedGroup.length > 0) {
+        html += `<p class="text-[10px] font-bold uppercase text-cyan-400 mt-2">Wpisy z Grupy</p>`;
+        matchedGroup.forEach(p => {
+          html += `<div class="panel p-3 text-xs space-y-1"><p class="text-slate-200">${sanitize(p.content)}</p><span class="text-[9px] muted">${p.date}</span></div>`;
+        });
+      }
+
+      if (matchedChannel.length === 0 && matchedGroup.length === 0) {
+        html = `<p class="text-xs muted text-center py-4">Brak wyników dla "${sanitize(query)}".</p>`;
+      }
+
+      resultsContainer.innerHTML = html;
+    }
+
     function getUserStorageKey(suffix) {
       const userId = TelegramApp?.initDataUnsafe?.user?.id;
       return userId ? `tp_${suffix}_${userId}` : `tp_${suffix}_guest`;
@@ -673,6 +956,8 @@
 
       if (homeTabs) homeTabs.classList.toggle('hidden', tab !== 'home');
       if (giftTabs) giftTabs.classList.toggle('hidden', tab !== 'gift');
+
+      if (tab === 'wallet') updateWalletUI();
 
       window.scrollTo(0, 0);
     }
@@ -704,6 +989,10 @@
         btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active-sub'));
         btn.classList.add('active-sub');
       }
+
+      if (id === 'tasks') renderTasks();
+      if (id === 'history') renderHistory();
+      if (id === 'ranks') renderRanks();
     }
 
     function showToast(message) {
@@ -745,6 +1034,7 @@
             <span class="text-[10px] uppercase font-mono text-violet-400 bg-violet-500/10 px-2 py-0.5 rounded border border-violet-500/20">Post #${p.id}</span>
             <span class="text-[10px] muted">${p.date}</span>
           </div>
+          ${p.mediaUrl ? `<img src="${sanitize(p.mediaUrl)}" class="w-full h-auto rounded-xl max-h-48 object-cover border border-slate-800" alt="Media" />` : ''}
           <p class="text-xs text-slate-200 whitespace-pre-wrap">${sanitize(p.content)}</p>
         </div>
       `).join('');
@@ -778,10 +1068,15 @@
       `).join('');
     }
 
+    // INICJALIZACJA APLIKACJI
     document.addEventListener('DOMContentLoaded', () => {
       renderPosts();
       renderChannelPosts();
       startMiningLogic();
+      updateXPUI();
+      updateWalletUI();
+      updateBonusTimer();
+      setInterval(updateBonusTimer, 1000);
 
       const minedElem = document.getElementById('tp-mined-tokens');
       if (minedElem) minedElem.textContent = tpMined.toFixed(4);
@@ -793,8 +1088,15 @@
         const user = TelegramApp.initDataUnsafe.user;
         const profileName = document.getElementById('profile-name');
         const profileId = document.getElementById('profile-id');
+        const tgUsername = document.getElementById('telegram-username');
+        const rankUserLabel = document.getElementById('rank-user-label');
+
+        const usernameText = user.username ? `@${user.username}` : (user.first_name || 'Użytkownik');
+
         if (profileName) profileName.textContent = user.first_name || 'Użytkownik';
         if (profileId) profileId.textContent = `TG ID: #${user.id}`;
+        if (tgUsername) tgUsername.textContent = usernameText;
+        if (rankUserLabel) rankUserLabel.textContent = `Ty (${usernameText})`;
       }
     });
   </script>
