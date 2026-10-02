@@ -51,8 +51,8 @@
     .muted { color: #93a0b8; }
 
     .panel {
-      background: linear-gradient(145deg, rgba(21, 29, 46, 0.72), rgba(13, 19, 32, 0.92));
-      border: 1px solid rgba(39, 52, 77, 0.7);
+      background: linear-gradient(145deg, rgba(21, 29, 46, 0.7), rgba(13, 19, 32, 0.9));
+      border: 1px solid rgba(39, 52, 77, 0.6);
       backdrop-filter: blur(12px);
       box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
       border-radius: 18px;
@@ -78,7 +78,7 @@
     }
 
     .nav-btn.active {
-      color: #c4b5fd;
+      color: #b9a4ff;
       transform: translateY(-2px);
     }
 
@@ -151,10 +151,10 @@
 
   <main class="max-w-md mx-auto w-full min-h-screen bg-[#080b14] flex flex-col relative pb-28 border-x border-slate-900/60 shadow-2xl">
 
-    <!-- NAGŁÓWEK -->
+    <!-- HEADER -->
     <header class="sticky top-0 z-30 flex items-center justify-between px-4 py-3 bg-[#080b14]/90 backdrop-blur-xl border-b border-slate-800/80">
       <div class="flex items-center gap-3">
-        <button onclick="showScreen('profile','Profil')" class="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 via-indigo-600 to-cyan-400 p-[1.5px] transition active:scale-95 shadow-lg shadow-violet-500/50">
+        <button onclick="show('profile','Profil')" class="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 via-indigo-600 to-cyan-400 p-[1.5px] transition active:scale-95 shadow-lg shadow-violet-500/50">
           <div class="w-full h-full bg-[#080b14] rounded-[10.5px] flex items-center justify-center font-black text-transparent bg-clip-text bg-gradient-to-tr from-violet-400 to-cyan-300 text-lg tracking-tighter">TP</div>
         </button>
         <div>
@@ -163,10 +163,10 @@
         </div>
       </div>
       <div class="flex items-center gap-3 muted">
-        <button onclick="showScreen('search','Wyszukiwarka')" class="w-9 h-9 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-center hover:text-white transition active:scale-95">
+        <button onclick="show('search','Wyszukiwarka')" class="w-9 h-9 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-center hover:text-white transition active:scale-95">
           <i class="fa-solid fa-magnifying-glass text-xs"></i>
         </button>
-        <button onclick="showScreen('notifications','Powiadomienia')" class="w-9 h-9 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-center hover:text-white relative transition active:scale-95">
+        <button onclick="show('notifications','Powiadomienia')" class="w-9 h-9 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-center hover:text-white relative transition active:scale-95">
           <i class="fa-regular fa-bell text-xs"></i>
           <span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
           <span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-cyan-400"></span>
@@ -174,31 +174,32 @@
       </div>
     </header>
 
-    <!-- SUBTABY DLA STRONY GŁÓWNEJ (HOME) -->
+    <!-- PASEK PODZAKŁADEK DLA START (KANAŁ / GRUPA / INFO) -->
     <div id="home-subtabs" class="flex relative sticky top-[65px] z-20 bg-[#080b14]/95 backdrop-blur-md border-b border-slate-800/80">
       <button class="subtab py-2.5 text-xs font-semibold text-center text-[#b9a4ff]" onclick="sub('home','channel',this)">Kanał</button>
       <button class="subtab py-2.5 muted text-xs font-semibold text-center" onclick="sub('home','group',this)">Grupa</button>
       <button class="subtab py-2.5 muted text-xs font-semibold text-center" onclick="sub('home','info',this)">Info</button>
+      <div id="subtab-indicator" class="subtab-indicator"></div>
     </div>
 
-    <!-- SUBTABY DLA BONUSÓW (GIFT / REWARDS) -->
+    <!-- PASEK PODZAKŁADEK DLA BONUSÓW -->
     <div id="gift-subtabs" class="hidden overflow-x-auto whitespace-nowrap scroll-none sticky top-[65px] z-20 bg-[#080b14]/95 backdrop-blur-md border-b border-slate-800/80 px-2">
       <button class="inline-block active-sub py-2.5 px-4 border-b-2 text-xs font-semibold" onclick="rewardTab('overview',this)">Przegląd</button>
       <button class="inline-block py-2.5 px-4 border-b-2 border-transparent muted text-xs font-semibold" onclick="rewardTab('events',this)">Eventy Live</button>
       <button class="inline-block py-2.5 px-4 border-b-2 border-transparent muted text-xs font-semibold" onclick="rewardTab('tasks',this)">Zadania</button>
-      <button class="inline-block py-2.5 px-4 border-b-2 border-transparent muted text-xs font-semibold" onclick="rewardTab('referral',this)">Referral</button>
+      <button class="inline-block py-2.5 px-4 border-b-2 border-transparent muted text-xs font-semibold" onclick="rewardTab('referrals',this)">Referral Link</button>
       <button class="inline-block py-2.5 px-4 border-b-2 border-transparent muted text-xs font-semibold" onclick="rewardTab('rewards',this)">Nagrody</button>
       <button class="inline-block py-2.5 px-4 border-b-2 border-transparent muted text-xs font-semibold" onclick="rewardTab('leaderboard',this)">Ranking</button>
       <button class="inline-block py-2.5 px-4 border-b-2 border-transparent muted text-xs font-semibold" onclick="rewardTab('history',this)">Historia</button>
       <button class="inline-block py-2.5 px-4 border-b-2 border-transparent muted text-xs font-semibold" onclick="rewardTab('ranks',this)">Rangi</button>
     </div>
 
-    <!-- GŁÓWNA ZAWARTOŚĆ APLIKACJI -->
-    <div id="app-content" class="p-4 space-y-4 flex-1 overflow-y-auto">
+    <!-- ZAWARTOŚĆ STRONY -->
+    <div id="app-content" class="p-4 space-y-4 flex-1">
 
-      <!-- EKRAN: HOME (START) -->
+      <!-- EKRAN GŁÓWNY (START) -->
       <section id="screen-home" class="screen space-y-4">
-        
+
         <!-- SUBTAB 1: KANAŁ -->
         <div id="home-channel" class="sub space-y-4">
           <div class="panel p-3.5 flex items-center justify-between">
@@ -209,26 +210,45 @@
             <span class="text-[10px] text-violet-400 bg-violet-500/10 border border-violet-500/20 px-2 py-0.5 rounded-full font-mono">v2.6 Stealth</span>
           </div>
 
-          <!-- PANEL ADMINA -->
-          <div id="admin-panel" class="hidden panel p-4 border-2 border-amber-500/40 space-y-3">
-            <h3 class="text-sm font-bold text-amber-400 flex items-center gap-2"><i class="fa-solid fa-crown"></i> Panel administratora</h3>
-            <textarea id="admin-post-input" rows="3" class="w-full rounded-xl bg-[#080b14] border border-amber-500/30 p-3 text-xs text-slate-200 focus:outline-none focus:border-amber-500" placeholder="Treść posta..."></textarea>
-            <input id="admin-media-url" type="text" class="w-full rounded-xl bg-[#080b14] border border-amber-500/30 p-3 text-xs text-slate-200 focus:outline-none focus:border-amber-500" placeholder="Link do zdjęcia / wideo (opcjonalnie)">
-            <button onclick="publishAdminPost()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs py-2.5 rounded-xl transition active:scale-95 flex items-center justify-center gap-2">
-              <i class="fa-solid fa-paper-plane"></i> Opublikuj post
-            </button>
-          </div>
-
-          <div class="panel p-4 space-y-3">
+          <!-- PANEL ADMINA DO PUBLIKACJI POSTÓW -->
+          <div id="admin-panel" class="panel p-4 space-y-3 bg-gradient-to-br from-violet-950/30 to-slate-900 border-violet-500/30">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-white">📢 Kanał Oficjalny</span>
-              <span id="channel-status" class="text-[10px] text-emerald-400">Live</span>
+              <span class="text-[10px] font-bold text-violet-400 bg-violet-500/10 border border-violet-500/20 px-2 py-0.5 rounded-full uppercase">Panel Admina</span>
+              <span class="text-[10px] muted">Publikuj na Kanał</span>
             </div>
-            <div id="channel-feed" class="space-y-3"></div>
+            <textarea id="admin-post-input" rows="3" class="w-full rounded-xl bg-[#080b14] border border-slate-700/80 p-3 text-xs text-slate-200 focus:outline-none focus:border-violet-500 resize-none" placeholder="Co nowego w TechnixPro?..."></textarea>
+            <input id="admin-media-input" type="text" class="w-full rounded-xl bg-[#080b14] border border-slate-700/80 p-2.5 text-xs text-slate-200 focus:outline-none focus:border-violet-500" placeholder="Opcjonalny link do grafiki/wideo (URL)..." />
+            <div class="flex justify-end">
+              <button onclick="publishChannelPost()" class="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition active:scale-95 flex items-center gap-2 shadow-lg shadow-violet-600/30">
+                <i class="fa-solid fa-paper-plane text-[10px]"></i> Opublikuj Post
+              </button>
+            </div>
           </div>
 
-          <!-- BONUS CZASOWY (LOKALNY ZEGAR) -->
-          <div class="panel p-4 text-center">
+          <!-- OFICJALNY KANAŁ POSTÓW -->
+          <div id="channel-feed" class="space-y-4">
+            <div class="panel p-4 space-y-3">
+              <div class="flex justify-between items-center">
+                <span class="text-[10px] uppercase font-mono text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">Oficjalny Post #001</span>
+                <span class="text-[10px] muted">Dzisiaj, 02:18</span>
+              </div>
+              <h2 class="font-bold text-base text-slate-100">TechnixPro wchodzi w Fazę Stealth v2.6</h2>
+              <p class="text-xs muted leading-relaxed">Zbieraj TechnixCoins, wspinaj się po szczeblach poziomów i odblokuj unikalne rangi w ekosystemie TechnixPro. Nowe moduły społecznościowe są już aktywne!</p>
+              <div class="flex items-center gap-4 pt-2 text-xs border-t border-slate-800/60">
+                <button onclick="toggleLike(this)" class="flex items-center gap-1.5 muted hover:text-pink-400 transition active:scale-95">
+                  <i class="fa-regular fa-heart"></i>
+                  <span class="text-[11px]">142</span>
+                </button>
+                <button onclick="show('comments','Komentarze')" class="flex items-center gap-1.5 muted hover:text-cyan-400 transition active:scale-95">
+                  <i class="fa-regular fa-comment"></i>
+                  <span class="text-[11px]">98</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- BONUS CZASOWY -->
+          <div class="panel p-4 mb-4 text-center">
             <h3 class="text-sm font-bold tracking-wider text-slate-300 uppercase mb-2">Bonus Czasowy</h3>
             <p class="text-xs text-slate-400 mb-3">Odbieraj darmowe TechnixCoins co 4 godziny!</p>
             <div class="flex items-center justify-center space-x-2 text-2xl font-mono text-cyan-400 mb-3">
@@ -239,11 +259,11 @@
           </div>
         </div>
 
-        <!-- SUBTAB 2: GRUPA / SPOŁECZNOŚĆ -->
+        <!-- SUBTAB 2: GRUPA -->
         <div id="home-group" class="sub hidden space-y-4">
           <div class="panel p-4 space-y-3">
             <h2 class="font-bold text-sm text-slate-200">Społeczność & Dyskusja</h2>
-            <p class="text-xs muted">Dyskusje członków ekosystemu TechnixPro.</p>
+            <p class="text-xs muted">Twoje wpisy są automatycznie zapisywane na tym urządzeniu (zabezpieczone Anti-XSS).</p>
             <textarea id="post-input" rows="3" class="w-full rounded-xl bg-[#080b14] border border-slate-700/80 p-3 text-xs text-slate-200 focus:outline-none focus:border-violet-500 resize-none" placeholder="Napisz wiadomość..."></textarea>
             <div class="flex justify-end">
               <button onclick="createNewPost()" class="bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition active:scale-95 flex items-center gap-2">
@@ -271,38 +291,64 @@
           <div class="panel p-4 space-y-3">
             <h3 class="text-sm font-bold text-violet-300">Od rdzenia do całego ekosystemu</h3>
             <p class="text-xs muted leading-relaxed">TechnixPro łączy innowacje sprzętowe z rynkiem krypto w komunikatorze Telegram. Zbieraj punkty XP, wykonuj zadania deweloperskie i przygotuj się na oficjalny token $TECHNIX.</p>
+            <div class="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200 flex gap-2">
+              <i class="fa-solid fa-triangle-exclamation text-amber-400 mt-0.5"></i>
+              <span>Projekt w fazie stealth. Wszystkie dane demo zostaną zsynchronizowane po starcie backendu.</span>
+            </div>
           </div>
         </div>
       </section>
 
-      <!-- EKRAN: BONUSY (GIFT / REWARDS HUB) -->
-      <section id="screen-rewards" class="screen hidden space-y-4">
-        
+      <!-- EKRAN BONUSÓW (GIFT / REWARDS HUB) -->
+      <section id="screen-gift" class="screen hidden space-y-4">
+        <!-- 1. PRZEGLĄD -->
         <div id="reward-overview" class="reward-view space-y-4">
           <div class="panel p-4 relative overflow-hidden bg-gradient-to-br from-violet-900/40 via-slate-900 to-cyan-900/30">
+            <span class="text-[9px] font-mono text-cyan-300 bg-cyan-500/20 border border-cyan-400/30 px-2 py-0.5 rounded-full">CORE REWARDS SYSTEM</span>
+            <h2 class="text-xl font-bold text-white mt-3">Aktywność buduje przyszłość</h2>
+            <p class="text-xs text-slate-300 mt-1">Rozwijaj profil, zbieraj punkty XP i odbieraj unikalne odznaki.</p>
+          </div>
+
+          <div class="panel p-4 space-y-3">
             <div class="flex justify-between items-center">
               <div>
-                <p id="profile-username" class="text-xs font-semibold text-cyan-300">@user</p>
-                <div class="flex items-baseline gap-2 mt-1">
-                  <span id="xp-display" class="text-3xl font-black text-white">0</span>
+                <span class="text-xs muted font-medium" id="telegram-username">@User</span>
+                <div class="flex items-baseline gap-1 mt-0.5">
+                  <span id="xp-total" class="text-2xl font-black text-white">2 450</span>
                   <span class="text-xs font-bold text-violet-400">XP</span>
                 </div>
               </div>
-              <span id="level-badge" class="rounded-full border border-violet-500/40 bg-violet-600/20 px-3 py-1 text-[10px] font-bold text-violet-200">LEVEL 1</span>
+              <span id="user-level-badge" class="bg-violet-600/30 border border-violet-500/40 text-violet-300 font-extrabold text-xs px-3 py-1 rounded-full">LEVEL 12</span>
             </div>
 
-            <div class="mt-4 space-y-1">
-              <div class="flex justify-between text-[10px] text-slate-300">
+            <div class="space-y-1">
+              <div class="flex justify-between text-[10px] muted">
                 <span>Postęp poziomu</span>
-                <span id="progress-text">0 / 3000 XP</span>
+                <span id="xp-progress-text">2 450 / 3 000 XP</span>
               </div>
-              <div class="h-2 rounded-full bg-slate-800 overflow-hidden">
-                <div id="progress-bar" class="h-full rounded-full bg-gradient-to-r from-violet-500 to-cyan-400" style="width: 0%"></div>
+              <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                <div id="xp-progress-bar" class="bg-gradient-to-r from-violet-500 to-cyan-400 h-full transition-all duration-500" style="width: 81.6%"></div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 pt-2 text-center">
+              <div class="bg-slate-900/80 rounded-xl p-2.5 border border-slate-800">
+                <span class="block text-sm font-bold text-cyan-400">7 dni</span>
+                <span class="text-[9px] muted">Streak</span>
+              </div>
+              <div class="bg-slate-900/80 rounded-xl p-2.5 border border-slate-800">
+                <span class="block text-sm font-bold text-violet-400">12</span>
+                <span class="text-[9px] muted">Nagrody</span>
+              </div>
+              <div class="bg-slate-900/80 rounded-xl p-2.5 border border-slate-800">
+                <span class="block text-sm font-bold text-emerald-400">84%</span>
+                <span class="text-[9px] muted">Aktywność</span>
               </div>
             </div>
           </div>
         </div>
 
+        <!-- 2. EVENTY LIVE -->
         <div id="reward-events" class="reward-view hidden space-y-3">
           <div class="panel p-4 space-y-3">
             <div class="flex justify-between items-center">
@@ -315,36 +361,66 @@
           </div>
         </div>
 
+        <!-- 3. ZADANIA -->
         <div id="reward-tasks" class="reward-view hidden space-y-3">
           <div class="panel p-4">
-            <h3 class="font-bold text-sm text-slate-200 mb-3">Zadania</h3>
+            <h3 class="font-bold text-sm text-slate-200 mb-3">Dzisiejsze zadania</h3>
             <div id="task-list" class="space-y-2"></div>
           </div>
         </div>
 
-        <!-- REFERRAL LINK MODULE -->
-        <div id="reward-referral" class="reward-view hidden space-y-3">
-          <div class="panel p-4 space-y-3 border-emerald-500/30 border-2">
-            <h3 class="text-sm font-bold text-emerald-400 flex items-center gap-2"><i class="fa-solid fa-link"></i> Referral Link</h3>
-            <div class="flex gap-2">
-              <input id="referral-link" readonly class="flex-1 bg-slate-900/60 border border-emerald-500/20 text-[10px] text-emerald-300 rounded-lg p-2.5" value="loading...">
-              <button onclick="copyReferral()" class="bg-emerald-600 text-white text-xs font-bold px-3 py-2 rounded-lg transition active:scale-95">Kopiuj</button>
+        <!-- 4. REFERRAL LINK -->
+        <div id="reward-referrals" class="reward-view hidden space-y-4">
+          <div class="panel p-4 space-y-3">
+            <h3 class="font-bold text-sm text-slate-200">Zapraszaj znajomych</h3>
+            <p class="text-xs muted">Zyskaj +100 XP za każdego nowego użytkownika dołączającego z Twojego linku polecającego.</p>
+            <div class="flex items-center gap-2">
+              <input id="ref-link-input" type="text" readonly value="https://t.me/TechnixProBot?start=ref_user123" class="w-full bg-[#080b14] border border-slate-700/80 rounded-xl p-2.5 text-xs font-mono text-cyan-400 focus:outline-none" />
+              <button onclick="copyReferralLink()" class="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs px-4 py-2.5 rounded-xl transition active:scale-95 shrink-0">Kopiuj</button>
             </div>
-            <p class="text-[10px] text-slate-400">10 osób = +100 XP • 20 = +300 XP • 50 = +1000 XP</p>
+            <div class="pt-2 border-t border-slate-800 space-y-2">
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-slate-300">Poleceni gracze:</span>
+                <span class="font-bold text-violet-400">3 osoby</span>
+              </div>
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-slate-300">Zdobyte XP z poleceń:</span>
+                <span class="font-bold text-emerald-400">+300 XP</span>
+              </div>
+            </div>
           </div>
         </div>
 
+        <!-- 5. NAGRODY -->
         <div id="reward-rewards" class="reward-view hidden space-y-3">
           <div class="panel p-4">
-            <h3 class="font-bold text-sm text-slate-200 mb-3">Dostępne Odznaki i Nagrody</h3>
-            <div id="badge-list" class="grid grid-cols-3 gap-2"></div>
+            <h3 class="font-bold text-sm text-slate-200 mb-3">Dostępne nagrody</h3>
+            <div id="badge-list" class="grid grid-cols-2 gap-2">
+              <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-3 flex flex-col justify-between">
+                <div>
+                  <i class="fa-solid fa-gift text-cyan-400 text-lg"></i>
+                  <span class="block font-bold text-xs mt-2">Bonus Dzienny</span>
+                  <span class="text-[10px] muted">+25 XP za logowanie</span>
+                </div>
+                <button onclick="claimReward('Bonus Dzienny', 25)" class="mt-3 text-xs text-violet-400 font-semibold text-left">Odbierz &rarr;</button>
+              </div>
+              <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-3 flex flex-col justify-between opacity-60">
+                <div>
+                  <i class="fa-solid fa-award text-amber-400 text-lg"></i>
+                  <span class="block font-bold text-xs mt-2">Odznaka Pioniera</span>
+                  <span class="text-[10px] muted">Za udział w Faza Stealth</span>
+                </div>
+                <span class="mt-3 text-[10px] text-slate-500">Zablokowana</span>
+              </div>
+            </div>
           </div>
         </div>
 
+        <!-- 6. RANKING -->
         <div id="reward-leaderboard" class="reward-view hidden space-y-3">
           <div class="panel p-4">
             <h3 class="font-bold text-sm text-slate-200">Ranking Społeczności</h3>
-            <p class="text-[10px] muted mb-3">Liderzy ekosystemu TechnixPro.</p>
+            <p class="text-[10px] muted mb-3">Prototyp rynkowy — wspólny ranking zostanie połączony z bazą danych.</p>
             <div class="space-y-2">
               <div class="flex items-center justify-between bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 text-xs">
                 <span>🥇 CoreBuilder</span>
@@ -354,10 +430,15 @@
                 <span>🥈 CyberNova</span>
                 <span class="font-bold text-cyan-400">4 910 XP</span>
               </div>
+              <div class="flex items-center justify-between bg-violet-900/30 p-2.5 rounded-xl border border-violet-500/30 text-xs font-semibold">
+                <span id="rank-user-label">12. You (@User)</span>
+                <span id="rank-xp-display" class="font-bold text-violet-300">2 450 XP</span>
+              </div>
             </div>
           </div>
         </div>
 
+        <!-- 7. HISTORIA -->
         <div id="reward-history" class="reward-view hidden space-y-3">
           <div class="panel p-4">
             <h3 class="font-bold text-sm text-slate-200 mb-3">Historia aktywności XP</h3>
@@ -365,157 +446,292 @@
           </div>
         </div>
 
+        <!-- 8. RANGI -->
         <div id="reward-ranks" class="reward-view hidden space-y-4">
           <div class="panel p-4">
             <h3 class="text-base font-bold text-white mb-2">Poziomy i Rangi</h3>
-            <div id="rank-list" class="space-y-3"></div>
+            <p class="text-xs text-slate-400 mb-4">Zbieraj Punkty Doświadczenia (XP), aby odblokowywać wyższe rangi i unikalne profity.</p>
+            <div class="space-y-3">
+              <div class="p-3 bg-slate-900/80 border border-amber-800/40 rounded-xl flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-lg bg-amber-900/30 text-amber-600 flex items-center justify-center font-bold text-sm border border-amber-800/30">BR</div>
+                  <div>
+                    <h4 class="text-sm font-semibold text-white">Brązowy Rekrut</h4>
+                    <p class="text-[10px] text-slate-400">Od 0 XP</p>
+                  </div>
+                </div>
+                <span class="text-xs font-semibold text-amber-500">Poziom 1</span>
+              </div>
+
+              <div class="p-3 bg-slate-900/80 border border-slate-700/40 rounded-xl flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-lg bg-slate-800 text-slate-300 flex items-center justify-center font-bold text-sm border border-slate-600/30">SR</div>
+                  <div>
+                    <h4 class="text-sm font-semibold text-white">Srebrny Operat</h4>
+                    <p class="text-[10px] text-slate-400">Od 1 000 XP</p>
+                  </div>
+                </div>
+                <span class="text-xs font-semibold text-slate-400">Poziom 2</span>
+              </div>
+
+              <div class="p-3 bg-slate-900/80 border border-yellow-600/40 rounded-xl flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-lg bg-yellow-900/30 text-yellow-500 flex items-center justify-center font-bold text-sm border border-yellow-600/30">ZL</div>
+                  <div>
+                    <h4 class="text-sm font-semibold text-white">Złoty Mistrz</h4>
+                    <p class="text-[10px] text-slate-400">Od 5 000 XP</p>
+                  </div>
+                </div>
+                <span class="text-xs font-semibold text-yellow-500">Poziom 3</span>
+              </div>
+
+              <div class="p-3 bg-slate-900/80 border border-cyan-500/40 rounded-xl flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-lg bg-cyan-950 text-cyan-400 flex items-center justify-center font-bold text-sm border border-cyan-500/30">DM</div>
+                  <div>
+                    <h4 class="text-sm font-semibold text-white">Diamentowy Lider</h4>
+                    <p class="text-[10px] text-slate-400">Od 20 000 XP</p>
+                  </div>
+                </div>
+                <span class="text-xs font-semibold text-cyan-400">Poziom 4</span>
+              </div>
+            </div>
           </div>
         </div>
-
       </section>
 
-      <!-- EKRAN: KRYPTOWALUTY -->
+      <!-- EKRAN KRYPTO -->
       <section id="screen-crypto" class="screen hidden space-y-4">
         <div class="flex justify-between items-center">
           <h2 class="text-lg font-bold text-white">Rynek Krypto</h2>
           <span class="text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Live Sync</span>
         </div>
         <div class="panel p-4 space-y-3">
-          <div id="crypto-container" class="space-y-2">
-            <div class="flex items-center justify-between py-2 border-b border-slate-800/60">
-              <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center font-bold text-amber-400">₿</div>
-                <div><span class="block text-xs font-bold text-white">Bitcoin</span><span class="text-[10px] muted font-mono">BTC</span></div>
-              </div>
-              <div class="text-right"><span class="block text-xs font-bold text-white">271 840 PLN</span><span class="text-[10px] text-emerald-400">+5.24%</span></div>
-            </div>
-            <div class="flex items-center justify-between py-2 border-b border-slate-800/60">
-              <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center font-bold text-indigo-400">Ξ</div>
-                <div><span class="block text-xs font-bold text-white">Ethereum</span><span class="text-[10px] muted font-mono">ETH</span></div>
-              </div>
-              <div class="text-right"><span class="block text-xs font-bold text-white">13 420 PLN</span><span class="text-[10px] text-emerald-400">+3.81%</span></div>
-            </div>
-            <div class="flex items-center justify-between py-2">
-              <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center font-bold text-cyan-400">💎</div>
-                <div><span class="block text-xs font-bold text-white">Toncoin</span><span class="text-[10px] muted font-mono">TON</span></div>
-              </div>
-              <div class="text-right"><span class="block text-xs font-bold text-white">24.50 PLN</span><span class="text-[10px] text-emerald-400">+8.15%</span></div>
-            </div>
+          <div id="crypto-container">
+            <coin-row name="Bitcoin" symbol="BTC" price="271 840 PLN" change="+5.24%" icon="₿" color="text-amber-400"></coin-row>
+            <coin-row name="Ethereum" symbol="ETH" price="13 420 PLN" change="+3.81%" icon="Ξ" color="text-indigo-400"></coin-row>
+            <coin-row name="Solana" symbol="SOL" price="582 PLN" change="+12.47%" icon="S" color="text-cyan-400"></coin-row>
+            <coin-row name="Toncoin" symbol="TON" price="24.50 PLN" change="+8.15%" icon="💎" color="text-blue-400"></coin-row>
           </div>
         </div>
       </section>
 
-      <!-- EKRAN: PORTFEL -->
+      <!-- EKRAN PORTFELA -->
       <section id="screen-wallet" class="screen hidden space-y-4">
         <h2 class="text-lg font-bold text-white">Portfel Cyfrowy</h2>
         <div class="panel p-5 text-center space-y-3">
           <p class="text-xs muted">Saldo demonstracyjne sieci TON</p>
           <div class="text-3xl font-extrabold text-white tracking-tight">24 680,42 PLN</div>
           <div class="flex justify-center gap-2 pt-2">
-            <button onclick="showToast('Funkcja wpłaty zostanie odblokowana w Fazie 3')" class="bg-violet-600 hover:bg-violet-500 text-xs font-semibold px-4 py-2 rounded-xl transition active:scale-95">Wpłać</button>
-            <button onclick="showToast('Funkcja wypłaty zostanie odblokowana w Fazie 3')" class="bg-slate-800 border border-slate-700 text-xs font-semibold px-4 py-2 rounded-xl transition active:scale-95">Wypłać</button>
+            <button onclick="showToast('Funkcja wpłaty zostanie odblokowana w Fazie 3')" class="bg-violet-600 text-xs font-semibold px-4 py-2 rounded-xl">Wpłać</button>
+            <button onclick="showToast('Funkcja wypłaty zostanie odblokowana w Fazie 3')" class="bg-slate-800 border border-slate-700 text-xs font-semibold px-4 py-2 rounded-xl">Wypłać</button>
           </div>
         </div>
 
-        <div class="panel p-4 space-y-3 border-blue-500/30 border-2">
-          <h3 class="text-sm font-bold text-blue-400 flex items-center gap-2"><i class="fa-brands fa-bitcoin"></i> Portfel TON</h3>
-          <div class="text-center">
-            <p class="text-2xl font-black text-white">0 TON</p>
-            <p class="text-[10px] text-slate-400">Saldo demonstracyjne</p>
-          </div>
-          <button onclick="showToast('Połączenie TON Keeper dostępne po integracji mainnet')" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs py-2.5 rounded-xl transition active:scale-95"><i class="fa-brands fa-bitcoin"></i> Połącz TON Keeper</button>
+        <div class="panel p-4 space-y-3">
+          <h3 class="text-sm font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-link text-cyan-400"></i> Połączenie TON Keeper
+          </h3>
+          <p class="text-xs muted">Podłącz swój portfel Web3, aby przygotować się do odbioru airdropa $TECHNIX.</p>
+          <button onclick="showToast('Moduł TON Connect zostanie zintegrowany w Fazie 3')" class="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold py-2.5 rounded-xl transition active:scale-95">Połącz Portfel</button>
         </div>
       </section>
 
-      <!-- EKRAN: PROFIL -->
+      <!-- EKRAN PROFILU -->
       <section id="screen-profile" class="screen hidden space-y-4">
-        <div class="panel p-5 text-center space-y-4">
-          <div class="w-20 h-20 mx-auto rounded-full border-2 border-violet-500 overflow-hidden bg-slate-900 shadow-xl">
-            <img id="profile-avatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80'%3E%3Ccircle cx='40' cy='28' r='16' fill='%234F46E5'/%3E%3Cpath d='M18 68c0-14 10-22 22-22s22 8 22 22' fill='%234F46E5'/%3E%3C/svg%3E" class="w-full h-full object-cover">
+        <div class="panel p-5 text-center space-y-3">
+          <div class="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-violet-600 to-cyan-400 p-0.5 shadow-lg shadow-violet-500/30">
+            <div id="profile-avatar" class="w-full h-full bg-[#080b14] rounded-full flex items-center justify-center text-2xl text-cyan-400 font-bold">
+              <i class="fa-solid fa-user"></i>
+            </div>
           </div>
           <div>
-            <h2 id="profile-name" class="text-lg font-bold text-white">Loading...</h2>
-            <p id="profile-id" class="text-xs muted">TG ID: #brak</p>
-            <p id="profile-username-inline" class="text-xs text-cyan-400">@user</p>
+            <h2 id="profile-name" class="font-bold text-base text-white">TechnixUser</h2>
+            <p id="profile-id" class="text-xs muted">TG ID: #00000000</p>
           </div>
         </div>
 
-        <div class="panel p-4 space-y-3 text-xs">
-          <div class="flex justify-between bg-slate-900/50 rounded-xl p-2.5"><span class="muted">Telegram ID</span><span id="show-id" class="font-mono text-cyan-400">-</span></div>
-          <div class="flex justify-between bg-slate-900/50 rounded-xl p-2.5"><span class="muted">Poziom</span><span id="profile-level" class="font-bold text-violet-400">1</span></div>
-          <div class="flex justify-between bg-slate-900/50 rounded-xl p-2.5"><span class="muted">XP</span><span id="profile-xp" class="font-bold text-emerald-400">0</span></div>
+        <div class="panel p-4 space-y-2">
+          <div class="flex justify-between items-center text-xs py-1">
+            <span class="muted">Twój Poziom:</span>
+            <span id="profile-level" class="font-bold text-violet-400">Level 12</span>
+          </div>
+          <div class="flex justify-between items-center text-xs py-1">
+            <span class="muted">Punkty XP:</span>
+            <span id="profile-xp" class="font-bold text-cyan-400">2 450 XP</span>
+          </div>
+        </div>
+
+        <div class="panel divide-y divide-slate-800/80 text-xs">
+          <button onclick="showToast('Informacje o koncie aktywne')" class="w-full p-3.5 text-left flex justify-between items-center text-slate-300">
+            <span>Ustawienia Profilu</span>
+            <i class="fa-solid fa-chevron-right text-[10px] muted"></i>
+          </button>
+          <button onclick="showToast('Bezpieczeństwo: Połączenie Telegram SSL')" class="w-full p-3.5 text-left flex justify-between items-center text-slate-300">
+            <span>Bezpieczeństwo & Dostęp</span>
+            <i class="fa-solid fa-chevron-right text-[10px] muted"></i>
+          </button>
         </div>
       </section>
 
-      <!-- DODATKOWE EKRANY (SEARCH, NOTIFICATIONS, MENU) -->
+      <!-- EKRAN MENU -->
+      <section id="screen-menu" class="screen hidden space-y-4">
+        <h2 class="text-lg font-bold text-white">Menu Główne</h2>
+        <div class="panel p-4 space-y-2 text-xs">
+          <button onclick="show('info','O Projekcie')" class="w-full p-2.5 rounded-xl bg-slate-900/60 text-left text-slate-200">O TechnixPro</button>
+          <button onclick="showToast('Kontakt: support@technix-pro.app')" class="w-full p-2.5 rounded-xl bg-slate-900/60 text-left text-slate-200">Wsparcie & Kontakt</button>
+        </div>
+      </section>
+
+      <!-- DODATKOWE EKRANY (SEARCH, NOTIFICATIONS, COMMENTS) -->
       <section id="screen-search" class="screen hidden space-y-4">
         <input class="panel w-full p-3 text-xs bg-[#080b14] text-white border border-slate-700 rounded-xl focus:outline-none" placeholder="Szukaj w TechnixPro...">
       </section>
 
       <section id="screen-notifications" class="screen hidden space-y-4">
-        <div class="panel p-4 space-y-3">
-          <h3 class="text-sm font-bold text-white">Powiadomienia</h3>
-          <div class="bg-slate-900/60 p-3 rounded-xl text-xs text-slate-300 border border-slate-800">
-            <p class="mb-1 font-semibold text-white">✅ Witamy w TechnixPro!</p>
-            <p class="text-slate-400">Twoje konto jest aktywne i zsynchronizowane.</p>
-          </div>
+        <div class="panel p-4 text-xs space-y-2">
+          <div class="font-bold text-white">Powiadomienie Systemowe</div>
+          <p class="muted">Witaj w TechnixPro! Połączyliśmy Twoje konto z interfejsem Telegram Mini App.</p>
         </div>
+      </section>
+
+      <section id="screen-comments" class="screen hidden space-y-4">
+        <h2 class="text-base font-bold text-white">Komentarze</h2>
+        <textarea class="panel w-full p-3 text-xs bg-[#080b14] border border-slate-700 rounded-xl focus:outline-none" rows="3" placeholder="Dodaj komentarz..."></textarea>
+        <button onclick="showToast('Komentarz został wysłany!')" class="bg-violet-600 text-xs font-semibold px-4 py-2 rounded-xl">Wyślij</button>
       </section>
 
     </div>
 
-    <!-- DOLNA NAWIGACJA -->
+    <!-- DOLNY PASEK NAWIGACJI -->
     <nav class="fixed bottom-0 left-0 right-0 z-40 max-w-md mx-auto bg-[#080b14]/95 backdrop-blur-xl border-t border-slate-800/80 px-2 pt-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))] flex justify-around">
-      <button class="nav-btn active flex flex-col items-center" data-tab="home" onclick="showScreen('home','Start')">
+      <button class="nav-btn active flex flex-col items-center" data-tab="home" onclick="show('home','Sieć społeczna')">
         <i class="fa-solid fa-house text-base"></i>
         <span>Start</span>
       </button>
-      <button class="nav-btn flex flex-col items-center" data-tab="rewards" onclick="showScreen('rewards','Bonusy')">
+      <button class="nav-btn flex flex-col items-center" data-tab="gift" onclick="show('gift','Rewards Hub')">
         <i class="fa-solid fa-gift text-base"></i>
         <span>Bonusy</span>
       </button>
-      <button class="nav-btn flex flex-col items-center" data-tab="crypto" onclick="showScreen('crypto','Krypto')">
+      <button class="nav-btn flex flex-col items-center" data-tab="crypto" onclick="show('crypto','Kryptowaluty')">
         <i class="fa-brands fa-bitcoin text-base"></i>
         <span>Krypto</span>
       </button>
-      <button class="nav-btn flex flex-col items-center" data-tab="wallet" onclick="showScreen('wallet','Portfel')">
+      <button class="nav-btn flex flex-col items-center" data-tab="wallet" onclick="show('wallet','Portfel')">
         <i class="fa-solid fa-wallet text-base"></i>
         <span>Portfel</span>
       </button>
-      <button class="nav-btn flex flex-col items-center" data-tab="profile" onclick="showScreen('profile','Profil')">
+      <button class="nav-btn flex flex-col items-center" data-tab="profile" onclick="show('profile','Profil')">
         <i class="fa-solid fa-user text-base"></i>
         <span>Profil</span>
+      </button>
+      <button class="nav-btn flex flex-col items-center" data-tab="menu" onclick="show('menu','Menu')">
+        <i class="fa-solid fa-bars text-base"></i>
+        <span>Menu</span>
       </button>
     </nav>
   </main>
 
-  <div id="toast" class="hidden fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-slate-800/90 border border-slate-700/80 text-xs text-slate-100 px-4 py-2 rounded-xl shadow-xl backdrop-blur-md"></div>
+  <!-- DIMEK TOAST -->
+  <div id="toast" class="hidden fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-slate-800/90 border border-slate-700/80 text-slate-100 text-xs font-medium px-4 py-2.5 rounded-xl shadow-xl backdrop-blur-md"></div>
 
-  <!-- POMOCNICZE PRZEŁĄCZNIKI WBUDOWANE -->
+  <!-- LOGIKA JAVASCRIPT -->
   <script>
-    function showScreen(tab, title) {
+    const TelegramApp = window.Telegram?.WebApp;
+    if (TelegramApp) {
+      TelegramApp.ready();
+      TelegramApp.expand();
+    }
+
+    // WEBELEMENT COIN-ROW
+    class CoinRow extends HTMLElement {
+      connectedCallback() {
+        const name = this.getAttribute('name');
+        const symbol = this.getAttribute('symbol');
+        const price = this.getAttribute('price');
+        const change = this.getAttribute('change');
+        const icon = this.getAttribute('icon');
+        const color = this.getAttribute('color') || 'text-violet-400';
+
+        this.innerHTML = `
+          <div class="flex items-center justify-between py-2.5 border-b border-slate-800/60 last:border-none">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center font-bold ${color}">${icon}</div>
+              <div>
+                <span class="block text-xs font-bold text-white">${name}</span>
+                <span class="text-[10px] muted font-mono">${symbol}</span>
+              </div>
+            </div>
+            <div class="text-right">
+              <span class="block text-xs font-bold text-white">${price}</span>
+              <span class="text-[10px] font-medium text-emerald-400">${change}</span>
+            </div>
+          </div>
+        `;
+      }
+    }
+    customElements.define('coin-row', CoinRow);
+
+    // GŁÓWNA NAWIGACJA EKRANÓW
+    function show(tab, title) {
+      const homeTabs = document.getElementById('home-subtabs');
+      const giftTabs = document.getElementById('gift-subtabs');
+
+      // Obsługa przekierowania do podzakładki Info na ekranie Home
+      if (tab === 'info') {
+        document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+        document.getElementById('screen-home')?.classList.remove('hidden');
+        homeTabs?.classList.remove('hidden');
+        giftTabs?.classList.add('hidden');
+        document.getElementById('header-title').textContent = title;
+        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === 'home'));
+        sub('home', 'info', document.querySelector('#home-subtabs .subtab:last-child'));
+        window.scrollTo(0, 0);
+        return;
+      }
+
+      // Ukrywanie/Pokazywanie ekranów
       document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
-      const targetScreen = document.getElementById('screen-' + tab);
-      if (targetScreen) targetScreen.classList.remove('hidden');
+      const activeScreen = document.getElementById('screen-' + tab);
+      if (activeScreen) activeScreen.classList.remove('hidden');
 
       const headerTitle = document.getElementById('header-title');
       if (headerTitle) headerTitle.textContent = title;
 
+      // Aktualizacja aktywnych przycisków w nawigacji dolnej
       document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.tab === tab);
       });
 
-      const homeTabs = document.getElementById('home-subtabs');
-      const giftTabs = document.getElementById('gift-subtabs');
+      // KLUCZOWA POPRAWKA: Pasek home-subtabs widoczny TYLKO w zakładce 'home'
+      if (homeTabs) {
+        if (tab === 'home') {
+          homeTabs.classList.remove('hidden');
+        } else {
+          homeTabs.classList.add('hidden');
+        }
+      }
 
-      if (homeTabs) homeTabs.classList.toggle('hidden', tab !== 'home');
-      if (giftTabs) giftTabs.classList.toggle('hidden', tab !== 'rewards');
+      // Pasek gift-subtabs widoczny TYLKO w zakładce 'gift'
+      if (giftTabs) {
+        if (tab === 'gift') {
+          giftTabs.classList.remove('hidden');
+        } else {
+          giftTabs.classList.add('hidden');
+        }
+      }
 
       window.scrollTo(0, 0);
     }
 
+    function updateSubtabIndicator(btn) {
+      const indicator = document.getElementById('subtab-indicator');
+      if (!indicator || !btn) return;
+      indicator.style.width = `${btn.offsetWidth}px`;
+      indicator.style.left = `${btn.offsetLeft}px`;
+    }
+
+    // NAWIGACJA SUBTABÓW (KANAŁ / GRUPA / INFO)
     function sub(parent, id, btn) {
       document.querySelectorAll('.sub').forEach(s => s.classList.add('hidden'));
       const activeSub = document.getElementById(parent + '-' + id);
@@ -528,9 +744,14 @@
         });
         btn.classList.remove('muted');
         btn.classList.add('text-[#b9a4ff]');
+        updateSubtabIndicator(btn);
       }
+
+      if (id === 'group') renderPosts();
+      if (id === 'channel') renderChannelPosts();
     }
 
+    // NAWIGACJA PODZAKŁADEK BONUSÓW
     function rewardTab(id, btn) {
       document.querySelectorAll('.reward-view').forEach(v => v.classList.add('hidden'));
       const activeView = document.getElementById('reward-' + id);
@@ -540,6 +761,9 @@
         btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active-sub'));
         btn.classList.add('active-sub');
       }
+
+      if (id === 'tasks') renderTaskList();
+      if (id === 'history') renderRewardHistory();
     }
 
     function showToast(message) {
@@ -550,9 +774,351 @@
       clearTimeout(window.toastTimer);
       window.toastTimer = setTimeout(() => toast.classList.add('hidden'), 2200);
     }
-  </script>
 
-  <!-- PODPIĘCIE GŁÓWNEGO SKRYPTU JS -->
-  <script src="./script.js"></script>
+    function toggleLike(btn) {
+      const icon = btn.querySelector('i');
+      const count = btn.querySelector('span');
+      const val = parseInt(count.textContent, 10) || 0;
+
+      if (icon.classList.contains('fa-regular')) {
+        icon.classList.replace('fa-regular', 'fa-solid');
+        btn.classList.add('text-pink-400');
+        count.textContent = String(val + 1);
+      } else {
+        icon.classList.replace('fa-solid', 'fa-regular');
+        btn.classList.remove('text-pink-400');
+        count.textContent = String(val - 1);
+      }
+    }
+
+    function sanitize(str) {
+      return String(str).replace(/[&<>"']/g, match => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[match]));
+    }
+
+    // PANEL ADMINA — PUBLIKOWANIE W KANALE
+    function publishChannelPost() {
+      const input = document.getElementById('admin-post-input');
+      const mediaInput = document.getElementById('admin-media-input');
+      const content = input.value.trim();
+      const mediaUrl = mediaInput.value.trim();
+
+      if (!content) return showToast('Wpisz treść ogłoszenia przed publikacją.');
+
+      const posts = JSON.parse(localStorage.getItem('tp_channel_posts') || '[]');
+      posts.unshift({
+        content,
+        mediaUrl,
+        date: new Date().toLocaleString('pl-PL'),
+        id: posts.length + 2
+      });
+
+      localStorage.setItem('tp_channel_posts', JSON.stringify(posts));
+      input.value = '';
+      mediaInput.value = '';
+      renderChannelPosts();
+      showToast('Post został pomyślnie opublikowany na kanale!');
+    }
+
+    function renderChannelPosts() {
+      const feed = document.getElementById('channel-feed');
+      if (!feed) return;
+
+      const customPosts = JSON.parse(localStorage.getItem('tp_channel_posts') || '[]');
+
+      let defaultPostHTML = `
+        <div class="panel p-4 space-y-3">
+          <div class="flex justify-between items-center">
+            <span class="text-[10px] uppercase font-mono text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">Oficjalny Post #001</span>
+            <span class="text-[10px] muted">Dzisiaj, 02:18</span>
+          </div>
+          <h2 class="font-bold text-base text-slate-100">TechnixPro wchodzi w Fazę Stealth v2.6</h2>
+          <p class="text-xs muted leading-relaxed">Zbieraj TechnixCoins, wspinaj się po szczeblach poziomów i odblokuj unikalne rangi w ekosystemie TechnixPro. Nowe moduły społecznościowe są już aktywne!</p>
+          <div class="flex items-center gap-4 pt-2 text-xs border-t border-slate-800/60">
+            <button onclick="toggleLike(this)" class="flex items-center gap-1.5 muted hover:text-pink-400 transition active:scale-95">
+              <i class="fa-regular fa-heart"></i>
+              <span class="text-[11px]">142</span>
+            </button>
+            <button onclick="show('comments','Komentarze')" class="flex items-center gap-1.5 muted hover:text-cyan-400 transition active:scale-95">
+              <i class="fa-regular fa-comment"></i>
+              <span class="text-[11px]">98</span>
+            </button>
+          </div>
+        </div>
+      `;
+
+      let renderedCustom = customPosts.map((p) => `
+        <div class="panel p-4 space-y-3">
+          <div class="flex justify-between items-center">
+            <span class="text-[10px] uppercase font-mono text-violet-400 bg-violet-500/10 px-2 py-0.5 rounded border border-violet-500/20">Oficjalny Post #${String(p.id).padStart(3, '0')}</span>
+            <span class="text-[10px] muted">${p.date}</span>
+          </div>
+          <p class="text-xs text-slate-200 whitespace-pre-wrap leading-relaxed">${sanitize(p.content)}</p>
+          ${p.mediaUrl ? `<div class="rounded-xl overflow-hidden border border-slate-800"><img src="${sanitize(p.mediaUrl)}" class="w-full h-auto object-cover max-h-52" alt="Post media" onerror="this.style.display='none'"/></div>` : ''}
+          <div class="flex items-center justify-between pt-2 text-xs border-t border-slate-800/60">
+            <div class="flex items-center gap-4">
+              <button onclick="toggleLike(this)" class="flex items-center gap-1.5 muted hover:text-pink-400 transition active:scale-95">
+                <i class="fa-regular fa-heart"></i>
+                <span class="text-[11px]">0</span>
+              </button>
+              <button onclick="show('comments','Komentarze')" class="flex items-center gap-1.5 muted hover:text-cyan-400 transition active:scale-95">
+                <i class="fa-regular fa-comment"></i>
+                <span class="text-[11px]">0</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      feed.innerHTML = renderedCustom + defaultPostHTML;
+    }
+
+    // SYSTEM DYSKUSJI W GRUPIE
+    function createNewPost() {
+      const input = document.getElementById('post-input');
+      const content = input.value.trim();
+      if (!content) return showToast('Wpisz treść posta przed publikacją.');
+
+      const posts = JSON.parse(localStorage.getItem('tp_posts') || '[]');
+      posts.unshift({ content, date: new Date().toLocaleString('pl-PL') });
+      localStorage.setItem('tp_posts', JSON.stringify(posts));
+      input.value = '';
+      renderPosts();
+      showToast('Post został pomyślnie opublikowany.');
+    }
+
+    function renderPosts() {
+      const feed = document.getElementById('posts-feed');
+      if (!feed) return;
+
+      const posts = JSON.parse(localStorage.getItem('tp_posts') || '[]');
+      if (!posts.length) {
+        feed.innerHTML = '<div class="panel p-4 text-center text-xs muted">Brak postów. Bądź pierwszy!</div>';
+        return;
+      }
+
+      feed.innerHTML = posts.map((p, idx) => `
+        <article class="panel p-4 space-y-2">
+          <div class="flex justify-between items-center text-xs">
+            <span class="font-bold text-violet-300">TechnixUser</span>
+            <span class="text-[10px] muted">${p.date}</span>
+          </div>
+          <p class="text-xs text-slate-200 whitespace-pre-wrap leading-relaxed">${sanitize(p.content)}</p>
+          <div class="flex justify-end pt-1">
+            <button onclick="removePost(${idx})" class="text-[10px] text-slate-500 hover:text-red-400 transition">
+              <i class="fa-regular fa-trash-can"></i> Usuń
+            </button>
+          </div>
+        </article>
+      `).join('');
+    }
+
+    function removePost(index) {
+      const posts = JSON.parse(localStorage.getItem('tp_posts') || '[]');
+      posts.splice(index, 1);
+      localStorage.setItem('tp_posts', JSON.stringify(posts));
+      renderPosts();
+      showToast('Post usunięty.');
+    }
+
+    // KOPIOWANIE LINKU POLECAJĄCEGO
+    function copyReferralLink() {
+      const input = document.getElementById('ref-link-input');
+      if (!input) return;
+      input.select();
+      navigator.clipboard.writeText(input.value).then(() => {
+        showToast('Link polecający został skopiowany!');
+      }).catch(() => {
+        showToast('Skopiowano do schowka.');
+      });
+    }
+
+    // SYSTEM XP I REWARDS
+    function getXP() {
+      return Number(localStorage.getItem('tp_xp') || 2450);
+    }
+
+    function addXP(amount, reason) {
+      const current = getXP();
+      const updated = current + amount;
+      localStorage.setItem('tp_xp', String(updated));
+
+      const logs = JSON.parse(localStorage.getItem('tp_reward_logs') || '[]');
+      logs.unshift({ reason, amount, date: new Date().toLocaleString('pl-PL') });
+      localStorage.setItem('tp_reward_logs', JSON.stringify(logs));
+
+      updateXPDisplay();
+      showToast(`+${amount} XP: ${reason}`);
+    }
+
+    function updateXPDisplay() {
+      const xp = getXP();
+      const xpTotal = document.getElementById('xp-total');
+      const xpProgressText = document.getElementById('xp-progress-text');
+      const rankDisplay = document.getElementById('rank-xp-display');
+      const progressBar = document.getElementById('xp-progress-bar');
+      const profileXp = document.getElementById('profile-xp');
+
+      if (xpTotal) xpTotal.textContent = xp.toLocaleString();
+      if (xpProgressText) xpProgressText.textContent = `${xp.toLocaleString()} / 3 000 XP`;
+      if (rankDisplay) rankDisplay.textContent = `${xp.toLocaleString()} XP`;
+      if (profileXp) profileXp.textContent = `${xp.toLocaleString()} XP`;
+      if (progressBar) {
+        const percentage = Math.min((xp / 3000) * 100, 100);
+        progressBar.style.width = `${percentage}%`;
+      }
+    }
+
+    function claimReward(name, amount) {
+      const claimedKey = 'tp_claimed_' + name;
+      if (localStorage.getItem(claimedKey)) return showToast('Ta nagroda została już odebrana.');
+
+      localStorage.setItem(claimedKey, 'true');
+      addXP(amount, name);
+    }
+
+    function renderTaskList() {
+      const completed = JSON.parse(localStorage.getItem('tp_tasks') || '[]');
+      const tasks = [
+        ['login', 'Zaloguj się codziennie', 25],
+        ['post', 'Opublikuj post w Grupie', 50],
+        ['visit_info', 'Odwiedź zakładkę Info', 25]
+      ];
+
+      const taskList = document.getElementById('task-list');
+      if (!taskList) return;
+
+      taskList.innerHTML = tasks.map(t => {
+        const isDone = completed.includes(t[0]);
+        return `
+          <div class="flex items-center justify-between bg-slate-900/80 p-3 rounded-xl border border-slate-800 text-xs">
+            <div class="flex items-center gap-2.5">
+              <i class="fa-solid ${isDone ? 'fa-circle-check text-emerald-400' : 'fa-circle text-slate-700'} text-sm"></i>
+              <div>
+                <span class="block font-bold text-slate-200">${t[1]}</span>
+                <span class="text-[10px] muted">+${t[2]} XP</span>
+              </div>
+            </div>
+            <button onclick="triggerTaskAction('${t[0]}', ${t[2]}, '${t[1]}')" class="text-[11px] font-semibold ${isDone ? 'muted cursor-default' : 'text-violet-400 hover:text-violet-300'}">
+              ${isDone ? 'Wykonane' : 'Wykonaj'}
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function triggerTaskAction(id, xpVal = 50, title = 'Zadanie') {
+      const completed = JSON.parse(localStorage.getItem('tp_tasks') || '[]');
+      if (completed.includes(id)) return showToast('Zadanie zostało już zaliczone.');
+
+      completed.push(id);
+      localStorage.setItem('tp_tasks', JSON.stringify(completed));
+      addXP(xpVal, title);
+      renderTaskList();
+    }
+
+    function renderRewardHistory() {
+      const logs = JSON.parse(localStorage.getItem('tp_reward_logs') || '[]');
+      const container = document.getElementById('reward-log');
+      if (!container) return;
+
+      if (!logs.length) {
+        container.innerHTML = '<p class="text-xs muted">Brak odnotowanej aktywności XP.</p>';
+        return;
+      }
+
+      container.innerHTML = logs.slice(0, 10).map(l => `
+        <div class="flex justify-between items-center bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 text-xs">
+          <div>
+            <span class="block font-semibold text-slate-200">${sanitize(l.reason)}</span>
+            <span class="text-[9px] muted">${l.date}</span>
+          </div>
+          <span class="font-bold text-emerald-400">+${l.amount} XP</span>
+        </div>
+      `).join('');
+    }
+
+    // BONUS CZASOWY
+    function initBonusTimer() {
+      const button = document.getElementById('claim-bonus-btn');
+      const timer = document.getElementById('bonus-timer');
+      if (!button || !timer) return;
+
+      const CLAIM_INTERVAL = 4 * 60 * 60 * 1000;
+
+      function updateBonusTimer() {
+        const lastClaim = Number(localStorage.getItem('lastTechnixClaimTime') || 0);
+        const now = Date.now();
+        const remaining = CLAIM_INTERVAL - (now - lastClaim);
+
+        if (remaining <= 0) {
+          timer.textContent = '00:00:00';
+          button.disabled = false;
+          button.classList.remove('bg-slate-700', 'text-slate-400', 'cursor-not-allowed');
+          button.classList.add('bg-cyan-500', 'hover:bg-cyan-400', 'text-slate-950', 'shadow-lg', 'shadow-cyan-500/20');
+          button.textContent = 'Odbierz +50 TechnixCoins';
+          return;
+        }
+
+        const hours = Math.floor(remaining / (1000 * 60 * 60));
+        const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+
+        const pad = (value) => String(value).padStart(2, '0');
+        timer.textContent = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+        button.disabled = true;
+        button.classList.add('bg-slate-700', 'text-slate-400', 'cursor-not-allowed');
+        button.classList.remove('bg-cyan-500', 'hover:bg-cyan-400', 'text-slate-950', 'shadow-lg', 'shadow-cyan-500/20');
+        button.textContent = `Dostępne za ${pad(hours)}h ${pad(minutes)}m`;
+      }
+
+      button.addEventListener('click', () => {
+        if (button.disabled) return;
+        localStorage.setItem('lastTechnixClaimTime', String(Date.now()));
+        addXP(50, 'Bonus Czasowy');
+        updateBonusTimer();
+      });
+
+      updateBonusTimer();
+      setInterval(updateBonusTimer, 1000);
+    }
+
+    // START APLIKACJI & INTEGRACJA Z TELEGRAMEM
+    document.addEventListener('DOMContentLoaded', () => {
+      initBonusTimer();
+      updateXPDisplay();
+      renderPosts();
+      renderChannelPosts();
+      renderTaskList();
+      renderRewardHistory();
+
+      const firstSubtab = document.querySelector('#home-subtabs .subtab');
+      if (firstSubtab) updateSubtabIndicator(firstSubtab);
+
+      if (TelegramApp && TelegramApp.initDataUnsafe?.user) {
+        const user = TelegramApp.initDataUnsafe.user;
+        const name = user.username ? `@${user.username}` : `${user.first_name} ${user.last_name || ''}`.trim();
+        const telegramUsername = document.getElementById('telegram-username');
+        const profileName = document.getElementById('profile-name');
+        const profileId = document.getElementById('profile-id');
+        const rankUserLabel = document.getElementById('rank-user-label');
+        const refInput = document.getElementById('ref-link-input');
+        const profileAvatar = document.getElementById('profile-avatar');
+
+        if (telegramUsername) telegramUsername.textContent = name;
+        if (profileName) profileName.textContent = name;
+        if (profileId) profileId.textContent = `TG ID: #${user.id}`;
+        if (rankUserLabel) rankUserLabel.textContent = `12. ${name}`;
+        if (refInput) refInput.value = `https://t.me/TechnixProBot?start=ref_${user.id}`;
+
+        if (profileAvatar && user.photo_url) {
+          profileAvatar.innerHTML = `<img src="${user.photo_url}" class="w-full h-full rounded-full object-cover"/>`;
+        }
+      }
+    });
+  </script>
+  
+  <script src="./script.js" type="module"></script>
 </body>
 </html>
