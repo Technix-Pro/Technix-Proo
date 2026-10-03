@@ -556,6 +556,7 @@
       <button class="subtab py-2.5 text-xs font-semibold text-center text-[#b9a4ff] border-b-2 border-violet-500" data-home-tab="channel">Kanał</button>
       <button class="subtab py-2.5 muted text-xs font-semibold text-center border-b-2 border-transparent" data-home-tab="group">Grupa</button>
       <button class="subtab py-2.5 muted text-xs font-semibold text-center border-b-2 border-transparent" data-home-tab="info">Info</button>
+      <button class="subtab py-2.5 muted text-xs font-semibold text-center border-b-2 border-transparent" data-home-tab="bot">Żaróweczka AI</button>
     </div>
 
     <div id="gift-subtabs" class="hidden overflow-x-auto whitespace-nowrap scroll-none sticky top-[65px] z-20 bg-[#080b14]/95 backdrop-blur-md border-b border-slate-800/80 px-2">
@@ -682,6 +683,30 @@
             <div class="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200 flex gap-2">
               <i class="fa-solid fa-triangle-exclamation text-amber-400 mt-0.5"></i>
               <span>Projekt nadal działa w trybie stealth. Wszystkie dane demo zostaną zsynchronizowane po uruchomieniu backendu.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Nowa podzakładka: Żaróweczka AI (Integracja Coze / Bot API) -->
+        <div id="home-bot" class="sub hidden space-y-4">
+          <div class="panel p-4 space-y-3 border-cyan-500/30 bg-gradient-to-br from-cyan-950/20 to-slate-900">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-bold text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded-full uppercase">Coze AI Agent</span>
+              <span class="text-[10px] text-emerald-400 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span> Online</span>
+            </div>
+            <h2 class="text-base font-bold text-white">Żaróweczka — Asystent TechnixPro</h2>
+            <p class="text-xs muted">Zadaj pytanie asystentowi AI skonfigurowanemu na platformie Coze dla bota Telegram.</p>
+            
+            <div id="bot-chat-log" class="space-y-2 bg-[#080b14]/90 border border-slate-800 rounded-xl p-3 h-48 overflow-y-auto text-xs text-slate-200">
+              <div class="p-2 rounded-lg bg-slate-800/60 border border-slate-700/50 max-w-[85%]">
+                <strong class="text-cyan-400 block text-[10px] mb-0.5">Żaróweczka</strong>
+                Cześć! Jestem Twoim botem wsparcia na Coze. W czym mogę Ci pomóc w ekosystemie TechnixPro?
+              </div>
+            </div>
+
+            <div class="flex gap-2">
+              <input id="bot-chat-input" type="text" class="flex-1 rounded-xl bg-[#080b14] border border-slate-700/80 p-2.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500" placeholder="Napisz wiadomość do Żaróweczki..." />
+              <button id="bot-send-btn" class="bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold px-4 py-2.5 rounded-xl transition active:scale-95 shrink-0">Wyślij</button>
             </div>
           </div>
         </div>
@@ -1307,6 +1332,8 @@
           document.getElementById('home-channel').classList.toggle('hidden', key !== 'channel');
           document.getElementById('home-group').classList.toggle('hidden', key !== 'group');
           document.getElementById('home-info').classList.toggle('hidden', key !== 'info');
+          const botTabElem = document.getElementById('home-bot');
+          if (botTabElem) botTabElem.classList.toggle('hidden', key !== 'bot');
 
           document.querySelectorAll('[data-home-tab]').forEach(tab => {
             const active = tab === btn;
@@ -1435,6 +1462,46 @@
       link.value = '';
       showToast('Opublikowano post, grafikę lub załącznik na kanale.');
       addStars(25, 'Panel Administratora');
+    }
+
+    // Funkcja obsługująca interakcję z botem AI (Coze / Telegram Bot API)
+    function initBotChat() {
+      const sendBtn = document.getElementById('bot-send-btn');
+      const chatInput = document.getElementById('bot-chat-input');
+      const chatLog = document.getElementById('bot-chat-log');
+
+      if (!sendBtn || !chatInput || !chatLog) return;
+
+      const handleSendMessage = () => {
+        const text = chatInput.value.trim();
+        if (!text) return;
+
+        // Dodaj wiadomość użytkownika
+        chatLog.innerHTML += `
+          <div class="p-2 rounded-lg bg-violet-950/40 border border-violet-800/50 max-w-[85%] ml-auto text-right">
+            <strong class="text-violet-300 block text-[10px] mb-0.5">Ty</strong>
+            ${text}
+          </div>
+        `;
+        chatInput.value = '';
+        chatLog.scrollTop = chatLog.scrollHeight;
+
+        // Symulacja / wysyłka zapytania do endpointu AI bota (Coze / Webhook API)
+        setTimeout(() => {
+          chatLog.innerHTML += `
+            <div class="p-2 rounded-lg bg-slate-800/60 border border-slate-700/50 max-w-[85%]">
+              <strong class="text-cyan-400 block text-[10px] mb-0.5">Żaróweczka</strong>
+              Otrzymałem Twoją wiadomość w systemie TechnixPro. Coze API przetwarza zapytanie w tle! 🚀
+            </div>
+          `;
+          chatLog.scrollTop = chatLog.scrollHeight;
+        }, 800);
+      };
+
+      sendBtn.addEventListener('click', handleSendMessage);
+      chatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleSendMessage();
+      });
     }
 
     function initTelegramProfile() {
@@ -1687,6 +1754,7 @@
       renderRewardTabs();
       bindGlobalActions();
       initCryptoGame();
+      initBotChat();
       show('home', 'Sieć społeczna');
     }
 
