@@ -208,6 +208,24 @@ function copyReferral() {
   navigator.clipboard.writeText(input.value).then(() => showToast('✅ Link skopiowany')).catch(() => showToast('❌ Błąd kopiowania'));
 }
 
+// ========== TELEGRAM STARS PAYMENTS ==========
+function buyWithStars(invoiceLink, itemName) {
+  if (TelegramApp) {
+    showToast(`Inicjalizacja płatności: ${itemName || 'przedmiot'}`);
+    TelegramApp.openInvoice(invoiceLink, function(status) {
+      if (status === 'paid') {
+        showToast(`✅ Zakupiono: ${itemName || 'Przedmiot'}`);
+      } else if (status === 'failed') {
+        showToast('❌ Płatność nie powiodła się');
+      } else {
+        showToast('ℹ️ Płatność anulowana');
+      }
+    });
+  } else {
+    showToast('❌ Telegram WebApp niedostępny');
+  }
+}
+
 // ========== UI & INIT ==========
 function showToast(message) {
   const toast = document.getElementById('toast');
@@ -267,3 +285,4 @@ window.publishAdminPost = publishAdminPost;
 window.showScreen = showScreen;
 window.copyReferral = copyReferral;
 window.completeTask = completeTask;
+window.buyWithStars = buyWithStars;
