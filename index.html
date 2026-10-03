@@ -559,7 +559,7 @@
     </div>
 
     <div id="gift-subtabs" class="hidden overflow-x-auto whitespace-nowrap scroll-none sticky top-[65px] z-20 bg-[#080b14]/95 backdrop-blur-md border-b border-slate-800/80 px-2">
-      <button class="inline-block active-sub py-2.5 px-4 border-b-2 text-xs font-semibold" data-reward-tab="overview">Przegląd</button>
+      <button class="inline-block active-sub py-2.5 px-4 border-b-2 text-xs font-semibold text-white border-violet-500" data-reward-tab="overview">Przegląd</button>
       <button class="inline-block py-2.5 px-4 border-b-2 border-transparent muted text-xs font-semibold" data-reward-tab="events">Eventy Live</button>
       <button class="inline-block py-2.5 px-4 border-b-2 border-transparent muted text-xs font-semibold" data-reward-tab="tasks">Zadania</button>
       <button class="inline-block py-2.5 px-4 border-b-2 border-transparent muted text-xs font-semibold" data-reward-tab="referrals">Referral</button>
@@ -1072,6 +1072,11 @@
 
   <script>
     const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+    }
+
     const defaultUser = {
       first_name: 'Guest',
       last_name: '',
@@ -1158,17 +1163,18 @@
       const currentLevelBase = state.level === 1 ? 0 : [0, 1500, 5000, 12000, 25000][state.level - 1];
       const progressValue = Math.min((state.stars - currentLevelBase) / (nextTarget - currentLevelBase || 1), 1);
 
-      starsTotal.textContent = formatK(state.stars);
-      progressText.textContent = `${formatK(state.stars)} / ${formatK(nextTarget)} ★`;
-      progress.style.width = `${(progressValue * 100).toFixed(0)}%`;
-      profileStars.textContent = `${formatK(state.stars)} ★`;
-      rankLabel.textContent = `${formatK(state.stars)} ★`;
-      levelBadge.textContent = buildLevelLabel(state.level);
-      profileLevel.textContent = `Level ${state.level}`;
+      if (starsTotal) starsTotal.textContent = formatK(state.stars);
+      if (progressText) progressText.textContent = `${formatK(state.stars)} / ${formatK(nextTarget)} ★`;
+      if (progress) progress.style.width = `${(progressValue * 100).toFixed(0)}%`;
+      if (profileStars) profileStars.textContent = `${formatK(state.stars)} ★`;
+      if (rankLabel) rankLabel.textContent = `${formatK(state.stars)} ★`;
+      if (levelBadge) levelBadge.textContent = buildLevelLabel(state.level);
+      if (profileLevel) profileLevel.textContent = `Level ${state.level}`;
     }
 
     function renderTaskList() {
       const taskList = document.getElementById('task-list');
+      if (!taskList) return;
       const tasks = [
         { title: 'Aktywność w kanale', reward: 25, action: 'task', label: 'Kanał' },
         { title: 'Wspólnota: post do grupy', reward: 40, action: 'task', label: 'Grupa' },
@@ -1185,10 +1191,19 @@
           <span class="text-[10px] text-violet-300 font-bold">Złap</span>
         </button>
       `).join('');
+
+      document.querySelectorAll('#task-list .task-action').forEach(button => {
+        button.addEventListener('click', () => {
+          const reward = Number(button.dataset.reward || 0);
+          const label = button.dataset.label || 'Zadanie';
+          addStars(reward, label);
+        });
+      });
     }
 
     function renderRewardLog() {
       const rewardLog = document.getElementById('reward-log');
+      if (!rewardLog) return;
       const items = state.taskHistory.slice(0, 5);
 
       rewardLog.innerHTML = items.map(item => `
@@ -1209,6 +1224,7 @@
 
     function showToast(msg) {
       const toast = document.getElementById('toast');
+      if (!toast) return;
       toast.textContent = msg;
       toast.classList.add('show');
       clearTimeout(window.toastTimer);
@@ -1223,6 +1239,12 @@
 
       const titleNode = document.getElementById('header-title');
       if (titleNode) titleNode.textContent = title;
+
+      const homeSubtabs = document.getElementById('home-subtabs');
+      const giftSubtabs = document.getElementById('gift-subtabs');
+
+      if (homeSubtabs) homeSubtabs.classList.toggle('hidden', screenName !== 'home');
+      if (giftSubtabs) giftSubtabs.classList.toggle('hidden', screenName !== 'gift');
 
       document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.screen === screenName));
     }
@@ -1241,7 +1263,6 @@
             tab.classList.toggle('muted', !active);
             tab.classList.toggle('border-violet-500', active);
             tab.classList.toggle('border-transparent', !active);
-            tab.classList.toggle('text-slate-400', !active);
           });
         });
       });
@@ -1269,6 +1290,7 @@
 
     function renderPostsFeed() {
       const postsFeed = document.getElementById('posts-feed');
+      if (!postsFeed) return;
       postsFeed.innerHTML = state.posts.map(post => `
         <div class="panel p-3 space-y-2">
           <div class="flex items-center justify-between">
@@ -1294,6 +1316,7 @@
 
     function renderChannelFeed() {
       const feed = document.getElementById('channel-feed');
+      if (!feed) return;
       feed.innerHTML = state.channelPosts.map(post => `
         <article class="panel p-3.5">
           <div class="flex items-center justify-between gap-3 mb-2">
@@ -1356,49 +1379,35 @@
         const h = String(Math.floor(remaining / 3600)).padStart(2, '0');
         const m = String(Math.floor((remaining % 3600) / 60)).padStart(2, '0');
         const s = String(remaining % 60).padStart(2, '0');
-        timerEl.textContent = `${h}:${m}:${s}`;
+        if (timerEl) timerEl.textContent = `${h}:${m}:${s}`;
 
         if (remaining <= 0) {
-          claimBtn.disabled = false;
-          claimBtn.classList.remove('bg-slate-700', 'text-slate-400', 'cursor-not-allowed');
-          claimBtn.classList.add('bg-gradient-to-r', 'from-cyan-500', 'to-violet-600', 'text-slate-950');
-          claimBtn.textContent = 'Odbierz +5 ★';
+          if (claimBtn) {
+            claimBtn.disabled = false;
+            claimBtn.classList.remove('bg-slate-700', 'text-slate-400', 'cursor-not-allowed');
+            claimBtn.classList.add('bg-gradient-to-r', 'from-cyan-500', 'to-violet-600', 'text-slate-950');
+            claimBtn.textContent = 'Odbierz +5 ★';
+          }
           remaining = 0;
           return;
         }
-
         remaining--;
       };
 
       update();
       setInterval(update, 1000);
 
-      claimBtn.addEventListener('click', () => {
-        if (claimBtn.disabled) return;
-        claimBtn.disabled = true;
-        claimBtn.classList.remove('bg-gradient-to-r', 'from-cyan-500', 'to-violet-600', 'text-slate-950');
-        claimBtn.classList.add('bg-slate-700', 'text-slate-400', 'cursor-not-allowed');
-        claimBtn.textContent = 'Odebrano';
-        addStars(5, 'Bonus czasowy');
-        remaining = target;
-        const timer = () => {
-          const h = String(Math.floor(remaining / 3600)).padStart(2, '0');
-          const m = String(Math.floor((remaining % 3600) / 60)).padStart(2, '0');
-          const s = String(remaining % 60).padStart(2, '0');
-          timerEl.textContent = `${h}:${m}:${s}`;
-
-          if (remaining <= 0) {
-            claimBtn.disabled = false;
-            claimBtn.classList.remove('bg-slate-700', 'text-slate-400', 'cursor-not-allowed');
-            claimBtn.classList.add('bg-gradient-to-r', 'from-cyan-500', 'to-violet-600', 'text-slate-950');
-            claimBtn.textContent = 'Odbierz +5 ★';
-            return;
-          }
-          remaining--;
-          setTimeout(timer, 1000);
-        };
-        timer();
-      });
+      if (claimBtn) {
+        claimBtn.addEventListener('click', () => {
+          if (claimBtn.disabled) return;
+          claimBtn.disabled = true;
+          claimBtn.classList.remove('bg-gradient-to-r', 'from-cyan-500', 'to-violet-600', 'text-slate-950');
+          claimBtn.classList.add('bg-slate-700', 'text-slate-400', 'cursor-not-allowed');
+          claimBtn.textContent = 'Odebrano';
+          addStars(5, 'Bonus czasowy');
+          remaining = target;
+        });
+      }
     }
 
     function initTelegramProfile() {
@@ -1412,12 +1421,13 @@
 
       const name = [user.first_name, user.last_name].filter(Boolean).join(' ') || 'Guest';
       const usernameText = user.username ? `@${user.username}` : '@guest';
-      username.textContent = usernameText;
-      profileName.textContent = name;
-      profileId.textContent = user.id ? `TG ID: ${user.id}` : 'TG ID: brak danych';
-      headerAvatar.textContent = name.slice(0, 2).toUpperCase();
 
-      if (user.photo_url) {
+      if (username) username.textContent = usernameText;
+      if (profileName) profileName.textContent = name;
+      if (profileId) profileId.textContent = user.id ? `TG ID: ${user.id}` : 'TG ID: brak danych';
+      if (headerAvatar) headerAvatar.textContent = name.slice(0, 2).toUpperCase();
+
+      if (user.photo_url && avatarImg && avatarFallback && headerAvatar) {
         avatarImg.src = user.photo_url;
         avatarImg.classList.remove('hidden');
         avatarFallback.classList.add('hidden');
@@ -1425,23 +1435,20 @@
         headerAvatar.style.backgroundImage = `url(${user.photo_url})`;
         headerAvatar.style.backgroundSize = 'cover';
         headerAvatar.style.backgroundPosition = 'center';
-        headerAvatar.style.color = 'transparent';
       }
     }
 
     function buyRigPartWithStars(itemKey, cost) {
-      if (tg && tg.openInvoice) {
-        showToast(`Inicjalizacja Telegram Stars za ${cost} ★...`);
-        // Przykładowe wywołanie Telegram Stars Invoice
+      if (tg && typeof tg.openInvoice === 'function') {
+        showToast(`Inicjalizacja Telegram Stars (${cost} ★)...`);
         tg.openInvoice({ url: `https://t.me/invoice_dummy_${itemKey}` }, (status) => {
           if (status === 'paid' || status === 'paid_dummy') {
             completePurchase(itemKey);
           } else {
-            showToast('Płatność Telegram Stars została anulowana.');
+            showToast('Płatność Telegram Stars anulowana.');
           }
         });
       } else {
-        // Fallback dla przeglądarek bez natywnego API
         completePurchase(itemKey);
       }
     }
@@ -1454,11 +1461,12 @@
         partElement.classList.add('active');
       }
       renderRigShop();
-      showToast(`${item ? item.name : 'Część'} odblokowana na stanowisku!`);
+      showToast(`${item ? item.name : 'Część'} została odblokowana!`);
     }
 
     function renderRigShop() {
       const rigShop = document.getElementById('rig-shop');
+      if (!rigShop) return;
       rigShop.innerHTML = state.rigCatalog.map(item => {
         const owned = state.rigParts[item.key];
         return `
@@ -1480,7 +1488,7 @@
           const key = button.dataset.rig;
           const cost = Number(button.dataset.cost || 0);
           if (state.rigParts[key]) {
-            showToast(`${state.rigCatalog.find(item => item.key === key).name} jest już na Twoim stanowisku.`);
+            showToast(`${state.rigCatalog.find(item => item.key === key).name} jest już odblokowany.`);
             return;
           }
           buyRigPartWithStars(key, cost);
@@ -1493,6 +1501,7 @@
       const techProgressFill = document.getElementById('tech-progress-fill');
       const techProgressText = document.getElementById('tech-progress-text');
       const techRemaining = document.getElementById('tech-remaining-time');
+      const techMinedValue = document.getElementById('tech-mined-value');
       const energyValue = document.getElementById('energyValue');
       const energyMax = document.getElementById('energyMax');
       const energyFill = document.getElementById('energyFill');
@@ -1506,20 +1515,23 @@
 
       function syncCryptoUI() {
         const ratio = mined / totalSupply;
-        techProgressFill.style.width = `${Math.min(ratio * 100, 100)}%`;
-        techTokenFill.style.width = `${Math.min(ratio * 100, 100)}%`;
+        if (techProgressFill) techProgressFill.style.width = `${Math.min(ratio * 100, 100)}%`;
+        if (techTokenFill) techTokenFill.style.width = `${Math.min(ratio * 100, 100)}%`;
+
         const remainingSeconds = Math.max(0, currentCycle);
         const days = Math.floor(remainingSeconds / 86400);
         const hrs = Math.floor((remainingSeconds % 86400) / 3600);
         const mins = Math.floor((remainingSeconds % 3600) / 60);
         const secs = remainingSeconds % 60;
-        techRemaining.textContent = `${days}d ${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-        techTokenCount.textContent = formatK(Math.round(mined));
-        techProgressText.textContent = `${formatK(mined)} / ${formatK(totalSupply)}`;
-        energyValue.textContent = state.energy;
-        energyMax.textContent = state.energyMax;
-        tpBalance.textContent = formatK(state.tp);
-        energyFill.style.width = `${(state.energy / state.energyMax) * 100}%`;
+
+        if (techRemaining) techRemaining.textContent = `${days}d ${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        if (techTokenCount) techTokenCount.textContent = formatK(Math.round(mined));
+        if (techMinedValue) techMinedValue.textContent = formatK(Math.round(mined));
+        if (techProgressText) techProgressText.textContent = `${formatK(mined)} / ${formatK(totalSupply)}`;
+        if (energyValue) energyValue.textContent = state.energy;
+        if (energyMax) energyMax.textContent = state.energyMax;
+        if (tpBalance) tpBalance.textContent = formatK(state.tp);
+        if (energyFill) energyFill.style.width = `${(state.energy / state.energyMax) * 100}%`;
       }
 
       if (coreClicker) {
@@ -1561,14 +1573,6 @@
         });
       });
 
-      document.querySelectorAll('.task-action').forEach(button => {
-        button.addEventListener('click', () => {
-          const reward = Number(button.dataset.reward || 0);
-          const label = button.dataset.label || 'Zadanie';
-          addStars(reward, label);
-        });
-      });
-
       document.querySelectorAll('.claim-reward').forEach(button => {
         button.addEventListener('click', () => {
           const reward = Number(button.dataset.bonus || 0);
@@ -1577,15 +1581,23 @@
         });
       });
 
-      document.getElementById('copy-ref-link').addEventListener('click', () => {
-        const input = document.getElementById('ref-link-input');
-        input.select();
-        document.execCommand('copy');
-        showToast('Link polecający został skopiowany.');
-      });
+      const copyRefBtn = document.getElementById('copy-ref-link');
+      if (copyRefBtn) {
+        copyRefBtn.addEventListener('click', () => {
+          const input = document.getElementById('ref-link-input');
+          if (input) {
+            input.select();
+            document.execCommand('copy');
+            showToast('Link polecający został skopiowany.');
+          }
+        });
+      }
 
-      document.getElementById('publish-post-btn').addEventListener('click', publishChannelPost);
-      document.getElementById('create-post-btn').addEventListener('click', createNewPost);
+      const pubPostBtn = document.getElementById('publish-post-btn');
+      if (pubPostBtn) pubPostBtn.addEventListener('click', publishChannelPost);
+
+      const createPostBtn = document.getElementById('create-post-btn');
+      if (createPostBtn) createPostBtn.addEventListener('click', createNewPost);
 
       document.querySelectorAll('.wallet-toast-btn, .profile-toast-btn').forEach(button => {
         button.addEventListener('click', () => {
