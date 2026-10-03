@@ -1455,8 +1455,6 @@
       if (profileId) profileId.textContent = user.id ? `TG ID: ${user.id}` : 'TG ID: brak danych';
       if (headerAvatar) headerAvatar.textContent = name.slice(0, 2).toUpperCase();
 
-      // Sprawdzenie uprawnień administratora wg ID (lub jeśli ADMIN_TELEGRAM_ID to 0 dla testów lokalnych możesz dostosować)
-      // Jeśli chcesz, aby na testach lokalnych panel był widoczny, zmień warunek lub ustaw ADMIN_TELEGRAM_ID równe Twojemu ID.
       const isOwner = (user.id === ADMIN_TELEGRAM_ID) || (ADMIN_TELEGRAM_ID === 0); 
       if (adminPanelContainer && isOwner) {
         adminPanelContainer.classList.remove('hidden');
@@ -1629,7 +1627,6 @@
       const createPostBtn = document.getElementById('create-post-btn');
       if (createPostBtn) createPostBtn.addEventListener('click', createNewPost);
 
-      // Obsługa formularza zapisywania eventu live z panelu admina
       const saveEventBtn = document.getElementById('save-event-btn');
       if (saveEventBtn) {
         saveEventBtn.addEventListener('click', () => {
@@ -1641,7 +1638,6 @@
           if (descInput) state.liveEvent.desc = descInput;
           if (rewardInput) state.liveEvent.reward = rewardInput;
 
-          // Aktualizacja widoku eventu w sekcji Bonusy -> Eventy Live
           document.getElementById('live-event-title').textContent = state.liveEvent.title;
           document.getElementById('live-event-desc').textContent = state.liveEvent.desc;
           const eventBtn = document.getElementById('live-event-action-btn');
@@ -1652,7 +1648,6 @@
         });
       }
 
-      // Obsługa dodawania nowych zadań z panelu admina
       const addTaskBtn = document.getElementById('add-task-btn');
       if (addTaskBtn) {
         addTaskBtn.addEventListener('click', () => {
