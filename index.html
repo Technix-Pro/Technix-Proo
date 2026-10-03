@@ -1111,12 +1111,12 @@
         gpu: false
       },
       rigCatalog: [
-        { key: 'mouse', name: 'Myszka', icon: 'fa-computer-mouse', cost: 15 },
-        { key: 'keyboard', name: 'Klawiatura', icon: 'fa-keyboard', cost: 25 },
-        { key: 'monitor', name: 'Monitor', icon: 'fa-display', cost: 50 },
-        { key: 'case', name: 'Obudowa', icon: 'fa-cube', cost: 40 },
-        { key: 'ram', name: 'RAM', icon: 'fa-memory', cost: 30 },
-        { key: 'gpu', name: 'GPU', icon: 'fa-microchip', cost: 100 }
+        { key: 'mouse', name: 'Myszka', icon: 'fa-computer-mouse', cost: 40 },
+        { key: 'keyboard', name: 'Klawiatura', icon: 'fa-keyboard', cost: 60 },
+        { key: 'monitor', name: 'Monitor', icon: 'fa-display', cost: 180 },
+        { key: 'case', name: 'Obudowa', icon: 'fa-cube', cost: 100 },
+        { key: 'ram', name: 'RAM', icon: 'fa-memory', cost: 80 },
+        { key: 'gpu', name: 'GPU', icon: 'fa-microchip', cost: 270 }
       ]
     };
 
@@ -1439,18 +1439,13 @@
     }
 
     function buyRigPartWithStars(itemKey, cost) {
-      if (tg && typeof tg.openInvoice === 'function') {
-        showToast(`Inicjalizacja Telegram Stars (${cost} ★)...`);
-        tg.openInvoice({ url: `https://t.me/invoice_dummy_${itemKey}` }, (status) => {
-          if (status === 'paid' || status === 'paid_dummy') {
-            completePurchase(itemKey);
-          } else {
-            showToast('Płatność Telegram Stars anulowana.');
-          }
-        });
-      } else {
-        completePurchase(itemKey);
+      if (state.stars < cost) {
+        showToast(`Masz za mało gwiazdek! Potrzebujesz ${cost} ★.`);
+        return;
       }
+      state.stars -= cost;
+      updateStarsDisplay();
+      completePurchase(itemKey);
     }
 
     function completePurchase(key) {
@@ -1461,7 +1456,7 @@
         partElement.classList.add('active');
       }
       renderRigShop();
-      showToast(`${item ? item.name : 'Część'} została odblokowana!`);
+      showToast(`${item ? item.name : 'Część'} została pomyślnie kupiona!`);
     }
 
     function renderRigShop() {
