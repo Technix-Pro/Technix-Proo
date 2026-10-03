@@ -70,8 +70,9 @@
     @keyframes floatOrb { 0%,100% { transform: translateY(0) scale(1); opacity: 0.55; } 50% { transform: translateY(-12px) scale(1.06); opacity: 1; } }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    .screen { animation: fadeIn 0.25s ease; }
-    .app-shell { max-width: 430px; margin: 0 auto; min-height: 100vh; position: relative; background: rgba(8,11,20,0.92); }
+    .screen { animation: fadeIn 0.25s ease; display: none; }
+    .screen.active { display: block; }
+    .app-shell { max-width: 430px; margin: 0 auto; min-height: 100vh; position: relative; background: rgba(8,11,20,0.92); padding-bottom: 90px; }
     .panel {
       background: linear-gradient(145deg, rgba(21,29,46,0.72), rgba(13,19,32,0.9));
       border: 1px solid rgba(39,52,77,0.6);
@@ -193,24 +194,28 @@
       color: #dbeafe;
     }
     .composer-wrap {
-      position: sticky;
-      bottom: 0;
+      position: fixed;
+      bottom: 60px;
+      left: 0;
+      right: 0;
+      max-width: 430px;
+      margin: 0 auto;
       z-index: 30;
-      padding: 12px;
+      padding: 8px 12px;
       background: linear-gradient(180deg, rgba(8,11,20,0.15), rgba(8,11,20,0.98) 15%, rgba(8,11,20,1));
       border-top: 1px solid rgba(148,163,184,0.06);
     }
     .composer-box {
       border: 1px solid rgba(148,163,184,0.08);
-      background: rgba(15,23,42,0.8);
+      background: rgba(15,23,42,0.9);
       border-radius: 18px;
-      padding: 12px;
+      padding: 10px;
       box-shadow: 0 18px 30px rgba(0,0,0,0.18);
     }
     .reply-preview {
       display: none;
-      margin-bottom: 8px;
-      padding: 8px 10px;
+      margin-bottom: 6px;
+      padding: 6px 8px;
       border-radius: 10px;
       border: 1px solid rgba(34,211,238,0.35);
       background: rgba(34,211,238,0.08);
@@ -281,6 +286,43 @@
       display:flex; align-items:center; justify-content:center;
       font-size: 32px; font-weight: 900; color: transparent; background-image: linear-gradient(135deg, #8de7ff, #ba7bff 35%, #f0abff 100%); -webkit-background-clip:text; background-clip:text;
     }
+
+    /* Dolny pasek nawigacyjny */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      max-width: 430px;
+      margin: 0 auto;
+      height: 60px;
+      background: rgba(8, 11, 20, 0.95);
+      border-top: 1px solid rgba(148, 163, 184, 0.12);
+      backdrop-filter: blur(16px);
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      z-index: 50;
+    }
+    .nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #94a3b8;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      gap: 3px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    .nav-item i { font-size: 16px; }
+    .nav-item.active { color: #22d3ee; }
   </style>
 </head>
 <body>
@@ -295,22 +337,16 @@
       </div>
       <div class="flex items-center gap-2">
         <button class="w-9 h-9 rounded-lg bg-slate-800/80 border border-white/10 flex items-center justify-center text-slate-200"><i class="fa-solid fa-magnifying-glass"></i></button>
-        <button class="w-9 h-9 rounded-lg bg-slate-800/80 border border-white/10 flex items-center justify-center text-slate-200 relative">
+        <button class="w-9 h-9 rounded-lg bg-slate-800/80 border border-white/10 flex items-center justify-center text-slate-200 relative nav-tab-btn" data-tab="alerts">
           <i class="fa-solid fa-bell"></i>
           <span class="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-cyan-400"></span>
         </button>
       </div>
     </header>
 
-    <nav class="flex border-b border-white/5 bg-[#080b14]/80 sticky top-[68px] z-30">
-      <button class="tab-btn flex-1 py-3 text-[10px] font-bold uppercase tracking-[0.18em] border-b-2 text-cyan-400 border-cyan-400" data-tab="home">Home</button>
-      <button class="tab-btn flex-1 py-3 text-[10px] font-bold uppercase tracking-[0.18em] border-b-2 text-slate-400 border-transparent" data-tab="group">Grupa</button>
-      <button class="tab-btn flex-1 py-3 text-[10px] font-bold uppercase tracking-[0.18em] border-b-2 text-slate-400 border-transparent" data-tab="info">Info</button>
-      <button class="tab-btn flex-1 py-3 text-[10px] font-bold uppercase tracking-[0.18em] border-b-2 text-slate-400 border-transparent" data-tab="alerts">Powiadomienia</button>
-    </nav>
-
-    <main class="pb-24">
-      <section id="screen-home" class="screen px-4 pt-4 space-y-4">
+    <main class="pb-12">
+      <!-- Ekran Home -->
+      <section id="screen-home" class="screen active px-4 pt-4 space-y-4">
         <div class="hero-core relative">
           <div class="absolute inset-0 pointer-events-none">
             <span class="floating-orb"></span><span class="floating-orb"></span><span class="floating-orb"></span><span class="floating-orb"></span>
@@ -357,6 +393,7 @@
           <button id="energy-click-btn" class="w-full rounded-xl bg-gradient-to-r from-violet-600 to-cyan-500 px-4 py-3 text-[10px] uppercase tracking-[0.16em] font-bold text-white shadow-lg shadow-violet-500/20">Kliknij TP</button>
         </div>
 
+        <!-- Rozbudowany Panel Administracyjny -->
         <div id="admin-panel" class="panel hidden p-4 space-y-3">
           <div class="flex items-center justify-between">
             <h3 class="text-sm font-bold uppercase tracking-[0.14em] text-violet-200">Panel administratora</h3>
@@ -417,22 +454,22 @@
         </div>
       </section>
 
-      <section id="screen-group" class="screen hidden">
-        <div class="px-4 pt-4 pb-6">
-          <div class="chat-shell">
-            <div class="flex items-center justify-between border-b border-white/5 px-4 py-3">
-              <div>
-                <p class="text-[9px] uppercase tracking-[0.14em] text-cyan-300 font-bold">TechnixPro</p>
-                <h2 class="text-base font-bold text-white">Grupa</h2>
-              </div>
-              <span class="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-1 text-[8px] uppercase tracking-[0.12em] text-emerald-200">Aktywna</span>
+      <!-- Ekran Grupa -->
+      <section id="screen-group" class="screen px-4 pt-4 pb-20">
+        <div class="chat-shell">
+          <div class="flex items-center justify-between border-b border-white/5 px-4 py-3">
+            <div>
+              <p class="text-[9px] uppercase tracking-[0.14em] text-cyan-300 font-bold">TechnixPro</p>
+              <h2 class="text-base font-bold text-white">Grupa</h2>
             </div>
-            <div id="chat-list" class="chat-list"></div>
+            <span class="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-1 text-[8px] uppercase tracking-[0.12em] text-emerald-200">Aktywna</span>
           </div>
+          <div id="chat-list" class="chat-list"></div>
         </div>
       </section>
 
-      <section id="screen-info" class="screen hidden px-4 pt-4 pb-8 space-y-4">
+      <!-- Ekran Info -->
+      <section id="screen-info" class="screen px-4 pt-4 pb-8 space-y-4">
         <div class="panel p-4">
           <p class="text-[9px] uppercase tracking-[0.18em] text-cyan-400 font-bold">Roadmap</p>
           <h2 class="text-xl font-extrabold text-white mt-2">Od rdzenia do ekosystemu</h2>
@@ -443,7 +480,8 @@
         <div id="phase-list" class="space-y-3"></div>
       </section>
 
-      <section id="screen-alerts" class="screen hidden px-4 pt-4 pb-8 space-y-4">
+      <!-- Ekran Powiadomienia -->
+      <section id="screen-alerts" class="screen px-4 pt-4 pb-8 space-y-4">
         <div class="panel p-4">
           <div class="flex items-center justify-between">
             <h2 class="text-base font-bold text-white">Powiadomienia systemowe</h2>
@@ -454,16 +492,37 @@
       </section>
     </main>
 
-    <div class="composer-wrap">
+    <!-- Kompozytor wiadomości w grupie -->
+    <div id="group-composer-wrap" class="composer-wrap hidden">
       <div class="composer-box">
         <div id="reply-preview" class="reply-preview">Odpowiedz do: <span id="reply-preview-text"></span> <button id="cancel-reply-btn" class="ml-2 text-[9px] uppercase tracking-[0.12em] text-cyan-200">Anuluj</button></div>
         <textarea id="group-input" rows="2" class="w-full rounded-xl border border-white/10 bg-slate-950/70 p-3 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-violet-500" placeholder="Napisz coś do społeczności..."></textarea>
-        <div class="mt-3 flex items-center justify-between gap-2">
+        <div class="mt-2 flex items-center justify-between gap-2">
           <button id="attach-media-btn" class="tiny-btn px-3 py-2 text-[10px] uppercase tracking-[0.12em] text-slate-300"><i class="fa-solid fa-paperclip"></i> Media</button>
           <button id="group-publish-btn" class="rounded-xl bg-gradient-to-r from-violet-600 to-cyan-500 px-4 py-2 text-[10px] uppercase tracking-[0.12em] font-bold text-white">Wyślij</button>
         </div>
       </div>
     </div>
+
+    <!-- Dolny Pasek Nawigacyjny -->
+    <nav class="bottom-nav">
+      <button class="nav-tab-btn active" data-tab="home">
+        <i class="fa-solid fa-house"></i>
+        <span>Home</span>
+      </button>
+      <button class="nav-tab-btn" data-tab="group">
+        <i class="fa-solid fa-users"></i>
+        <span>Grupa</span>
+      </button>
+      <button class="nav-tab-btn" data-tab="info">
+        <i class="fa-solid fa-circle-info"></i>
+        <span>Info</span>
+      </button>
+      <button class="nav-tab-btn" data-tab="alerts">
+        <i class="fa-solid fa-bell"></i>
+        <span>Alerts</span>
+      </button>
+    </nav>
   </div>
 
   <script>
@@ -816,19 +875,27 @@
       renderTasks();
     }
 
-    document.querySelectorAll('.tab-btn').forEach(button => {
+    // Obsługa przełączania zakładek (górne i dolne przyciski)
+    document.querySelectorAll('.nav-tab-btn').forEach(button => {
       button.addEventListener('click', () => {
         const tab = button.dataset.tab;
-        document.getElementById('screen-home').classList.toggle('hidden', tab !== 'home');
-        document.getElementById('screen-group').classList.toggle('hidden', tab !== 'group');
-        document.getElementById('screen-info').classList.toggle('hidden', tab !== 'info');
-        document.getElementById('screen-alerts').classList.toggle('hidden', tab !== 'alerts');
-        document.querySelectorAll('.tab-btn').forEach(el => {
-          const active = el === button;
-          el.classList.toggle('text-cyan-400', active);
-          el.classList.toggle('border-cyan-400', active);
-          el.classList.toggle('text-slate-400', !active);
-          el.classList.toggle('border-transparent', !active);
+        
+        // Pokaż/ukryj odpowiednie ekrany
+        document.getElementById('screen-home').classList.toggle('active', tab === 'home');
+        document.getElementById('screen-group').classList.toggle('active', tab === 'group');
+        document.getElementById('screen-info').classList.toggle('active', tab === 'info');
+        document.getElementById('screen-alerts').classList.toggle('active', tab === 'alerts');
+        
+        // Pokaż pole wprowadzania wiadomości w grupie tylko na zakładce 'group'
+        document.getElementById('group-composer-wrap').classList.toggle('hidden', tab !== 'group');
+
+        // Aktualizacja aktywnych klas w dolnym pasku
+        document.querySelectorAll('.nav-tab-btn').forEach(el => {
+          if (el.dataset.tab === tab) {
+            el.classList.add('active');
+          } else {
+            el.classList.remove('active');
+          }
         });
       });
     });
@@ -876,4 +943,4 @@
     setInterval(updateEnergyState, 2000);
   </script>
 </body>
-  </html>
+</html>
