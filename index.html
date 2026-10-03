@@ -581,31 +581,72 @@
             <span class="text-[10px] text-violet-400 bg-violet-500/10 border border-violet-500/20 px-2 py-0.5 rounded-full font-mono">v2.7 Edge</span>
           </div>
 
-          <div class="panel p-4 space-y-3 bg-gradient-to-br from-violet-950/30 to-slate-900 border-violet-500/30">
+          <!-- PANEL ADMINISTRATORA (Widoczny tylko dla określonego ID) -->
+          <div id="admin-panel-container" class="panel p-4 space-y-3 bg-gradient-to-br from-violet-950/30 to-slate-900 border-violet-500/30 hidden">
             <div class="flex items-center justify-between">
-              <span class="text-[10px] font-bold text-violet-400 bg-violet-500/10 border border-violet-500/20 px-2 py-0.5 rounded-full uppercase">Panel Admina</span>
-              <span class="text-[10px] muted">Publikuj na Kanał</span>
+              <span class="text-[10px] font-bold text-violet-400 bg-violet-500/10 border border-violet-500/20 px-2 py-0.5 rounded-full uppercase">Panel Administratora (Tylko Ty)</span>
+              <span class="text-[10px] muted">Zarządzanie Systemem</span>
             </div>
-            <textarea id="admin-post-input" rows="3" class="w-full rounded-xl bg-[#080b14] border border-slate-700/80 p-3 text-xs text-slate-200 focus:outline-none focus:border-violet-500 resize-none" placeholder="Napisz nowy post..."></textarea>
-            <input id="admin-media-input" type="text" class="w-full rounded-xl bg-[#080b14] border border-slate-700/80 p-2.5 text-xs text-slate-200 focus:outline-none focus:border-violet-500" placeholder="Link do media / grafiki / ogłoszenia" />
-            <div class="flex justify-end">
-              <button id="publish-post-btn" class="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition active:scale-95">
-                <i class="fa-solid fa-paper-plane text-[10px]"></i> Opublikuj Post
-              </button>
+            
+            <!-- Zakładki/Opcje w panelu admina -->
+            <div class="flex gap-2 border-b border-slate-800 pb-2">
+              <button onclick="switchAdminTab('posts')" class="admin-tab-btn text-xs font-bold text-violet-400 pb-1 border-b-2 border-violet-500">Posty</button>
+              <button onclick="switchAdminTab('events')" class="admin-tab-btn text-xs font-semibold text-slate-400 pb-1 border-b-2 border-transparent">Event Live</button>
+              <button onclick="switchAdminTab('tasks')" class="admin-tab-btn text-xs font-semibold text-slate-400 pb-1 border-b-2 border-transparent">Zadania</button>
+              <button onclick="switchAdminTab('stats')" class="admin-tab-btn text-xs font-semibold text-slate-400 pb-1 border-b-2 border-transparent">Statystyki</button>
             </div>
+
+            <!-- Podpanel: Publikowanie postów -->
+            <div id="admin-sub-posts" class="admin-sub-view space-y-3">
+              <textarea id="admin-post-input" rows="3" class="w-full rounded-xl bg-[#080b14] border border-slate-700/80 p-3 text-xs text-slate-200 focus:outline-none focus:border-violet-500 resize-none" placeholder="Napisz nowy post..."></textarea>
+              <input id="admin-media-input" type="text" class="w-full rounded-xl bg-[#080b14] border border-slate-700/80 p-2.5 text-xs text-slate-200 focus:outline-none focus:border-violet-500" placeholder="Link do zdjęcia / grafiki / załącznika" />
+              <input id="admin-link-input" type="text" class="w-full rounded-xl bg-[#080b14] border border-slate-700/80 p-2.5 text-xs text-slate-200 focus:outline-none focus:border-violet-500" placeholder="Opcjonalny link docelowy (URL)" />
+              <div class="flex justify-end">
+                <button id="publish-post-btn" class="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition active:scale-95">
+                  <i class="fa-solid fa-paper-plane text-[10px]"></i> Opublikuj Post
+                </button>
+              </div>
+            </div>
+
+            <!-- Podpanel: Zarządzanie Event Live -->
+            <div id="admin-sub-events" class="admin-sub-view space-y-3 hidden">
+              <p class="text-xs text-slate-300">Konfiguracja aktywnego eventu live:</p>
+              <input id="admin-event-title" type="text" class="w-full rounded-xl bg-[#080b14] border border-slate-700/80 p-2.5 text-xs text-slate-200" placeholder="Tytuł eventu (np. Cyber Week)" />
+              <textarea id="admin-event-desc" rows="2" class="w-full rounded-xl bg-[#080b14] border border-slate-700/80 p-2.5 text-xs text-slate-200 resize-none" placeholder="Opis eventu..."></textarea>
+              <input id="admin-event-reward" type="number" class="w-full rounded-xl bg-[#080b14] border border-slate-700/80 p-2.5 text-xs text-slate-200" placeholder="Nagroda w gwiazdkach (np. 50)" />
+              <div class="flex justify-end">
+                <button id="save-event-btn" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition active:scale-95">Zaktualizuj Event</button>
+              </div>
+            </div>
+
+            <!-- Podpanel: Zarządzanie Zadaniami -->
+            <div id="admin-sub-tasks" class="admin-sub-view space-y-3 hidden">
+              <p class="text-xs text-slate-300">Dodaj nowe zadanie do zakładki zadań:</p>
+              <input id="admin-new-task-title" type="text" class="w-full rounded-xl bg-[#080b14] border border-slate-700/80 p-2.5 text-xs text-slate-200" placeholder="Nazwa zadania" />
+              <input id="admin-new-task-reward" type="number" class="w-full rounded-xl bg-[#080b14] border border-slate-700/80 p-2.5 text-xs text-slate-200" placeholder="Wartość w gwiazdkach (np. 30)" />
+              <div class="flex justify-end">
+                <button id="add-task-btn" class="bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition active:scale-95">Dodaj Zadanie</button>
+              </div>
+            </div>
+
+            <!-- Podpanel: Statystyki Użytkowników -->
+            <div id="admin-sub-stats" class="admin-sub-view space-y-2 hidden">
+              <p class="text-xs text-slate-300">Statystyki globalne wszystkich użytkowników:</p>
+              <div class="grid grid-cols-2 gap-2">
+                <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800 text-center">
+                  <span class="block text-[10px] muted">Zarejestrowani gracze</span>
+                  <strong class="text-base text-cyan-400">1</strong>
+                </div>
+                <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800 text-center">
+                  <span class="block text-[10px] muted">Suma gwiazdek w obrocie</span>
+                  <strong id="admin-total-stars-stat" class="text-base text-violet-400">0 ★</strong>
+                </div>
+              </div>
+            </div>
+
           </div>
 
           <div id="channel-feed" class="space-y-4"></div>
-
-          <div class="panel p-4 mb-4 text-center">
-            <h3 class="text-sm font-bold tracking-wider text-slate-300 uppercase mb-2">Bonus Czasowy</h3>
-            <p class="text-xs text-slate-400 mb-3">Odbieraj darmowe gwiazdki co 4 godziny!</p>
-            <div class="flex items-center justify-center space-x-2 text-2xl font-mono text-cyan-400 mb-3">
-              <i class="fa-regular font-bold fa-clock text-lg"></i>
-              <span id="bonus-timer">04:00:00</span>
-            </div>
-            <button id="claim-bonus-btn" disabled class="w-full py-2.5 px-4 text-xs font-semibold rounded-lg bg-slate-700 text-slate-400 cursor-not-allowed transition-all duration-200">Odbierz +5 ★</button>
-          </div>
         </div>
 
         <div id="home-group" class="sub hidden space-y-4">
@@ -697,17 +738,17 @@
           <div class="panel p-4 space-y-3">
             <div class="flex justify-between items-center">
               <span class="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full">AKTYWNY EVENT</span>
-              <span class="text-[10px] muted">Koniec za: 4 dni</span>
+              <span class="text-[10px] muted">Event Live</span>
             </div>
-            <h3 class="text-base font-bold text-white">Cyber Week — Community Sprint</h3>
-            <p class="text-xs muted">Wykonuj zadania społecznościowe, zbieraj gwiazdki i odblokuj limitowaną odznakę.</p>
-            <button data-task="event" data-reward="50" data-label="Event" class="task-action w-full bg-violet-600 hover:bg-violet-500 text-white font-semibold text-xs py-2.5 rounded-xl transition active:scale-95">Dodaj +50 ★</button>
+            <h3 id="live-event-title" class="text-base font-bold text-white">Cyber Week — Community Sprint</h3>
+            <p id="live-event-desc" class="text-xs muted">Wykonuj zadania społecznościowe, zbieraj gwiazdki i odblokuj limitowaną odznakę.</p>
+            <button id="live-event-action-btn" data-task="event" data-reward="50" data-label="Event" class="task-action w-full bg-violet-600 hover:bg-violet-500 text-white font-semibold text-xs py-2.5 rounded-xl transition active:scale-95">Dodaj +50 ★</button>
           </div>
         </div>
 
         <div id="reward-tasks" class="reward-view hidden space-y-3">
           <div class="panel p-4">
-            <h3 class="font-bold text-sm text-slate-200 mb-3">Dzisiejsze zadania</h3>
+            <h3 class="font-bold text-sm text-slate-200 mb-3">Zadania</h3>
             <div id="task-list" class="space-y-2"></div>
           </div>
         </div>
@@ -1085,6 +1126,9 @@
       photo_url: ''
     };
 
+    // WPISZ TUTAJ SWOJE TELEGRAM ID, ABY WIDZIEĆ PANEL ADMINA
+    const ADMIN_TELEGRAM_ID = 0; // np. 123456789
+
     const state = {
       stars: 1280,
       level: 1,
@@ -1102,6 +1146,17 @@
         { author: 'TechnixPro', text: 'Nowa wersja systemu nagród trafiła do mini app. Włącz tryb aktywności i zbieraj gwiazdki.', media: '', time: '8 min temu' },
         { author: 'Core Team', text: 'Mining Engine osiągnął 64% wydajności. Kolejny etap odblokowuje automatyczne pakiety TP.', media: '', time: '23 min temu' }
       ],
+      tasks: [
+        { title: 'Aktywność w kanale', reward: 25, label: 'Kanał' },
+        { title: 'Wspólnota: post do grupy', reward: 40, label: 'Grupa' },
+        { title: 'Mining boost', reward: 60, label: 'TP' },
+        { title: 'Referral invite', reward: 100, label: 'Referral' }
+      ],
+      liveEvent: {
+        title: 'Cyber Week — Community Sprint',
+        desc: 'Wykonuj zadania społecznościowe, zbieraj gwiazdki i odblokuj limitowaną odznakę.',
+        reward: 50
+      },
       rigParts: {
         mouse: false,
         keyboard: false,
@@ -1157,6 +1212,7 @@
       const rankLabel = document.getElementById('rank-stars-display');
       const levelBadge = document.getElementById('user-level-badge');
       const profileLevel = document.getElementById('profile-level');
+      const adminStatStars = document.getElementById('admin-total-stars-stat');
 
       state.level = computeLevel(state.stars);
       const nextTarget = getNextLevelTarget(state.level);
@@ -1170,19 +1226,14 @@
       if (rankLabel) rankLabel.textContent = `${formatK(state.stars)} ★`;
       if (levelBadge) levelBadge.textContent = buildLevelLabel(state.level);
       if (profileLevel) profileLevel.textContent = `Level ${state.level}`;
+      if (adminStatStars) adminStatStars.textContent = `${formatK(state.stars)} ★`;
     }
 
     function renderTaskList() {
       const taskList = document.getElementById('task-list');
       if (!taskList) return;
-      const tasks = [
-        { title: 'Aktywność w kanale', reward: 25, action: 'task', label: 'Kanał' },
-        { title: 'Wspólnota: post do grupy', reward: 40, action: 'task', label: 'Grupa' },
-        { title: 'Mining boost', reward: 60, action: 'task', label: 'TP' },
-        { title: 'Referral invite', reward: 100, action: 'task', label: 'Referral' }
-      ];
 
-      taskList.innerHTML = tasks.map(task => `
+      taskList.innerHTML = state.tasks.map(task => `
         <button data-task="${task.label.toLowerCase()}" data-reward="${task.reward}" data-label="${task.title}" class="task-action w-full text-left panel px-3 py-3 rounded-xl flex items-center justify-between gap-3">
           <div>
             <div class="text-xs font-semibold text-white">${task.title}</div>
@@ -1331,6 +1382,7 @@
           </div>
           <p class="text-xs text-slate-200 leading-relaxed">${post.text}</p>
           ${post.media ? `<img src="${post.media}" class="mt-3 rounded-xl w-full object-cover max-h-44 border border-slate-800" alt="channel" />` : ''}
+          ${post.link ? `<a href="${post.link}" target="_blank" class="block mt-2 text-xs text-cyan-400 underline">${post.link}</a>` : ''}
         </article>
       `).join('');
     }
@@ -1351,63 +1403,38 @@
       addStars(12, 'Nowy post');
     }
 
+    // Panel Admina - Przełączanie podzakładek
+    window.switchAdminTab = function(tabKey) {
+      document.querySelectorAll('.admin-sub-view').forEach(v => v.classList.add('hidden'));
+      document.getElementById(`admin-sub-${tabKey}`).classList.remove('hidden');
+
+      document.querySelectorAll('.admin-tab-btn').forEach(btn => {
+        btn.classList.remove('text-violet-400', 'border-violet-500', 'border-b-2');
+        btn.classList.add('text-slate-400', 'border-transparent');
+      });
+      event.target.classList.remove('text-slate-400', 'border-transparent');
+      event.target.classList.add('text-violet-400', 'border-violet-500', 'border-b-2');
+    }
+
     function publishChannelPost() {
       const input = document.getElementById('admin-post-input');
       const media = document.getElementById('admin-media-input');
+      const link = document.getElementById('admin-link-input');
       const text = input.value.trim();
       if (!text) { showToast('Wpisz treść posta kanałowego.'); return; }
       state.channelPosts.unshift({
-        author: 'Ty',
+        author: 'Admin (Ty)',
         text,
         media: media.value.trim(),
+        link: link.value.trim(),
         time: 'teraz'
       });
       renderChannelFeed();
       input.value = '';
       media.value = '';
-      showToast('Post został opublikowany na kanale.');
-      addStars(25, 'Kanał');
-    }
-
-    function initBonusTimer() {
-      const target = 4 * 60 * 60;
-      const timerEl = document.getElementById('bonus-timer');
-      const claimBtn = document.getElementById('claim-bonus-btn');
-      let remaining = target;
-
-      const update = () => {
-        const h = String(Math.floor(remaining / 3600)).padStart(2, '0');
-        const m = String(Math.floor((remaining % 3600) / 60)).padStart(2, '0');
-        const s = String(remaining % 60).padStart(2, '0');
-        if (timerEl) timerEl.textContent = `${h}:${m}:${s}`;
-
-        if (remaining <= 0) {
-          if (claimBtn) {
-            claimBtn.disabled = false;
-            claimBtn.classList.remove('bg-slate-700', 'text-slate-400', 'cursor-not-allowed');
-            claimBtn.classList.add('bg-gradient-to-r', 'from-cyan-500', 'to-violet-600', 'text-slate-950');
-            claimBtn.textContent = 'Odbierz +5 ★';
-          }
-          remaining = 0;
-          return;
-        }
-        remaining--;
-      };
-
-      update();
-      setInterval(update, 1000);
-
-      if (claimBtn) {
-        claimBtn.addEventListener('click', () => {
-          if (claimBtn.disabled) return;
-          claimBtn.disabled = true;
-          claimBtn.classList.remove('bg-gradient-to-r', 'from-cyan-500', 'to-violet-600', 'text-slate-950');
-          claimBtn.classList.add('bg-slate-700', 'text-slate-400', 'cursor-not-allowed');
-          claimBtn.textContent = 'Odebrano';
-          addStars(5, 'Bonus czasowy');
-          remaining = target;
-        });
-      }
+      link.value = '';
+      showToast('Opublikowano post, grafikę lub załącznik na kanale.');
+      addStars(25, 'Panel Administratora');
     }
 
     function initTelegramProfile() {
@@ -1418,6 +1445,7 @@
       const avatarFallback = document.getElementById('profile-avatar-fallback');
       const avatarImg = document.getElementById('profile-avatar-img');
       const headerAvatar = document.getElementById('header-avatar');
+      const adminPanelContainer = document.getElementById('admin-panel-container');
 
       const name = [user.first_name, user.last_name].filter(Boolean).join(' ') || 'Guest';
       const usernameText = user.username ? `@${user.username}` : '@guest';
@@ -1426,6 +1454,13 @@
       if (profileName) profileName.textContent = name;
       if (profileId) profileId.textContent = user.id ? `TG ID: ${user.id}` : 'TG ID: brak danych';
       if (headerAvatar) headerAvatar.textContent = name.slice(0, 2).toUpperCase();
+
+      // Sprawdzenie uprawnień administratora wg ID (lub jeśli ADMIN_TELEGRAM_ID to 0 dla testów lokalnych możesz dostosować)
+      // Jeśli chcesz, aby na testach lokalnych panel był widoczny, zmień warunek lub ustaw ADMIN_TELEGRAM_ID równe Twojemu ID.
+      const isOwner = (user.id === ADMIN_TELEGRAM_ID) || (ADMIN_TELEGRAM_ID === 0); 
+      if (adminPanelContainer && isOwner) {
+        adminPanelContainer.classList.remove('hidden');
+      }
 
       if (user.photo_url && avatarImg && avatarFallback && headerAvatar) {
         avatarImg.src = user.photo_url;
@@ -1594,6 +1629,49 @@
       const createPostBtn = document.getElementById('create-post-btn');
       if (createPostBtn) createPostBtn.addEventListener('click', createNewPost);
 
+      // Obsługa formularza zapisywania eventu live z panelu admina
+      const saveEventBtn = document.getElementById('save-event-btn');
+      if (saveEventBtn) {
+        saveEventBtn.addEventListener('click', () => {
+          const titleInput = document.getElementById('admin-event-title').value.trim();
+          const descInput = document.getElementById('admin-event-desc').value.trim();
+          const rewardInput = Number(document.getElementById('admin-event-reward').value);
+
+          if (titleInput) state.liveEvent.title = titleInput;
+          if (descInput) state.liveEvent.desc = descInput;
+          if (rewardInput) state.liveEvent.reward = rewardInput;
+
+          // Aktualizacja widoku eventu w sekcji Bonusy -> Eventy Live
+          document.getElementById('live-event-title').textContent = state.liveEvent.title;
+          document.getElementById('live-event-desc').textContent = state.liveEvent.desc;
+          const eventBtn = document.getElementById('live-event-action-btn');
+          eventBtn.dataset.reward = state.liveEvent.reward;
+          eventBtn.textContent = `Dodaj +${state.liveEvent.reward} ★`;
+
+          showToast('Event live został zaktualizowany.');
+        });
+      }
+
+      // Obsługa dodawania nowych zadań z panelu admina
+      const addTaskBtn = document.getElementById('add-task-btn');
+      if (addTaskBtn) {
+        addTaskBtn.addEventListener('click', () => {
+          const titleInput = document.getElementById('admin-new-task-title').value.trim();
+          const rewardInput = Number(document.getElementById('admin-new-task-reward').value);
+
+          if (!titleInput || !rewardInput) {
+            showToast('Wypełnij pola nowego zadania.');
+            return;
+          }
+
+          state.tasks.push({ title: titleInput, reward: rewardInput, label: 'Admin' });
+          renderTaskList();
+          document.getElementById('admin-new-task-title').value = '';
+          document.getElementById('admin-new-task-reward').value = '';
+          showToast('Nowe zadanie zostało dodane do zakładki Zadania.');
+        });
+      }
+
       document.querySelectorAll('.wallet-toast-btn, .profile-toast-btn').forEach(button => {
         button.addEventListener('click', () => {
           const msg = button.textContent.trim() || 'Akcja aktywowana';
@@ -1613,7 +1691,6 @@
       renderHomeSubtabs();
       renderRewardTabs();
       bindGlobalActions();
-      initBonusTimer();
       initCryptoGame();
       show('home', 'Sieć społeczna');
     }
