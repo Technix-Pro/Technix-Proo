@@ -1117,9 +1117,9 @@
     }
 
     const defaultUser = {
-      first_name: 'Guest',
+      first_name: 'Żaku',
       last_name: '',
-      username: 'guest',
+      username: 'zaku',
       id: 0,
       photo_url: ''
     };
@@ -1393,7 +1393,7 @@
       const text = input.value.trim();
       if (!text) { showToast('Napisz treść posta zanim opublikujesz.'); return; }
       state.posts.unshift({
-        author: 'Ty',
+        author: 'Żaku',
         text,
         media: '',
         time: 'teraz'
@@ -1423,7 +1423,7 @@
       const text = input.value.trim();
       if (!text) { showToast('Wpisz treść posta kanałowego.'); return; }
       state.channelPosts.unshift({
-        author: 'Admin (Ty)',
+        author: 'Żaku (Admin)',
         text,
         media: media.value.trim(),
         link: link.value.trim(),
@@ -1447,8 +1447,8 @@
       const headerAvatar = document.getElementById('header-avatar');
       const adminPanelContainer = document.getElementById('admin-panel-container');
 
-      const name = [user.first_name, user.last_name].filter(Boolean).join(' ') || 'Guest';
-      const usernameText = user.username ? `@${user.username}` : '@guest';
+      const name = [user.first_name, user.last_name].filter(Boolean).join(' ') || 'Żaku';
+      const usernameText = user.username ? `@${user.username}` : '@zaku';
 
       if (username) username.textContent = usernameText;
       if (profileName) profileName.textContent = name;
