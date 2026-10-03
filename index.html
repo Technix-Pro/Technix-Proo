@@ -1050,19 +1050,18 @@
   </main>
 
   <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-[#080b14]/95 backdrop-blur-xl border-t border-slate-800/80 z-40">
-    <div class="grid grid-cols-5 gap-2 px-3 py-2">
+    <div class="grid grid-cols-6 gap-1 px-2 py-2">
       <button data-screen="home" class="nav-btn active flex flex-col items-center justify-center py-2 rounded-xl">
         <i class="fa-solid fa-house"></i>
         <span>Home</span>
       </button>
-      <button data-screen="gift" class="nav-btn flex flex-col items-center justify-center py-2 rounded-xl relative">
-        <i class="fa-solid fa-star"></i>
-        <span>Gwiazdy</span>
-        <span class="nav-pill" id="nav-stars-pill">+5</span>
-      </button>
       <button data-screen="crypto" class="nav-btn flex flex-col items-center justify-center py-2 rounded-xl">
-        <i class="fa-solid fa-coins"></i>
-        <span>TP</span>
+        <i class="fa-solid fa-microchip"></i>
+        <span>TechnixPro</span>
+      </button>
+      <button data-screen="gift" class="nav-btn flex flex-col items-center justify-center py-2 rounded-xl relative">
+        <i class="fa-solid fa-gift"></i>
+        <span>Bonusy</span>
       </button>
       <button data-screen="wallet" class="nav-btn flex flex-col items-center justify-center py-2 rounded-xl">
         <i class="fa-solid fa-wallet"></i>
@@ -1071,6 +1070,10 @@
       <button data-screen="profile" class="nav-btn flex flex-col items-center justify-center py-2 rounded-xl">
         <i class="fa-solid fa-user"></i>
         <span>Profil</span>
+      </button>
+      <button data-screen="menu" class="nav-btn flex flex-col items-center justify-center py-2 rounded-xl">
+        <i class="fa-solid fa-bars"></i>
+        <span>Menu</span>
       </button>
     </div>
   </nav>
@@ -1157,7 +1160,6 @@
       const rankLabel = document.getElementById('rank-stars-display');
       const levelBadge = document.getElementById('user-level-badge');
       const profileLevel = document.getElementById('profile-level');
-      const navPill = document.getElementById('nav-stars-pill');
 
       state.level = computeLevel(state.stars);
       const nextTarget = getNextLevelTarget(state.level);
@@ -1171,7 +1173,6 @@
       rankLabel.textContent = `${formatK(state.stars)} ★`;
       levelBadge.textContent = buildLevelLabel(state.level);
       profileLevel.textContent = `Level ${state.level}`;
-      navPill.textContent = `+${Math.max(1, Math.ceil(state.level * 5))}`;
     }
 
     function renderTaskList() {
@@ -1232,10 +1233,6 @@
       if (titleNode) titleNode.textContent = title;
 
       document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.screen === screenName));
-    }
-
-    function sub(section, key, btn) {
-      const group = document.querySelectorAll(`#${section}-` + key === '#home-channel' ? '#home-channel' : `#${section}-${key}`);
     }
 
     function renderHomeSubtabs() {
@@ -1400,7 +1397,7 @@
 
           if (remaining <= 0) {
             claimBtn.disabled = false;
-            claimBtn.classList.remove('bg-slate-700', 'text-slate-400', 'cursor-not-allowed');
+            claimBtn.classList.remove('bg-gradient-to-r', 'from-cyan-500', 'to-violet-600', 'text-slate-950');
             claimBtn.classList.add('bg-gradient-to-r', 'from-cyan-500', 'to-violet-600', 'text-slate-950');
             claimBtn.textContent = 'Odbierz +5 ★';
             return;
@@ -1551,10 +1548,11 @@
         button.addEventListener('click', () => {
           const key = button.dataset.screen;
           if (key === 'home') show('home', 'Sieć społeczna');
-          if (key === 'gift') show('gift', 'Gwiazdy');
-          if (key === 'crypto') show('crypto', 'Kryptowaluta');
+          if (key === 'crypto') show('crypto', 'TechnixPro');
+          if (key === 'gift') show('gift', 'Bonusy');
           if (key === 'wallet') show('wallet', 'Portfel');
           if (key === 'profile') show('profile', 'Profil');
+          if (key === 'menu') show('menu', 'Menu Główne');
           if (key === 'search') show('search', 'Wyszukiwarka');
           if (key === 'notifications') show('notifications', 'Powiadomienia');
         });
@@ -1613,4 +1611,4 @@
     window.addEventListener('load', seedInitialState);
   </script>
 </body>
-  </html>
+</html>
