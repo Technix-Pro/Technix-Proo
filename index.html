@@ -583,14 +583,12 @@
             <span class="text-[10px] text-violet-400 bg-violet-500/10 border border-violet-500/20 px-2 py-0.5 rounded-full font-mono">v2.7 Edge</span>
           </div>
 
-          <!-- PANEL ADMINISTRATORA (Widoczny tylko dla określonego ID) -->
           <div id="admin-panel-container" class="panel p-4 space-y-3 bg-gradient-to-br from-violet-950/30 to-slate-900 border-violet-500/30 hidden">
             <div class="flex items-center justify-between">
               <span class="text-[10px] font-bold text-violet-400 bg-violet-500/10 border border-violet-500/20 px-2 py-0.5 rounded-full uppercase">Panel Administratora (Tylko Ty)</span>
               <span class="text-[10px] muted">Zarządzanie Systemem</span>
             </div>
             
-            <!-- Zakładki/Opcje w panelu admina -->
             <div class="flex gap-2 border-b border-slate-800 pb-2">
               <button onclick="switchAdminTab('posts')" class="admin-tab-btn text-xs font-bold text-violet-400 pb-1 border-b-2 border-violet-500">Posty</button>
               <button onclick="switchAdminTab('events')" class="admin-tab-btn text-xs font-semibold text-slate-400 pb-1 border-b-2 border-transparent">Event Live</button>
@@ -598,7 +596,6 @@
               <button onclick="switchAdminTab('stats')" class="admin-tab-btn text-xs font-semibold text-slate-400 pb-1 border-b-2 border-transparent">Statystyki</button>
             </div>
 
-            <!-- Podpanel: Publikowanie postów -->
             <div id="admin-sub-posts" class="admin-sub-view space-y-3">
               <textarea id="admin-post-input" rows="3" class="w-full rounded-xl bg-[#080b14] border border-slate-700/80 p-3 text-xs text-slate-200 focus:outline-none focus:border-violet-500 resize-none" placeholder="Napisz nowy post..."></textarea>
               <input id="admin-media-input" type="text" class="w-full rounded-xl bg-[#080b14] border border-slate-700/80 p-2.5 text-xs text-slate-200 focus:outline-none focus:border-violet-500" placeholder="Link do zdjęcia / grafiki / załącznika" />
@@ -610,7 +607,6 @@
               </div>
             </div>
 
-            <!-- Podpanel: Zarządzanie Event Live -->
             <div id="admin-sub-events" class="admin-sub-view space-y-3 hidden">
               <p class="text-xs text-slate-300">Konfiguracja aktywnego eventu live:</p>
               <input id="admin-event-title" type="text" class="w-full rounded-xl bg-[#080b14] border border-slate-700/80 p-2.5 text-xs text-slate-200" placeholder="Tytuł eventu (np. Cyber Week)" />
@@ -621,7 +617,6 @@
               </div>
             </div>
 
-            <!-- Podpanel: Zarządzanie Zadaniami -->
             <div id="admin-sub-tasks" class="admin-sub-view space-y-3 hidden">
               <p class="text-xs text-slate-300">Dodaj nowe zadanie do zakładki zadań:</p>
               <input id="admin-new-task-title" type="text" class="w-full rounded-xl bg-[#080b14] border border-slate-700/80 p-2.5 text-xs text-slate-200" placeholder="Nazwa zadania" />
@@ -631,7 +626,6 @@
               </div>
             </div>
 
-            <!-- Podpanel: Statystyki Użytkowników -->
             <div id="admin-sub-stats" class="admin-sub-view space-y-2 hidden">
               <p class="text-xs text-slate-300">Statystyki globalne wszystkich użytkowników:</p>
               <div class="grid grid-cols-2 gap-2">
@@ -1130,8 +1124,7 @@
       photo_url: ''
     };
 
-    // WPISZ TUTAJ SWOJE TELEGRAM ID, ABY WIDZIEĆ PANEL ADMINA
-    const ADMIN_TELEGRAM_ID = 0; // np. 123456789
+    const ADMIN_TELEGRAM_ID = 0;
 
     const state = {
       stars: 1280,
@@ -1411,7 +1404,6 @@
       addStars(12, 'Nowy post');
     }
 
-    // Panel Admina - Przełączanie podzakładek
     window.switchAdminTab = function(tabKey) {
       document.querySelectorAll('.admin-sub-view').forEach(v => v.classList.add('hidden'));
       document.getElementById(`admin-sub-${tabKey}`).classList.remove('hidden');
