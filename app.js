@@ -50,6 +50,48 @@
         { author: 'System', text: 'TechnixPro Core Engine online. Wersja 2.7 Edge aktywna.', media: '', time: '2 min temu' },
         { author: 'System', text: 'Nowa seria zadań społecznościowych została dodana do sekcji gwiazd.', media: '', time: '12 min temu' }
       ],
+8      channelPosts: [
+        { author: 'TechnixPro', text: 'Nowa wersja systemu nagród trafiła do mini app. Włącz tryb aktywności i zbieraj gwiazdki.', media: '', time: '8 min temu' },
+        { author: 'Core Team', text: 'Mining Engine osiągnął 64% wydajności. Kolejny etap odblokowuje automatyczne pakiety TP.', media: '', time: '23 min temu' }
+      ],
+      tasks: [
+        { title: 'Aktywność w kanale', reward: 25, label: 'Kanał' },
+        { title: 'Wspólnota: post do grupy', reward: 40, label: 'Grupa' },
+        { title: 'Mining boost', reward: 60, label: 'TP' },
+        { title: 'Referral invite', reward: 100, label: 'Referral' }
+      ],
+      liveEvent: {
+        title: 'Cyber Week — Community Sprint',
+        desc: 'Wykonuj zadania społecznościowe, zbieraj gwiazdki i odblokuj limitowaną odznakę.',
+        reward: 50
+      },
+      owned: {},
+      purchases: []
+      rigParts: {
+        mouse: false,
+        keyboard: false,
+        monitor: false,
+        case: false,
+        ram: false,
+        gpu: false,
+        fan: false
+      },
+      rigCatalog: [
+        { key: 'mouse', name: 'Mysz', cost: 40 },
+        { key: 'keyboard', name: 'Klawiatura', cost: 60 },
+        { key: 'monitor', name: 'Monitor', cost: 180 },
+        { key: 'case', name: 'Obudowa', cost: 100 },
+        { key: 'ram', name: 'RAM', cost: 80 },
+        { key: 'gpu', name: 'GPU', cost: 270 },
+        { key: 'fan', name: 'Chłodzenie', cost: 90 }
+        { key: 'mouse', name: 'Mysz', icon: 'fa-computer-mouse', cost: 40 },
+        { key: 'keyboard', name: 'Klawiatura', icon: 'fa-keyboard', cost: 60 },
+        { key: 'monitor', name: 'Monitor', icon: 'fa-display', cost: 180 },
+        { key: 'case', name: 'Obudowa', icon: 'fa-cube', cost: 100 },
+        { key: 'ram', name: 'RAM', icon: 'fa-memory', cost: 80 },
+        { key: 'gpu', name: 'GPU', icon: 'fa-microchip', cost: 270 },
+        { key: 'fan', name: 'Chłodzenie', icon: 'fa-fan', cost: 120 }
+      ]
       channelPosts: [],
       tasks: [],
       liveEvent: null,
@@ -517,6 +559,64 @@
       state.owned = owned;
       state.purchases = Array.isArray(data.purchases) ? data.purchases : [];
       applyEffects();
+    async function buyRigPartWithStars(itemKey, cost, button) {
+      button.disabled = true;
+      button.textContent = 'Łączenie z Telegramem…';
+      try {
+        const payment = await TechnixAPI.purchaseRigPart(itemKey, cost);
+        if (payment && payment.owned) {
+          completePurchase(itemKey, payment);
+        } else if (payment?.status === 'cancelled') {
+          showToast('Płatność została anulowana.');
+        } else if (payment?.status === 'failed') {
+          showToast('Płatność Telegram Stars nie powiodła się.');
+        } else {
+          showToast('Płatność oczekuje na potwierdzenie.');
+        }
+      } catch (error) {
+        showToast(error.message || 'Nie udało się rozpocząć płatności Telegram Stars.');
+      } finally {
+        if (button.isConnected && !state.rigParts[itemKey]) {
+          button.disabled = false;
+          button.textContent = `Kup za ${cost} ⭐`;
+        }
+      }
+    }
+
+    function ownedCount(id) {
+      return Number(state.owned[id]) || 0;
+    }
+
+    function getOwnedRigParts() {
+      const parts = {};
+      getCatalog().forEach(item => {
+        if (item.type === 'rig_part' && item.effect && item.effect.part && ownedCount(item.id) > 0) parts[item.effect.part] = true;
+      });
+      return parts;
+    }
+
+    function applyEffects() {
+      let energyBonus = 0;
+      let theme = '';
+      getCatalog().forEach(item => {
+        if (ownedCount(item.id) < 1 || !item.effect) return;
+        if (item.effect.type === 'energy_max') energyBonus += Number(item.effect.value) || 0;
+        if (item.effect.type === 'cosmetic' && item.effect.theme) theme = item.effect.theme;
+      });
+      state.energyMax = 1000 + energyBonus;
+      if (theme) document.body.dataset.coreTheme = theme; else delete document.body.dataset.coreTheme;
+    }
+
+    // Server response ({ owned, purchases }) is the only source of truth for owned goods.
+    function applyServerState(data, silent) {
+      if (!data) return;
+      const owned = {};
+      if (data.owned && typeof data.owned === 'object') {
+        Object.keys(data.owned).forEach(id => { owned[id] = Number(data.owned[id]) || 0; });
+      }
+      state.owned = owned;
+      state.purchases = Array.isArray(data.purchases) ? data.purchases : [];
+      applyEffects();
       renderRigShop();
       renderPurchaseHistory();
       if (window.RigBuilder) window.RigBuilder.setOwned(getOwnedRigParts(), !!silent);
@@ -606,7 +706,139 @@
         row.appendChild(left);
         row.appendChild(right);
         box.appendChild(row);
+      const paymentNote = document.getElementById('rig-payment-note');
+      if (paymentNote) paymentNote.textContent = window.CONFIG?.USE_MOCK_API
+        ? 'Tryb demonstracyjny — nie jest pobierana rzeczywista płatność.'
+        : 'Płatność przez Telegram Stars (XTR).';
+      const previewViews = {
+        monitor: '170 60 180 160',
+        keyboard: '292 214 154 36',
+        mouse: '450 210 54 36',
+        case: '394 239 142 100',
+        fan: '423 256 62 62',
+        ram: '414 250 32 68',
+        gpu: '404 294 84 36'
+      };
+      rigShop.replaceChildren();
+      state.rigCatalog.forEach(item => {
+        const owned = state.rigParts[item.key];
+        const card = document.createElement('div');
+        card.className = `shop-item${owned ? ' shop-item-owned' : ''}`;
+        card.innerHTML = '<div class="shop-item-preview" data-preview><svg viewBox=""><use></use></svg></div><div><div class="shop-item-title text-[10px] font-semibold text-white"></div><div class="shop-item-cost text-[9px] text-amber-400 font-bold"></div><div class="shop-installed hidden text-[9px] font-bold">Zamontowano</div></div><button type="button" data-rig class="px-2 py-2 rounded-lg transition active:scale-95"></button>';
+        const preview = card.querySelector('[data-preview]');
+        preview.dataset.preview = item.key;
+        preview.querySelector('svg').setAttribute('viewBox', previewViews[item.key]);
+        preview.querySelector('use').setAttribute('href', `#rig-${item.key}`);
+        card.querySelector('.shop-item-title').textContent = item.name;
+        card.querySelector('.shop-item-cost').textContent = `${item.cost} ★ Telegram Stars`;
+        card.querySelector('.shop-installed').classList.toggle('hidden', !owned);
+        const button = card.querySelector('[data-rig]');
+        button.dataset.rig = item.key;
+        button.dataset.cost = String(item.cost);
+        button.className += owned
+          ? ' bg-emerald-500/20 text-emerald-300 border border-emerald-500/20'
+          : ' bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-extrabold';
+        button.textContent = owned ? 'Zamontowano' : `Kup za ${item.cost} ⭐`;
+        button.setAttribute('aria-label', owned ? `${item.name}: zamontowano` : `Kup ${item.name} za ${item.cost} Telegram Stars`);
+        button.disabled = Boolean(owned);
+        rigShop.appendChild(card);
       });
+    }
+
+    function renderPurchaseHistory() {
+      const box = document.getElementById('purchase-history');
+      if (!box) return;
+      box.textContent = '';
+      if (!state.purchases.length) {
+        box.appendChild(makeEl('p', 'text-[10px] muted', 'Brak zakupów.'));
+        return;
+      }
+      state.purchases.forEach(entry => {
+        const product = getCatalog().find(item => item.id === entry.productId);
+        const date = new Date(entry.createdAt);
+        const row = makeEl('div', 'flex items-center justify-between gap-2 text-[10px] bg-slate-900/60 rounded-lg px-3 py-2');
+        const left = makeEl('div');
+        left.appendChild(makeEl('div', 'font-semibold text-white', product ? product.title : String(entry.productId)));
+        left.appendChild(makeEl('div', 'muted', isNaN(date) ? '' : date.toLocaleString('pl-PL')));
+        const right = makeEl('div', 'text-right');
+        right.appendChild(makeEl('div', 'text-amber-400 font-bold', `${Number(entry.priceXtr) || 0} XTR`));
+        right.appendChild(makeEl('div', entry.status === 'paid' ? 'text-emerald-400' : 'muted', PURCHASE_STATUS[entry.status] || String(entry.status)));
+        row.appendChild(left);
+        row.appendChild(right);
+        box.appendChild(row);
+      });
+    }
+
+    async function buyProduct(id) {
+      const item = getCatalog().find(p => p.id === id);
+      const payments = window.Payments;
+      if (!item || !payments) return;
+      if (ownedCount(id) >= item.maxOwned) {
+        showToast(`${item.title} jest już zakupione.`);
+        return;
+      }
+      if (shopUi.loading.has(id)) return;
+      if (!payments.isMock && !payments.inTelegram()) {
+        showToast('Zakupy za Telegram Stars działają tylko w aplikacji Telegram.');
+        return;
+      }
+      shopUi.loading.add(id);
+      shopUi.errors.delete(id);
+      renderRigShop();
+      const result = await payments.purchase(id);
+      shopUi.loading.delete(id);
+      const mockTag = payments.isMock ? ' (MOCK)' : '';
+      if (result.status === 'paid') {
+        applyServerState(result.data);
+        if (window.FX) window.FX.haptic('notify', 'success');
+        showToast(`${item.title} zakupione za ${item.priceXtr} XTR!${mockTag}`);
+        return;
+      }
+      if (result.status === 'cancelled') {
+        showToast('Płatność anulowana.');
+      } else if (result.status === 'pending') {
+        if (result.data) applyServerState(result.data, true);
+        showToast('Płatność oczekuje na potwierdzenie serwera.');
+      } else if (result.status === 'unavailable') {
+        showToast('Zakupy za Telegram Stars działają tylko w aplikacji Telegram.');
+      } else if (result.status !== 'busy') {
+        shopUi.errors.add(id);
+        if (window.FX) window.FX.haptic('notify', 'error');
+        showToast(`Płatność nie powiodła się.${mockTag}`);
+      }
+      renderRigShop();
+    }
+
+    function initShop() {
+      const rigShop = document.getElementById('rig-shop');
+      if (rigShop) {
+        rigShop.addEventListener('click', event => {
+          const button = event.target.closest('[data-buy]');
+          if (button && !button.disabled) buyProduct(button.dataset.buy);
+        });
+      }
+      renderRigShop();
+      renderPurchaseHistory();
+      if (window.RigBuilder) window.RigBuilder.init();
+      // Restore owned goods from the server (GET /api/me); mock mode uses localStorage.
+      if (window.Payments) {
+        window.Payments.loadMe().then(data => applyServerState(data, true)).catch(() => {});
+      }
+    }
+
+    function renderEmission(snap) {
+      const set = (id, text) => { const node = document.getElementById(id); if (node) node.textContent = text; };
+      const pct = `${Math.min(snap.ratio * 100, 100).toFixed(2)}%`;
+      const fill = document.getElementById('tech-progress-fill');
+      const capsule = document.getElementById('tech-capsule-fill');
+      if (fill) fill.style.width = pct;
+      if (capsule) capsule.style.width = pct;
+      set('tech-mined-value', formatK(Math.floor(snap.mined)));
+      set('tech-progress-text', `${formatK(Math.floor(snap.mined))} / ${formatK(snap.supply)}`);
+      set('tech-supply-limit', formatK(snap.supply));
+      set('tech-remaining-time', snap.ended ? 'Cykl zakończony' : snap.remainingText);
+      set('tech-daily-rate', formatK(snap.perDay));
+      set('tech-status-word', snap.status);
     }
 
     async function buyProduct(id) {
@@ -714,6 +946,33 @@
         fx.addTask(dt => {
           if (energyExact >= state.energyMax) { regenRunning = false; syncCryptoUI(); return false; }
           energyExact = Math.min(state.energyMax, energyExact + 5 * dt);
+      let totalSupply = 100000000;
+      let currentCycle = 60 * 60 * 24 * 60;
+      let lastEnergySync = Date.now();
+
+      let mined = 0;
+      let energyExact = state.energy;
+      let regenRunning = false;
+
+      function syncCryptoUI() {
+        state.energy = Math.floor(energyExact);
+        const ratio = state.energyMax ? Math.min(1, energyExact / state.energyMax) : 0;
+        if (techTokenCount) fx ? fx.countTo(techTokenCount, mined, formatK) : (techTokenCount.textContent = formatK(mined));
+        if (energyValue) energyValue.textContent = state.energy;
+        if (energyMax) energyMax.textContent = state.energyMax;
+        if (tpBalance) fx ? fx.countTo(tpBalance, state.tp, formatK) : (tpBalance.textContent = formatK(state.tp));
+        if (energyFill) energyFill.style.transform = `scaleX(${ratio.toFixed(3)})`;
+        if (energyBar) energyBar.classList.toggle('energy-low', ratio < 0.2);
+        if (energyExact < state.energyMax) ensureRegen();
+      }
+      window.syncCryptoUI = syncCryptoUI;
+
+      function ensureRegen() {
+        if (regenRunning || !fx) return;
+        regenRunning = true;
+        fx.addTask(dt => {
+          if (energyExact >= state.energyMax) { regenRunning = false; syncCryptoUI(); return false; }
+          energyExact = Math.min(state.energyMax, energyExact + 5 * dt);
           syncCryptoUI();
         });
       }
@@ -723,6 +982,11 @@
           showToast('Brakuje energii! Poczekaj na regenerację.');
           if (energyBar && fx) fx.pop(energyBar);
           return { ok: false };
+      syncCryptoUI();
+
+      setInterval(() => {
+        if (state.energy < state.energyMax) {
+          state.energy = Math.min(state.energyMax, state.energy + 5);
         }
         energyExact -= 15;
         state.tp += 25;
@@ -737,6 +1001,23 @@
           fx.bindTapCore(coreClicker, tap);
         } else {
           coreClicker.addEventListener('pointerdown', tap);
+        }
+      }
+
+      syncCryptoUI();
+      ensureRegen();
+      if (!fx) {
+        setInterval(() => { energyExact = Math.min(state.energyMax, energyExact + 5); syncCryptoUI(); }, 1000);
+      }
+
+      if (window.Emission) {
+        window.Emission.subscribe(renderEmission);
+        window.Emission.init();
+      }
+        if (Date.now() % 15000 < 1000) scheduleStateSync();
+        if (Date.now() - lastEnergySync >= 10000) {
+          lastEnergySync = Date.now();
+          scheduleStateSync();
         }
       }
 
@@ -843,6 +1124,20 @@
       document.body.classList.toggle('reduce-motion', Boolean(config.animations.reduceMotion));
       renderTaskList();
       renderChannelFeed();
+      initShop();
+      window.rigBuilder.bindScene();
+      window.rigBuilder.renderRig(state.rigParts);
+      renderRigShop();
+      window.RigBuilder?.renderRig(Object.keys(state.rigParts).filter(key => state.rigParts[key]));
+      initTelegramProfile();
+      window.rigBuilder.bindThumbnails();
+      renderHomeSubtabs();
+      initChatViewport();
+      renderRewardTabs();
+      bindGlobalActions();
+      initCryptoGame();
+      if (window.FX) window.FX.bindRipples();
+      show('home', 'Sieć społeczna');
       renderNotifications();
       const selectedView = document.querySelector('.reward-view:not(.hidden)');
       if (selectedView && selectedView.style.display === 'none') {

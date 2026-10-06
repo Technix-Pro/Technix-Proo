@@ -9,6 +9,15 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="app-config.js"></script>
+  <script src="shop-config.js"></script>
+  <script src="payments.js"></script>
+  <script src="emission.js"></script>
+  <script src="fx.js"></script>
+  <script src="config.js"></script>
+  <script src="api.js"></script>
+  <script src="rig-builder.js"></script>
+  <script src="app.js"></script>
   <link rel="stylesheet" href="styles.css" />
   <script defer src="config.js"></script>
   <script defer src="api.js"></script>
@@ -471,12 +480,181 @@
                 <circle class="rig-flash" cx="193" cy="161" r="14" fill="#a5f3fc"/>
               </g>
             </svg>
+          <div class="rig-station" aria-label="Boczny widok stanowiska RIG">
+            <svg class="rig-scene" viewBox="0 0 640 360" role="img" aria-labelledby="rig-scene-title rig-scene-desc">
+              <title id="rig-scene-title">Stanowisko RIG widziane z boku</title>
+              <desc id="rig-scene-desc">Puste biurko. Kolejne elementy pojawiają się po zakupie w sklepie poniżej.</desc>
+              <defs>
+                <linearGradient id="rig-screen-gradient" x2="1" y2="1">
+                  <stop stop-color="#071421" />
+                  <stop offset="1" stop-color="#31205f" />
+                </linearGradient>
+                <linearGradient id="rig-metal-gradient" x2="0" y2="1">
+                  <stop stop-color="#334155" />
+                  <stop offset="1" stop-color="#111827" />
+                </linearGradient>
+              </defs>
+              <g class="rig-grid" aria-hidden="true">
+                <path d="M0 270H640M0 300H640M0 330H640M80 250V360M160 250V360M240 250V360M320 250V360M400 250V360M480 250V360M560 250V360" />
+              </g>
+              <g id="rig-desk" aria-hidden="true">
+                <path class="desk-glow" d="M44 211H594" />
+                <path class="desk-top" d="M44 207H596V222H44Z" />
+                <path class="desk-edge" d="M44 207H596" />
+                <path class="desk-leg" d="M82 222H96V338H82ZM544 222H558V338H544Z" />
+                <path class="desk-foot" d="M64 338H114V346H64ZM528 338H578V346H528Z" />
+                <path class="desk-support" d="M96 322H544" />
+              </g>
+              <g class="rig-ghosts" aria-hidden="true">
+                <rect x="177" y="72" width="150" height="111" rx="8" />
+                <path d="M236 188H268L278 207H226ZM300 226H438L430 239H308ZM466 222C476 213 492 215 497 226L493 238H467Z" />
+                <rect x="401" y="246" width="126" height="83" rx="9" />
+                <circle cx="492" cy="287" r="25" />
+              </g>
+              <g id="rig-monitor" class="rig-part" data-part="monitor" aria-label="Monitor" aria-hidden="true">
+                <title>Monitor</title>
+                <rect class="monitor-frame" x="183" y="72" width="150" height="111" rx="8" />
+                <rect class="monitor-screen" x="190" y="79" width="136" height="96" rx="4" />
+                <g class="monitor-boot">
+                  <path d="M202 151H312M202 158H278M202 165H300" />
+                  <circle cx="306" cy="99" r="9" />
+                </g>
+                <path class="monitor-stand" d="M242 184H274L284 207H232Z" />
+                <path class="monitor-base" d="M222 207H294V213H222Z" />
+                <circle class="rig-flash" cx="184" cy="76" r="13" />
+              </g>
+              <g id="rig-keyboard" class="rig-part" data-part="keyboard" aria-label="Klawiatura" aria-hidden="true">
+                <title>Klawiatura</title>
+                <path class="keyboard-body" d="M300 222H438L430 240H308Z" />
+                <path class="keyboard-keys" d="M311 227H424M309 232H422M315 237H418M322 225V230M338 225V230M354 225V230M370 225V230M386 225V230M402 225V230M418 225V230" />
+                <path class="rig-flash" d="M298 220L306 215L313 220L306 225Z" />
+              </g>
+              <g id="rig-mouse" class="rig-part" data-part="mouse" aria-label="Mysz" aria-hidden="true">
+                <title>Mysz</title>
+                <path class="mouse-body" d="M462 222C468 214 484 214 491 222L496 237H459Z" />
+                <path class="mouse-seam" d="M477 217V228" />
+                <circle class="mouse-led" cx="477" cy="231" r="2.5" />
+                <circle class="rig-flash" cx="464" cy="221" r="9" />
+              </g>
+              <g id="rig-case" class="rig-part" data-part="case" aria-label="Obudowa komputera" aria-hidden="true">
+                <title>Obudowa komputera</title>
+                <rect class="case-shell" x="399" y="244" width="132" height="88" rx="9" />
+                <path class="case-side" d="M410 254H476V322H410Z" />
+                <path class="case-front" d="M486 254H520V322H486Z" />
+                <circle class="case-power" cx="503" cy="263" r="3" />
+                <path class="case-vent" d="M494 276H513M494 282H513M494 288H513" />
+                <circle class="rig-flash" cx="401" cy="246" r="12" />
+              </g>
+              <g id="rig-fan" class="rig-part" data-part="fan" aria-label="Wentylator chłodzenia" aria-hidden="true">
+                <title>Wentylator chłodzenia</title>
+                <circle class="fan-ring" cx="454" cy="287" r="26" />
+                <g class="fan-blades">
+                  <path d="M454 285C451 270 457 266 462 269C466 273 461 280 456 287Z" />
+                  <path d="M456 287C471 284 474 290 471 295C467 299 460 294 454 289Z" />
+                  <path d="M453 289C456 304 450 308 445 305C441 301 446 294 451 287Z" />
+                  <path d="M451 286C436 289 433 283 436 278C440 274 447 279 453 284Z" />
+                  <circle cx="454" cy="287" r="4" />
+                </g>
+                <circle class="rig-flash" cx="429" cy="263" r="9" />
+              </g>
+              <g id="rig-ram" class="rig-part" data-part="ram" aria-label="Pamięć RAM" aria-hidden="true">
+                <title>Pamięć RAM</title>
+                <path class="ram-stick" d="M420 256H427V314H420Z" />
+                <path class="ram-stick" d="M432 256H439V314H432Z" />
+                <path class="ram-led" d="M422 262V280M434 262V280" />
+                <path class="ram-contact" d="M420 309H427M432 309H439" />
+                <circle class="rig-flash" cx="420" cy="256" r="7" />
+              </g>
+              <g id="rig-gpu" class="rig-part" data-part="gpu" aria-label="Karta graficzna" aria-hidden="true">
+                <title>Karta graficzna</title>
+                <path class="gpu-body" d="M410 302H484V320H410Z" />
+                <circle class="gpu-fan" cx="432" cy="311" r="7" />
+                <circle class="gpu-fan" cx="460" cy="311" r="7" />
+                <path class="gpu-ports" d="M413 320V324M419 320V324M425 320V324" />
+                <path class="rig-flash" d="M405 299L412 293L419 299L412 305Z" />
+              </g>
+            </svg>
+          </div>
+          <div class="flex items-center justify-between text-[10px]">
+            <span id="rig-status" class="muted" aria-live="polite">0 z 7 części zamontowanych</span>
+            <span id="rig-online" class="hidden rig-online" role="status">RIG ONLINE</span>
+            <span id="rig-progress" class="text-cyan-300 font-bold">Zamontowano 0/7</span>
+          </div>
+          <button id="rig-replay" type="button" class="w-full rounded-xl border border-cyan-500/30 bg-cyan-500/10 py-2 text-xs font-semibold text-cyan-200 transition hover:bg-cyan-500/20">Odtwórz montaż</button>
+          <div class="rig-scene-frame">
+            <svg id="rig-scene" class="rig-scene is-paused" viewBox="0 0 360 260" role="img" aria-label="Boczny widok stanowiska komputerowego TechnixPro">
+              <title>Budowa stanowiska komputerowego</title>
+              <desc>Elementy zestawu pojawiają się po zakupie w sklepie.</desc>
+              <defs>
+                <radialGradient id="rigGlow" cx="50%" cy="55%" r="50%"><stop offset="0%" stop-color="#22d3ee" stop-opacity="0.45"/><stop offset="60%" stop-color="#8b5cf6" stop-opacity="0.18"/><stop offset="100%" stop-color="#8b5cf6" stop-opacity="0"/></radialGradient>
+                <linearGradient id="rigScreen" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0e7490"/><stop offset="100%" stop-color="#6d28d9"/></linearGradient>
+              </defs>
+              <g class="rig-glow-wrap" style="opacity:0"><ellipse class="rig-glow" cx="160" cy="105" rx="150" ry="85" fill="url(#rigGlow)"/></g>
+
+              <g class="rig-part" data-rig-base="desk">
+                <rect x="14" y="148" width="292" height="24" rx="4" fill="#1e293b" stroke="#22d3ee" stroke-opacity="0.5"/>
+                <rect x="14" y="172" width="292" height="6" fill="#0f172a" stroke="#334155"/>
+                <rect x="32" y="178" width="8" height="12" fill="#0f172a" stroke="#334155"/>
+                <rect x="280" y="178" width="8" height="12" fill="#0f172a" stroke="#334155"/>
+                <circle class="rig-flash" cx="160" cy="160" r="90" fill="#a5f3fc"/>
+              </g>
+
+              <g class="rig-part" data-part="case">
+                <rect x="222" y="60" width="64" height="94" rx="6" fill="#0f172a" stroke="#22d3ee"/>
+                <rect x="228" y="68" width="40" height="78" rx="3" fill="#020617" stroke="#334155"/>
+                <circle cx="277" cy="80" r="5" fill="#111827" stroke="#334155"/>
+                <circle cx="277" cy="98" r="5" fill="#111827" stroke="#334155"/>
+                <circle class="rig-led" cx="277" cy="140" r="2.5" fill="#34d399"/>
+                <circle class="rig-flash" cx="254" cy="107" r="48" fill="#a5f3fc"/>
+              </g>
+
+              <g class="rig-part" data-part="ram">
+                <rect x="232" y="74" width="32" height="64" rx="2" fill="#14532d" stroke="#34d399" stroke-opacity="0.6"/>
+                <rect x="250" y="78" width="3" height="26" fill="#a78bfa"/>
+                <rect x="255" y="78" width="3" height="26" fill="#a78bfa"/>
+                <rect x="260" y="78" width="3" height="26" fill="#a78bfa"/>
+                <circle class="rig-flash" cx="248" cy="92" r="26" fill="#a5f3fc"/>
+              </g>
+
+              <g class="rig-part" data-part="gpu">
+                <rect x="232" y="112" width="34" height="16" rx="2" fill="#1e3a8a" stroke="#60a5fa"/>
+                <circle cx="242" cy="120" r="5" fill="#0f172a" stroke="#93c5fd"/>
+                <circle cx="256" cy="120" r="5" fill="#0f172a" stroke="#93c5fd"/>
+                <circle class="rig-flash" cx="249" cy="120" r="24" fill="#a5f3fc"/>
+              </g>
+
+              <g class="rig-part" data-part="monitor">
+                <rect x="108" y="118" width="10" height="26" fill="#1e293b" stroke="#334155"/>
+                <rect x="92" y="142" width="42" height="6" rx="2" fill="#1e293b" stroke="#334155"/>
+                <rect x="48" y="40" width="130" height="82" rx="6" fill="#0b1220" stroke="#22d3ee"/>
+                <rect class="rig-screen" x="54" y="46" width="118" height="70" rx="3" fill="url(#rigScreen)"/>
+                <g class="rig-screen-lines">
+                  <rect x="62" y="56" width="70" height="4" rx="2" fill="#e0f2fe"/>
+                  <rect x="62" y="68" width="94" height="4" rx="2" fill="#a5f3fc"/>
+                  <rect x="62" y="80" width="54" height="4" rx="2" fill="#e0f2fe"/>
+                  <rect x="62" y="92" width="82" height="4" rx="2" fill="#a5f3fc"/>
+                </g>
+                <circle class="rig-flash" cx="113" cy="81" r="58" fill="#a5f3fc"/>
+              </g>
+
+              <g class="rig-part" data-part="keyboard">
+                <rect x="70" y="156" width="96" height="12" rx="3" fill="#1e293b" stroke="#818cf8"/>
+                <path d="M76 160h84M76 164h84" stroke="#818cf8" stroke-width="1.5" stroke-dasharray="3 2" fill="none"/>
+                <circle class="rig-flash" cx="118" cy="162" r="48" fill="#a5f3fc"/>
+              </g>
+
+              <g class="rig-part" data-part="mouse">
+                <rect x="186" y="155" width="14" height="12" rx="6" fill="#1e293b" stroke="#f472b6"/>
+                <circle class="rig-flash" cx="193" cy="161" r="14" fill="#a5f3fc"/>
+              </g>
+            </svg>
           </div>
 
           <div class="shop-notice">
             <span><i class="fa-solid fa-star text-amber-400"></i> Sklep płaci się <strong>Telegram Stars (XTR)</strong>. Punkty aktywności ★ nie służą do zakupów.</span>
             <span id="shop-mock-badge" class="shop-mock-badge hidden">MOCK – płatności symulowane</span>
           </div>
+          <p id="rig-payment-note" class="text-[9px] muted text-center"></p>
           <div class="rig-shop" id="rig-shop"></div>
 
           <div class="space-y-2 pt-2">

@@ -21,6 +21,8 @@ TechnixPro is a dark, neon-styled Telegram Mini App frontend demo with a clicker
 - `rig-builder.js` — RIG Builder assembly animation.
 - `fx.js` — tap effects, count-up, ripples and the shared animation loop.
 - `docs/BACKEND_API.md` — backend API contract.
+- `config.js` / `api.js` — API configuration and mock/HTTP data adapters.
+- `rig-builder.js` — SVG rig state, queued assembly, and animation lifecycle.
 
 Tailwind CSS, Font Awesome, Inter, and the Telegram Web App SDK load from CDNs. No build step or package installation is required.
 

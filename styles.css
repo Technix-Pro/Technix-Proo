@@ -283,6 +283,74 @@
       position: relative;
       border-radius: 22px;
       border: 1px solid rgba(148,163,184,0.16);
+      background:
+        radial-gradient(ellipse at 52% 76%, rgba(34,211,238,0.09), transparent 52%),
+        linear-gradient(180deg, rgba(2,6,23,0.92), rgba(15,23,42,0.95));
+      overflow: hidden;
+      padding: 12px;
+      contain: layout paint;
+    }
+
+    .rig-svg { display: block; width: 100%; height: auto; margin-top: 6px; }
+
+    .rig-progress { height: 4px; border-radius: 999px; background: rgba(148,163,184,0.15); overflow: hidden; }
+    .rig-progress-fill { height: 100%; width: 100%; transform-origin: left; transform: scaleX(0); transition: transform 0.4s ease; background: linear-gradient(90deg, #22d3ee, #a855f7); }
+
+    .rig-replay-btn {
+      font-size: 9px;
+      font-weight: 700;
+      color: #a5f3fc;
+      background: rgba(34,211,238,0.1);
+      border: 1px solid rgba(34,211,238,0.3);
+      border-radius: 999px;
+      padding: 4px 9px;
+      transition: transform 0.12s ease;
+    }
+    .rig-replay-btn:active { transform: scale(0.95); }
+
+    .rig-part { transform-box: fill-box; transform-origin: center; }
+    .rig-part:not(.is-on) { opacity: 0.3; }
+    .rig-part:not(.is-on) :is(rect, circle, path) { fill: none; stroke: #67e8f9; stroke-width: 1; stroke-dasharray: 3 3; }
+    .rig-flash { opacity: 0; transform-box: fill-box; transform-origin: center; }
+    .rig-part:not(.is-on) .rig-flash { stroke: none; }
+    .rig-screen { opacity: 0; }
+    .rig-screen-lines rect { opacity: 0; transform-box: fill-box; transform-origin: left center; }
+    .rig-running .rig-screen { opacity: 1; }
+    .rig-running .rig-screen-lines rect { opacity: 0.9; }
+    .rig-led { opacity: 0.3; }
+    .rig-running .rig-led { animation: ledBlink 1.4s ease-in-out infinite; }
+    .rig-running .rig-glow { animation: rigGlowPulse 2.4s ease-in-out infinite alternate; }
+
+    .shop-notice {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 10px;
+      color: #cbd5e1;
+      margin-top: 10px;
+    }
+    .shop-mock-badge {
+      align-self: flex-start;
+      font-size: 9px;
+      font-weight: 800;
+      color: #fbbf24;
+      background: rgba(245,158,11,0.12);
+      border: 1px dashed rgba(245,158,11,0.5);
+      border-radius: 6px;
+      padding: 2px 6px;
+      padding: 8px;
+      overflow: hidden;
+      border: 1px solid rgba(148,163,184,0.16);
+      border-radius: 18px;
+      background:
+        radial-gradient(ellipse at 57% 55%, rgba(34,211,238,0.11), transparent 54%),
+        linear-gradient(180deg, #080d19, #0d1423);
+    }
+
+    .rig-scene {
+      display: block;
+      width: 100%;
+      height: auto;
       background: linear-gradient(180deg, rgba(2,6,23,0.92), rgba(15,23,42,0.95));
       overflow: hidden;
       padding: 12px;
