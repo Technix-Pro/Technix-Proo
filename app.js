@@ -30,8 +30,11 @@
       last_name: '',
       username: 'guest',
       id: 0,
-      photo_url: ''
+      photo_url: '',
+      language_code: 'pl'
     };
+    let currentUser = { ...defaultUser };
+    let syncTimer;
 
     // WPISZ TUTAJ SWOJE TELEGRAM ID, ABY WIDZIEĆ PANEL ADMINA
     const ADMIN_TELEGRAM_ID = 0; // np. 123456789
@@ -42,6 +45,7 @@
       energy: 1000,
       energyMax: 1000,
       tp: 240,
+      taps: 0,
       taskHistory: [
         { label: 'Pierwsze logowanie', value: 25, time: 'dziś' }
       ],
@@ -70,17 +74,20 @@
         monitor: false,
         case: false,
         ram: false,
-        gpu: false
+        gpu: false,
+        fan: false
       },
       rigCatalog: [
-        { key: 'mouse', name: 'Myszka', icon: 'fa-computer-mouse', cost: 40 },
+        { key: 'mouse', name: 'Mysz', icon: 'fa-computer-mouse', cost: 40 },
         { key: 'keyboard', name: 'Klawiatura', icon: 'fa-keyboard', cost: 60 },
         { key: 'monitor', name: 'Monitor', icon: 'fa-display', cost: 180 },
         { key: 'case', name: 'Obudowa', icon: 'fa-cube', cost: 100 },
         { key: 'ram', name: 'RAM', icon: 'fa-memory', cost: 80 },
-        { key: 'gpu', name: 'GPU', icon: 'fa-microchip', cost: 270 }
+        { key: 'gpu', name: 'GPU', icon: 'fa-microchip', cost: 270 },
+        { key: 'fan', name: 'Chłodzenie', icon: 'fa-fan', cost: 120 }
       ]
     };
+    window.getOwnedRigParts = () => Object.keys(state.rigParts).filter(key => state.rigParts[key]);
 
     function formatK(value) {
       return new Intl.NumberFormat('pl-PL', { maximumFractionDigits: 0 }).format(value);
@@ -89,9 +96,50 @@
     function parseTelegramUser() {
       const raw = tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user : defaultUser;
       return {
-        ...defaultUser,
-        ...raw
+        id: raw.id || 0,
+        username: raw.username || '',
+        first_name: raw.first_name || 'Gość',
+        photo_url: raw.photo_url || '',
+        language_code: raw.language_code || 'pl',
+        last_name: raw.last_name || ''
       };
+    }
+
+    currentUser = parseTelegramUser();
+    if (window.TechnixAPI) window.TechnixAPI.setTelegramContext(currentUser, tg?.initData || '');
+
+    function escapeHTML(value) {
+      return String(value ?? '').replace(/[&<>"']/g, character => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      })[character]);
+    }
+
+    function safeMediaURL(value) {
+      if (!String(value || '').trim()) return '';
+      try {
+        const url = new URL(value, window.location.href);
+        return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
+      } catch (error) {
+        return '';
+      }
+    }
+
+    function scheduleStateSync() {
+      clearTimeout(syncTimer);
+      syncTimer = setTimeout(() => syncGameState(), 4000);
+    }
+
+    function syncGameState(keepalive = false) {
+      if (!window.TechnixAPI) return;
+      const gameState = {
+        stars: Number(state.stars) || 0,
+        energy: Number(state.energy) || 0,
+        energyMax: Number(state.energyMax) || 0,
+        tp: Number(state.tp) || 0,
+        taps: Number(state.taps) || 0,
+        ownedParts: Object.keys(state.rigParts).filter(key => state.rigParts[key])
+      };
+      return window.TechnixAPI.sync(gameState, keepalive).catch(() => {});
     }
 
     function computeLevel(stars) {
@@ -141,10 +189,10 @@
       if (!taskList) return;
 
       taskList.innerHTML = state.tasks.map(task => `
-        <button data-task="${task.label.toLowerCase()}" data-reward="${task.reward}" data-label="${task.title}" class="task-action w-full text-left panel px-3 py-3 rounded-xl flex items-center justify-between gap-3">
+        <button data-task="${escapeHTML(String(task.label || 'zadanie').toLowerCase())}" data-reward="${Number(task.reward) || 0}" data-label="${escapeHTML(task.title)}" class="task-action w-full text-left panel px-3 py-3 rounded-xl flex items-center justify-between gap-3">
           <div>
-            <div class="text-xs font-semibold text-white">${task.title}</div>
-            <div class="text-[10px] muted">+${task.reward} ★</div>
+            <div class="text-xs font-semibold text-white">${escapeHTML(task.title)}</div>
+            <div class="text-[10px] muted">+${Number(task.reward) || 0} ★</div>
           </div>
           <span class="text-[10px] text-violet-300 font-bold">Złap</span>
         </button>
@@ -166,8 +214,8 @@
 
       rewardLog.innerHTML = items.map(item => `
         <div class="flex items-center justify-between text-xs rounded-xl bg-slate-900/60 border border-slate-800 px-3 py-2">
-          <span class="text-slate-300">${item.label}</span>
-          <span class="font-bold text-emerald-400">+${item.value} ★</span>
+          <span class="text-slate-300">${escapeHTML(item.label)}</span>
+          <span class="font-bold text-emerald-400">+${Number(item.value) || 0} ★</span>
         </div>
       `).join('');
     }
@@ -177,6 +225,7 @@
       state.taskHistory.unshift({ label, value: amount, time: 'teraz' });
       updateStarsDisplay();
       renderRewardLog();
+      scheduleStateSync();
       showToast(`Dodano ${amount} ★ do profilu (${label})`);
     }
 
@@ -205,6 +254,119 @@
       if (giftSubtabs) giftSubtabs.classList.toggle('hidden', screenName !== 'gift');
 
       document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.screen === screenName));
+      document.dispatchEvent(new CustomEvent('rig-screen-visibility', { detail: screenName === 'crypto' }));
+      if (screenName === 'wallet') loadApiView('wallet');
+      if (screenName === 'notifications') loadApiView('notifications');
+    }
+
+    const apiViewConfig = {
+      tasks: { target: 'reward-tasks', load: () => TechnixAPI.getTasks() },
+      leaderboard: { target: 'reward-leaderboard', load: () => TechnixAPI.getLeaderboard() },
+      referrals: { target: 'reward-referrals', load: () => TechnixAPI.getReferrals() },
+      notifications: { target: 'screen-notifications', load: () => TechnixAPI.getNotifications() },
+      wallet: { target: 'screen-wallet', load: () => TechnixAPI.getWallet() }
+    };
+
+    function setApiViewState(target, message, type = 'loading', retry) {
+      let status = target.querySelector('.api-view-state');
+      if (!status) {
+        status = document.createElement('div');
+        status.className = 'api-view-state panel p-4 text-center text-xs muted';
+        target.append(status);
+      }
+      [...target.children].filter(child => child !== status).forEach(child => child.classList.add('hidden'));
+      status.className = `api-view-state panel p-4 text-center text-xs ${type === 'error' ? 'text-rose-300' : 'muted'}`;
+      status.replaceChildren();
+      if (type === 'loading') {
+        const skeleton = document.createElement('div');
+        skeleton.className = 'api-skeleton';
+        skeleton.setAttribute('aria-label', 'Ładowanie danych');
+        status.append(skeleton);
+      } else {
+        const text = document.createElement('p');
+        text.textContent = message;
+        status.append(text);
+      }
+      if (type === 'error') {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'mt-3 rounded-lg bg-violet-600 px-3 py-2 font-semibold text-white';
+        button.textContent = 'Spróbuj ponownie';
+        button.addEventListener('click', retry);
+        status.append(button);
+      }
+    }
+
+    function resetApiView(target) {
+      target.querySelector('.api-view-state')?.remove();
+      [...target.children].forEach(child => child.classList.remove('hidden'));
+    }
+
+    function renderLeaderboard(entries) {
+      const list = document.getElementById('leaderboard-list');
+      if (!list) return;
+      const currentRow = list.querySelector('.current-user-rank') || list.firstElementChild;
+      if (currentRow) currentRow.classList.add('current-user-rank');
+      const preserved = currentRow?.cloneNode(true);
+      list.replaceChildren();
+      if (preserved) list.append(preserved);
+      entries.forEach(entry => {
+        const row = document.createElement('div');
+        row.className = 'flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900/60 p-2.5 text-xs';
+        const name = document.createElement('span');
+        name.className = 'text-slate-200';
+        name.textContent = entry.username ? `@${entry.username}` : entry.first_name || 'Użytkownik';
+        const score = document.createElement('span');
+        score.className = 'font-bold text-cyan-300';
+        score.textContent = `${Number(entry.stars) || 0} ★`;
+        row.append(name, score);
+        list.append(row);
+      });
+    }
+
+    async function loadApiView(key) {
+      const config = apiViewConfig[key];
+      if (!config || !window.TechnixAPI) return;
+      const target = document.getElementById(config.target);
+      if (!target) return;
+      setApiViewState(target, '', 'loading');
+      try {
+        const data = await config.load();
+        resetApiView(target);
+        if (key === 'tasks') {
+          state.tasks = Array.isArray(data) ? data.filter(task => task && typeof task === 'object').map(task => ({
+            title: String(task.title || 'Zadanie'),
+            reward: Math.max(0, Number(task.reward) || 0),
+            label: String(task.label || 'Zadanie')
+          })) : [];
+          renderTaskList();
+        } else if (key === 'leaderboard') {
+          const entries = Array.isArray(data) ? data.filter(entry => entry && typeof entry === 'object') : [];
+          renderLeaderboard(entries);
+          if (!entries.length) setApiViewState(target, 'Brak danych rankingu. Wróć później, aby sprawdzić wyniki.', 'empty');
+        } else if (key === 'referrals') {
+          const count = Math.max(0, Number(data?.count) || 0);
+          const stars = Math.max(0, Number(data?.stars) || 0);
+          document.getElementById('referral-count').textContent = `${count} osób`;
+          document.getElementById('referral-stars').textContent = `+${stars} ★`;
+        } else if (key === 'wallet') {
+          const balance = document.getElementById('wallet-balance');
+          if (balance) balance.textContent = typeof data?.balance === 'string' ? data.balance : '0,00 PLN';
+        } else if (key === 'notifications') {
+          const notifications = Array.isArray(data) ? data.filter(item => item && typeof item === 'object') : [];
+          const title = document.getElementById('notification-title');
+          const message = document.getElementById('notification-message');
+          if (!notifications.length) {
+            setApiViewState(target, 'Nie masz nowych powiadomień.', 'empty');
+          } else {
+            if (title) title.textContent = String(notifications[0].title || 'Powiadomienie');
+            if (message) message.textContent = String(notifications[0].message || '');
+          }
+        }
+        if (key === 'tasks' && !state.tasks.length) setApiViewState(target, 'Brak dostępnych zadań. Zajrzyj ponownie później.', 'empty');
+      } catch (error) {
+        setApiViewState(target, 'Nie udało się pobrać danych. Sprawdź połączenie i spróbuj ponownie.', 'error', () => loadApiView(key));
+      }
     }
 
     function renderHomeSubtabs() {
@@ -292,6 +454,7 @@
           document.querySelectorAll('.reward-view').forEach(view => view.classList.add('hidden'));
           const target = document.getElementById(`reward-${key}`);
           if (target) target.classList.remove('hidden');
+          if (apiViewConfig[key]) loadApiView(key);
 
           document.querySelectorAll('[data-reward-tab]').forEach(tab => {
             const active = tab === btn;
@@ -315,7 +478,7 @@
         system: 'System'
       };
       postsFeed.innerHTML = state.posts.slice().reverse().map(post => {
-        const author = post.author || 'Użytkownik';
+        const author = String(post.author || 'Użytkownik');
         const requestedRole = post.role;
         const role = roles[requestedRole] ? requestedRole
           : author === 'System' ? 'system'
@@ -326,16 +489,16 @@
         <article class="panel chat-message space-y-2" data-message-role="${role}">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
-              <div class="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-cyan-400 flex items-center justify-center text-[10px] font-black text-slate-950">${author.slice(0, 1).toUpperCase()}</div>
+              <div class="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-cyan-400 flex items-center justify-center text-[10px] font-black text-slate-950">${escapeHTML(author.slice(0, 1).toUpperCase())}</div>
               <div>
-                <div class="text-[10px] font-semibold text-white">${author}</div>
-                <div class="text-[9px] muted">${post.time}</div>
+                <div class="text-[10px] font-semibold text-white">${escapeHTML(author)}</div>
+                <div class="text-[9px] muted">${escapeHTML(post.time)}</div>
               </div>
             </div>
             <span class="text-[9px] text-cyan-300" data-role="${role}">${roles[role]}</span>
           </div>
-          <p class="text-xs text-slate-200 leading-relaxed">${post.text}</p>
-          ${post.media ? `<img src="${post.media}" alt="media" class="w-full rounded-xl border border-slate-800 object-cover max-h-48" />` : ''}
+          <p class="text-xs text-slate-200 leading-relaxed">${escapeHTML(post.text)}</p>
+          ${safeMediaURL(post.media) ? `<img src="${escapeHTML(safeMediaURL(post.media))}" alt="media" class="w-full rounded-xl border border-slate-800 object-cover max-h-48" />` : ''}
           <div class="flex items-center gap-3 text-[10px] text-slate-400">
             <span><i class="fa-regular fa-heart"></i> 42</span>
             <span><i class="fa-regular fa-comment"></i> 9</span>
@@ -355,17 +518,17 @@
         <article class="panel p-3.5">
           <div class="flex items-center justify-between gap-3 mb-2">
             <div class="flex items-center gap-2">
-              <div class="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-cyan-400 flex items-center justify-center text-[10px] font-bold text-slate-950">${(post.author || 'T').slice(0, 1).toUpperCase()}</div>
+              <div class="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-cyan-400 flex items-center justify-center text-[10px] font-bold text-slate-950">${escapeHTML(String(post.author || 'T').slice(0, 1).toUpperCase())}</div>
               <div>
-                <div class="text-[10px] font-semibold text-white">${post.author}</div>
-                <div class="text-[9px] muted">${post.time}</div>
+                <div class="text-[10px] font-semibold text-white">${escapeHTML(post.author)}</div>
+                <div class="text-[9px] muted">${escapeHTML(post.time)}</div>
               </div>
             </div>
             <span class="text-[10px] text-violet-300 bg-violet-500/10 border border-violet-500/20 rounded-full px-2 py-0.5">Official</span>
           </div>
-          <p class="text-xs text-slate-200 leading-relaxed">${post.text}</p>
-          ${post.media ? `<img src="${post.media}" class="mt-3 rounded-xl w-full object-cover max-h-44 border border-slate-800" alt="channel" />` : ''}
-          ${post.link ? `<a href="${post.link}" target="_blank" class="block mt-2 text-xs text-cyan-400 underline">${post.link}</a>` : ''}
+          <p class="text-xs text-slate-200 leading-relaxed">${escapeHTML(post.text)}</p>
+          ${safeMediaURL(post.media) ? `<img src="${escapeHTML(safeMediaURL(post.media))}" class="mt-3 rounded-xl w-full object-cover max-h-44 border border-slate-800" alt="channel" />` : ''}
+          ${safeMediaURL(post.link) ? `<a href="${escapeHTML(safeMediaURL(post.link))}" target="_blank" rel="noopener noreferrer" class="block mt-2 text-xs text-cyan-400 underline">${escapeHTML(post.link)}</a>` : ''}
         </article>
       `).join('');
     }
@@ -375,7 +538,7 @@
       const text = input.value.trim();
       if (!text) { showToast('Napisz treść posta zanim opublikujesz.'); return; }
       state.posts.unshift({
-        author: 'Ty',
+        author: currentUser.first_name || 'Ty',
         text,
         media: '',
         time: 'teraz'
@@ -436,12 +599,17 @@
       const adminPanelContainer = document.getElementById('admin-panel-container');
 
       const name = [user.first_name, user.last_name].filter(Boolean).join(' ') || 'Guest';
-      const usernameText = user.username ? `@${user.username}` : '@guest';
+      const usernameText = user.username ? `@${user.username}` : (user.first_name || 'Gość');
 
       if (username) username.textContent = usernameText;
+      const rankUserLabel = document.getElementById('rank-user-label');
+      if (rankUserLabel) rankUserLabel.textContent = `Ty (${user.username ? `@${user.username}` : user.first_name || 'Gość'})`;
       if (profileName) profileName.textContent = name;
       if (profileId) profileId.textContent = user.id ? `TG ID: ${user.id}` : 'TG ID: brak danych';
       if (headerAvatar) headerAvatar.textContent = name.slice(0, 2).toUpperCase();
+      const referralLink = document.getElementById('ref-link-input');
+      const botName = window.CONFIG?.BOT_USERNAME || 'TechnixProBot';
+      if (referralLink) referralLink.value = `https://t.me/${encodeURIComponent(botName)}?start=ref_${encodeURIComponent(user.id || 0)}`;
 
       // Sprawdzenie uprawnień administratora wg ID (lub jeśli ADMIN_TELEGRAM_ID to 0 dla testów lokalnych możesz dostosować)
       // Jeśli chcesz, aby na testach lokalnych panel był widoczny, zmień warunek lub ustaw ADMIN_TELEGRAM_ID równe Twojemu ID.
@@ -450,12 +618,13 @@
         adminPanelContainer.classList.remove('hidden');
       }
 
-      if (user.photo_url && avatarImg && avatarFallback && headerAvatar) {
-        avatarImg.src = user.photo_url;
+      const photoURL = safeMediaURL(user.photo_url);
+      if (photoURL && avatarImg && avatarFallback && headerAvatar) {
+        avatarImg.src = photoURL;
         avatarImg.classList.remove('hidden');
         avatarFallback.classList.add('hidden');
         headerAvatar.textContent = '';
-        headerAvatar.style.backgroundImage = `url(${user.photo_url})`;
+        headerAvatar.style.backgroundImage = `url("${photoURL.replace(/["\\]/g, '')}")`;
         headerAvatar.style.backgroundSize = 'cover';
         headerAvatar.style.backgroundPosition = 'center';
       }
@@ -473,11 +642,12 @@
 
     function completePurchase(key) {
       const item = state.rigCatalog.find(i => i.key === key);
+      if (!item || !Object.prototype.hasOwnProperty.call(state.rigParts, key)) return;
       state.rigParts[key] = true;
-      const partElement = document.querySelector(`.station-part[data-part="${key}"]`);
-      if (partElement) {
-        partElement.classList.add('active');
-      }
+      const ownedParts = Object.keys(state.rigParts).filter(part => state.rigParts[part]);
+      window.RigBuilder?.renderRig(ownedParts, { animateNew: [key], focus: true });
+      window.TechnixAPI?.saveRig(ownedParts).catch(() => {});
+      scheduleStateSync();
       renderRigShop();
       showToast(`${item ? item.name : 'Część'} została pomyślnie kupiona!`);
     }
@@ -488,25 +658,31 @@
       rigShop.innerHTML = state.rigCatalog.map(item => {
         const owned = state.rigParts[item.key];
         return `
-          <div class="shop-item">
-            <div class="shop-item-icon"><i class="fa-solid ${item.icon}"></i></div>
+          <div class="shop-item" data-part="${item.key}" title="${escapeHTML(item.name)}">
+            <div class="shop-item-preview" aria-label="${escapeHTML(`Podgląd: ${item.name}`)}"></div>
             <div>
-              <div class="text-[10px] font-semibold text-white">${item.name}</div>
-              <div class="text-[9px] text-amber-400 font-bold">${item.cost} ★ Telegram Stars</div>
+              <div class="text-[10px] font-semibold text-white">${escapeHTML(item.name)}</div>
+              <div class="text-[9px] text-amber-400 font-bold">${Number(item.cost) || 0} ★ Telegram Stars</div>
             </div>
-            <button data-rig="${item.key}" data-cost="${item.cost}" class="${owned ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/20' : 'bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-extrabold'} px-2 py-2 rounded-lg transition active:scale-95">
-              ${owned ? 'Kupione' : 'Kup (Stars)'}
+            <button type="button" data-rig="${item.key}" data-cost="${Number(item.cost) || 0}" aria-label="${escapeHTML(`${owned ? 'Zamontowano' : 'Kup'}: ${item.name}`)}" ${owned ? 'disabled' : ''} class="${owned ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/20' : 'bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-extrabold'} px-2 py-2 rounded-lg transition active:scale-95">
+              ${owned ? 'Zamontowano' : 'Kup (Stars)'}
             </button>
           </div>
         `;
       }).join('');
+
+      rigShop.querySelectorAll('.shop-item-preview').forEach(preview => {
+        const key = preview.closest('.shop-item')?.dataset.part;
+        if (key && window.RigBuilder) preview.replaceChildren(window.RigBuilder.createPreview(key));
+      });
 
       document.querySelectorAll('[data-rig]').forEach(button => {
         button.addEventListener('click', () => {
           const key = button.dataset.rig;
           const cost = Number(button.dataset.cost || 0);
           if (state.rigParts[key]) {
-            showToast(`${state.rigCatalog.find(item => item.key === key).name} jest już odblokowany.`);
+            const item = state.rigCatalog.find(entry => entry.key === key);
+            showToast(`${item?.name || 'Ta część'} jest już zamontowana.`);
             return;
           }
           buyRigPartWithStars(key, cost);
@@ -530,6 +706,7 @@
       let mined = 0;
       let totalSupply = 100000000;
       let currentCycle = 60 * 60 * 24 * 60;
+      let lastEnergySync = Date.now();
 
       function syncCryptoUI() {
         const ratio = mined / totalSupply;
@@ -560,8 +737,10 @@
           }
           state.energy = Math.max(0, state.energy - 15);
           state.tp += 25;
+          state.taps += 1;
           mined = Math.min(totalSupply, mined + 25);
           syncCryptoUI();
+          scheduleStateSync();
         });
       }
 
@@ -573,6 +752,10 @@
           state.energy = Math.min(state.energyMax, state.energy + 5);
         }
         syncCryptoUI();
+        if (Date.now() - lastEnergySync >= 10000) {
+          lastEnergySync = Date.now();
+          scheduleStateSync();
+        }
       }, 1000);
     }
 
@@ -672,13 +855,32 @@
       });
     }
 
-    function seedInitialState() {
+    async function seedInitialState() {
+      if (window.TechnixAPI) {
+        const [meResult, rigResult] = await Promise.allSettled([
+          window.TechnixAPI.getMe(),
+          window.TechnixAPI.getRig()
+        ]);
+        if (meResult.status === 'fulfilled' && meResult.value) {
+          const me = meResult.value;
+          state.stars = Number.isFinite(Number(me.stars)) ? Math.max(0, Number(me.stars)) : state.stars;
+          state.energy = Number.isFinite(Number(me.energy)) ? Math.max(0, Number(me.energy)) : state.energy;
+          state.energyMax = Number.isFinite(Number(me.energyMax)) ? Math.max(1, Number(me.energyMax)) : state.energyMax;
+          state.tp = Number.isFinite(Number(me.tp)) ? Math.max(0, Number(me.tp)) : state.tp;
+          state.taps = Number.isFinite(Number(me.taps)) ? Math.max(0, Number(me.taps)) : state.taps;
+        }
+        const apiRig = rigResult.status === 'fulfilled' ? rigResult.value : null;
+        const owned = Array.isArray(apiRig?.ownedParts) ? apiRig.ownedParts
+          : (Array.isArray(meResult.value?.ownedParts) ? meResult.value.ownedParts : []);
+        Object.keys(state.rigParts).forEach(key => { state.rigParts[key] = owned.includes(key); });
+      }
       updateStarsDisplay();
       renderTaskList();
       renderRewardLog();
       renderPostsFeed();
       renderChannelFeed();
       renderRigShop();
+      window.RigBuilder?.renderRig(Object.keys(state.rigParts).filter(key => state.rigParts[key]));
       initTelegramProfile();
       renderHomeSubtabs();
       initChatViewport();
@@ -688,4 +890,8 @@
       show('home', 'Sieć społeczna');
     }
 
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) syncGameState(true);
+    });
+    window.addEventListener('beforeunload', () => syncGameState(true));
     window.addEventListener('load', seedInitialState);
