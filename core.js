@@ -49,6 +49,7 @@
       stars: 0,
       rig_parts: ['desk'],
       tasks_completed: 0,
+      clicks: 0,
       wallet_balance: 0,
       referral_code: referralCode(id),
       referral_count: 0,
@@ -100,26 +101,30 @@
     return Math.max(0, t + hours * 3600000 - (nowMs || Date.now()));
   }
 
-  function claimTimer(user, nowMs) {
+  // Optional opts ({ hours, reward }) let the admin panel override the defaults from app-config.js.
+  function claimTimer(user, nowMs, opts) {
     nowMs = nowMs || Date.now();
-    if (msUntil(user.last_xp_claim, CFG.XP_TIMER_HOURS, nowMs) > 0) return { ok: false };
+    var hours = opts && opts.hours != null ? opts.hours : CFG.XP_TIMER_HOURS;
+    var reward = opts && opts.reward != null ? opts.reward : CFG.XP_TIMER_REWARD;
+    if (msUntil(user.last_xp_claim, hours, nowMs) > 0) return { ok: false };
     user.last_xp_claim = new Date(nowMs).toISOString();
-    addXp(user, CFG.XP_TIMER_REWARD);
-    return { ok: true, xp: CFG.XP_TIMER_REWARD };
+    addXp(user, reward);
+    return { ok: true, xp: reward };
   }
 
-  function claimDaily(user, nowMs) {
+  function claimDaily(user, nowMs, opts) {
     nowMs = nowMs || Date.now();
+    var reward = opts && opts.reward != null ? opts.reward : CFG.DAILY_REWARD_XP;
     if (msUntil(user.last_daily, 24, nowMs) > 0) return { ok: false };
     user.last_daily = new Date(nowMs).toISOString();
-    addXp(user, CFG.DAILY_REWARD_XP);
+    addXp(user, reward);
     user.tasks_completed += 1;
-    return { ok: true, xp: CFG.DAILY_REWARD_XP };
+    return { ok: true, xp: reward };
   }
 
-  function claimReferralMilestones(user) {
+  function claimReferralMilestones(user, milestones) {
     var gained = [];
-    CFG.REFERRAL_MILESTONES.forEach(function (m) {
+    (milestones || CFG.REFERRAL_MILESTONES).forEach(function (m) {
       if (user.referral_count >= m.count && user.referral_claimed.indexOf(m.count) === -1) {
         user.referral_claimed.push(m.count);
         addXp(user, m.rewardXp);

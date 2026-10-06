@@ -9,6 +9,8 @@ Static Telegram Mini App (no build step). Runs offline with mock data in `localS
 - `config.js` — **template** with placeholders (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `BOT_USERNAME`, `ADMIN_IDS`). Fill in your own values; never put a service_role key or bot token here.
 - `core.js` — pure logic (levels, referrals, tasks, achievements, validation); tested with `node --test test/core.test.js`.
 - `data.js` — versioned localStorage store (`technixpro:v<STORAGE_VERSION>:*`, older versions are purged) and optional Supabase REST adapter with fallback to mock data.
+- `admin-core.js` — pure admin logic (phases, feature flags, permission check, validation, stats, backup); tested with `node --test test/admin-core.test.js`.
+- `admin-ui.js` — admin modal (Posty, Zadania, Eventy, Powiadomienia, Fazy, Ustawienia, Statystyki).
 - `app.js` — UI: Kanał (posts + admin panel), Chat, Bonusy, Warsztat RIG, Profil.
 - `rig-builder.js` — RIG assembly animation and reduced-motion handling.
 - `styles.css` — styles.
@@ -22,6 +24,13 @@ Static Telegram Mini App (no build step). Runs offline with mock data in `localS
 - Chat: username, avatar, time, online count (polling; shared across tabs via localStorage, or Supabase when configured).
 - Profil: avatar upload (PNG/JPEG/WebP ≤ 2 MB), user info, wallet (TON Keeper link, history, deposit/withdraw requests), settings (account, notifications, privacy, language).
 - Admin panel (Kanał tab): text/images/videos/links, draft vs. published, user preview, moderation, 4h XP timer. Other users can only like and comment.
+
+## Admin panel & phases
+
+- Visible only for IDs in `ADMIN_IDS` (`config.js`); the header shield button opens the panel. This is a UI check — enforce it server-side with Supabase RLS before production.
+- Phase 1 (Stealth): only Kanał. Phase 2 (Community): + Chat, Bonusy, Warsztat. Phase 3 (Token & Wallet): + Wallet, Shop, Airdrop. The admin always sees everything (use "Podgląd użytkownika" to see what users see). With no phase deployed, all features stay on (backward compatible).
+- Admin data is kept in `localStorage` (`admin`, `admin:audit`, `admin:phases`, `admin:notifications`, `admin:trash`, `admin:history`) and mirrored best-effort to Supabase tables `admin_actions`, `phases`, `notifications`, `post_trash`. Without a backend, changes apply only on this device.
+- Bottom nav: Home, TechnixPro (bonuses), Warsztat, Wallet, Profil; Chat is a header button; the clicker counter is in the header (every 100 clicks +5 XP, every 1000 +50 XP and a loot box, 10 000 an achievement).
 
 ## Run
 
