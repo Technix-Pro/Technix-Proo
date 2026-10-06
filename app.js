@@ -226,6 +226,65 @@
       });
     }
 
+    function initChatViewport() {
+      const input = document.getElementById('post-input');
+      const chat = document.getElementById('home-group');
+      if (!input || !chat) return;
+
+      let baselineHeight = window.innerHeight;
+      let blurTimer;
+
+      function updateViewport() {
+        const isFocused = document.activeElement === input;
+        if (!isFocused) {
+          baselineHeight = Math.max(baselineHeight, window.innerHeight);
+          document.body.classList.remove('chat-keyboard-open');
+          document.documentElement.style.setProperty('--chat-keyboard-inset', '0px');
+          return;
+        }
+
+        const viewport = window.visualViewport;
+        const visibleHeight = viewport ? viewport.height + viewport.offsetTop : window.innerHeight;
+        const layoutWasResized = baselineHeight - window.innerHeight > 120;
+        const keyboardOpen = layoutWasResized || baselineHeight - visibleHeight > 120;
+        const wasOpen = document.body.classList.contains('chat-keyboard-open');
+        const keyboardInset = layoutWasResized ? 0 : Math.max(0, baselineHeight - visibleHeight);
+
+        document.body.classList.toggle('chat-keyboard-open', keyboardOpen);
+        document.documentElement.style.setProperty('--chat-keyboard-inset', `${keyboardInset}px`);
+        if (keyboardOpen && !wasOpen) {
+          requestAnimationFrame(() => {
+            const feed = document.getElementById('posts-feed');
+            if (feed) feed.scrollTop = feed.scrollHeight;
+          });
+        }
+      }
+
+      input.addEventListener('focus', () => {
+        clearTimeout(blurTimer);
+        baselineHeight = Math.max(baselineHeight, window.innerHeight);
+        updateViewport();
+      });
+      input.addEventListener('blur', () => {
+        blurTimer = setTimeout(updateViewport, 100);
+      });
+      input.addEventListener('input', () => {
+        input.style.height = 'auto';
+        input.style.height = `${Math.min(input.scrollHeight, 112)}px`;
+      });
+      input.addEventListener('keydown', event => {
+        if (event.key === 'Enter' && !event.shiftKey) {
+          event.preventDefault();
+          createNewPost();
+        }
+      });
+      window.addEventListener('resize', updateViewport);
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', updateViewport);
+        window.visualViewport.addEventListener('scroll', updateViewport);
+      }
+    }
+
     function renderRewardTabs() {
       document.querySelectorAll('[data-reward-tab]').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -249,17 +308,31 @@
     function renderPostsFeed() {
       const postsFeed = document.getElementById('posts-feed');
       if (!postsFeed) return;
-      postsFeed.innerHTML = state.posts.map(post => `
-        <div class="panel p-3 space-y-2">
+      const roles = {
+        user: 'Użytkownik',
+        moderator: 'Moderator',
+        admin: 'Administrator',
+        system: 'System'
+      };
+      postsFeed.innerHTML = state.posts.slice().reverse().map(post => {
+        const author = post.author || 'Użytkownik';
+        const requestedRole = post.role;
+        const role = roles[requestedRole] ? requestedRole
+          : author === 'System' ? 'system'
+          : author.toLowerCase().includes('admin') ? 'admin'
+          : author.toLowerCase().includes('moderator') ? 'moderator'
+          : 'user';
+        return `
+        <article class="panel chat-message space-y-2" data-message-role="${role}">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
-              <div class="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-cyan-400 flex items-center justify-center text-[10px] font-black text-slate-950">${(post.author || 'T').slice(0, 1).toUpperCase()}</div>
+              <div class="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-cyan-400 flex items-center justify-center text-[10px] font-black text-slate-950">${author.slice(0, 1).toUpperCase()}</div>
               <div>
-                <div class="text-[10px] font-semibold text-white">${post.author}</div>
+                <div class="text-[10px] font-semibold text-white">${author}</div>
                 <div class="text-[9px] muted">${post.time}</div>
               </div>
             </div>
-            <span class="text-[9px] text-cyan-300">#${post.author === 'System' ? 'tech' : 'crew'}</span>
+            <span class="text-[9px] text-cyan-300" data-role="${role}">${roles[role]}</span>
           </div>
           <p class="text-xs text-slate-200 leading-relaxed">${post.text}</p>
           ${post.media ? `<img src="${post.media}" alt="media" class="w-full rounded-xl border border-slate-800 object-cover max-h-48" />` : ''}
@@ -268,8 +341,11 @@
             <span><i class="fa-regular fa-comment"></i> 9</span>
             <span><i class="fa-regular fa-share-from-square"></i> 3</span>
           </div>
-        </div>
-      `).join('');
+          <div class="chat-message-actions" data-message-actions aria-label="Przyszłe akcje moderacyjne"></div>
+        </article>
+      `;
+      }).join('');
+      postsFeed.scrollTop = postsFeed.scrollHeight;
     }
 
     function renderChannelFeed() {
@@ -306,6 +382,7 @@
       });
       renderPostsFeed();
       input.value = '';
+      input.style.height = '';
       showToast('Post został dodany do grupy.');
       addStars(12, 'Nowy post');
     }
@@ -604,6 +681,7 @@
       renderRigShop();
       initTelegramProfile();
       renderHomeSubtabs();
+      initChatViewport();
       renderRewardTabs();
       bindGlobalActions();
       initCryptoGame();

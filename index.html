@@ -137,18 +137,24 @@
           <div id="channel-feed" class="space-y-4"></div>
         </div>
 
-        <div id="home-group" class="sub hidden space-y-4">
-          <div class="panel p-4 space-y-3">
-            <h2 class="font-bold text-sm text-slate-200">Społeczność & Dyskusja</h2>
-            <p class="text-xs muted">Twoje wpisy są zapisywane lokalnie na tym urządzeniu i będą dostępne po synchronizacji z backendem.</p>
-            <textarea id="post-input" rows="3" class="w-full rounded-xl bg-[#080b14] border border-slate-700/80 p-3 text-xs text-slate-200 focus:outline-none focus:border-violet-500 resize-none" placeholder="Opowiedz o swoim postępie..."></textarea>
-            <div class="flex justify-end">
-              <button id="create-post-btn" class="bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition active:scale-95 flex items-center gap-2">
-                <i class="fa-solid fa-paper-plane text-[10px]"></i> Opublikuj
-              </button>
+        <div id="home-group" class="sub chat-layout hidden">
+          <div class="panel chat-heading px-3 py-2.5 flex items-center justify-between">
+            <div>
+              <h2 class="font-bold text-sm text-slate-200">Chat społeczności</h2>
+              <p class="text-[10px] muted">Wiadomości lokalne · synchronizacja z backendem później</p>
             </div>
+            <span class="chat-online-status text-[9px] text-emerald-300" aria-label="Chat aktywny">
+              <i class="fa-solid fa-circle text-[6px]"></i> Aktywny
+            </span>
           </div>
-          <div id="posts-feed" class="space-y-3"></div>
+          <div id="posts-feed" class="chat-message-list scroll-none" role="log" aria-label="Wiadomości czatu" aria-live="polite"></div>
+          <div class="chat-composer panel">
+            <label class="sr-only" for="post-input">Wiadomość do czatu</label>
+            <textarea id="post-input" rows="1" class="chat-message-input" placeholder="Napisz wiadomość..." enterkeyhint="send"></textarea>
+            <button id="create-post-btn" type="button" aria-label="Wyślij wiadomość" class="chat-send-button">
+              <i class="fa-solid fa-paper-plane"></i>
+            </button>
+          </div>
         </div>
 
         <div id="home-info" class="sub hidden space-y-4">
