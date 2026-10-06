@@ -64,22 +64,8 @@
         desc: 'Wykonuj zadania społecznościowe, zbieraj gwiazdki i odblokuj limitowaną odznakę.',
         reward: 50
       },
-      rigParts: {
-        mouse: false,
-        keyboard: false,
-        monitor: false,
-        case: false,
-        ram: false,
-        gpu: false
-      },
-      rigCatalog: [
-        { key: 'mouse', name: 'Myszka', icon: 'fa-computer-mouse', cost: 40 },
-        { key: 'keyboard', name: 'Klawiatura', icon: 'fa-keyboard', cost: 60 },
-        { key: 'monitor', name: 'Monitor', icon: 'fa-display', cost: 180 },
-        { key: 'case', name: 'Obudowa', icon: 'fa-cube', cost: 100 },
-        { key: 'ram', name: 'RAM', icon: 'fa-memory', cost: 80 },
-        { key: 'gpu', name: 'GPU', icon: 'fa-microchip', cost: 270 }
-      ]
+      owned: {},
+      purchases: []
     };
 
     function formatK(value) {
@@ -185,6 +171,7 @@
       if (!toast) return;
       toast.textContent = msg;
       toast.classList.add('show');
+      if (window.FX) window.FX.toastIn(toast);
       clearTimeout(window.toastTimer);
       window.toastTimer = setTimeout(() => toast.classList.remove('show'), 1700);
     }
@@ -461,119 +448,280 @@
       }
     }
 
-    function buyRigPartWithStars(itemKey, cost) {
-      if (state.stars < cost) {
-        showToast(`Masz za mało gwiazdek! Potrzebujesz ${cost} ★.`);
-        return;
-      }
-      state.stars -= cost;
-      updateStarsDisplay();
-      completePurchase(itemKey);
+    const shopUi = { loading: new Set(), errors: new Set() };
+    const PURCHASE_STATUS = { paid: 'Opłacone', pending: 'Oczekuje', refunded: 'Zwrot', failed: 'Błąd', cancelled: 'Anulowane' };
+
+    function getCatalog() {
+      return Array.isArray(window.SHOP_CATALOG) ? window.SHOP_CATALOG : [];
     }
 
-    function completePurchase(key) {
-      const item = state.rigCatalog.find(i => i.key === key);
-      state.rigParts[key] = true;
-      const partElement = document.querySelector(`.station-part[data-part="${key}"]`);
-      if (partElement) {
-        partElement.classList.add('active');
+    function ownedCount(id) {
+      return Number(state.owned[id]) || 0;
+    }
+
+    function getOwnedRigParts() {
+      const parts = {};
+      getCatalog().forEach(item => {
+        if (item.type === 'rig_part' && item.effect && item.effect.part && ownedCount(item.id) > 0) parts[item.effect.part] = true;
+      });
+      return parts;
+    }
+
+    function applyEffects() {
+      let energyBonus = 0;
+      let theme = '';
+      getCatalog().forEach(item => {
+        if (ownedCount(item.id) < 1 || !item.effect) return;
+        if (item.effect.type === 'energy_max') energyBonus += Number(item.effect.value) || 0;
+        if (item.effect.type === 'cosmetic' && item.effect.theme) theme = item.effect.theme;
+      });
+      state.energyMax = 1000 + energyBonus;
+      if (theme) document.body.dataset.coreTheme = theme; else delete document.body.dataset.coreTheme;
+    }
+
+    // Server response ({ owned, purchases }) is the only source of truth for owned goods.
+    function applyServerState(data, silent) {
+      if (!data) return;
+      const owned = {};
+      if (data.owned && typeof data.owned === 'object') {
+        Object.keys(data.owned).forEach(id => { owned[id] = Number(data.owned[id]) || 0; });
       }
+      state.owned = owned;
+      state.purchases = Array.isArray(data.purchases) ? data.purchases : [];
+      applyEffects();
       renderRigShop();
-      showToast(`${item ? item.name : 'Część'} została pomyślnie kupiona!`);
+      renderPurchaseHistory();
+      if (window.RigBuilder) window.RigBuilder.setOwned(getOwnedRigParts(), !!silent);
+      if (typeof window.syncCryptoUI === 'function') window.syncCryptoUI();
+    }
+
+    function makeEl(tag, className, text) {
+      const node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text !== undefined) node.textContent = text;
+      return node;
+    }
+
+    function setShopButton(button, item, owned) {
+      button.textContent = '';
+      if (owned) {
+        button.className = 'shop-buy-btn bg-emerald-500/20 text-emerald-300 border border-emerald-500/20';
+        button.disabled = true;
+        button.appendChild(makeEl('span', '', 'Zakupione'));
+      } else if (shopUi.loading.has(item.id)) {
+        button.className = 'shop-buy-btn bg-slate-700 text-slate-200';
+        button.disabled = true;
+        button.appendChild(makeEl('i', 'fa-solid fa-spinner fa-spin'));
+        button.appendChild(makeEl('span', '', ' Płatność…'));
+      } else if (shopUi.errors.has(item.id)) {
+        button.className = 'shop-buy-btn bg-rose-500/20 text-rose-300 border border-rose-500/30';
+        button.disabled = false;
+        button.appendChild(makeEl('span', '', 'Błąd – spróbuj ponownie'));
+      } else {
+        button.className = 'shop-buy-btn bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-extrabold';
+        button.disabled = false;
+        button.appendChild(makeEl('span', '', `Kup za ${item.priceXtr} ⭐ Stars`));
+      }
     }
 
     function renderRigShop() {
       const rigShop = document.getElementById('rig-shop');
       if (!rigShop) return;
-      rigShop.innerHTML = state.rigCatalog.map(item => {
-        const owned = state.rigParts[item.key];
-        return `
-          <div class="shop-item">
-            <div class="shop-item-icon"><i class="fa-solid ${item.icon}"></i></div>
-            <div>
-              <div class="text-[10px] font-semibold text-white">${item.name}</div>
-              <div class="text-[9px] text-amber-400 font-bold">${item.cost} ★ Telegram Stars</div>
-            </div>
-            <button data-rig="${item.key}" data-cost="${item.cost}" class="${owned ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/20' : 'bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-extrabold'} px-2 py-2 rounded-lg transition active:scale-95">
-              ${owned ? 'Kupione' : 'Kup (Stars)'}
-            </button>
-          </div>
-        `;
-      }).join('');
+      const mockBadge = document.getElementById('shop-mock-badge');
+      if (mockBadge) mockBadge.classList.toggle('hidden', !(window.Payments && window.Payments.isMock));
+      rigShop.textContent = '';
+      getCatalog().forEach(item => {
+        const owned = ownedCount(item.id) >= item.maxOwned;
+        const card = makeEl('div', 'shop-item');
+        card.dataset.product = item.id;
 
-      document.querySelectorAll('[data-rig]').forEach(button => {
-        button.addEventListener('click', () => {
-          const key = button.dataset.rig;
-          const cost = Number(button.dataset.cost || 0);
-          if (state.rigParts[key]) {
-            showToast(`${state.rigCatalog.find(item => item.key === key).name} jest już odblokowany.`);
-            return;
-          }
-          buyRigPartWithStars(key, cost);
-        });
+        const icon = makeEl('div', 'shop-item-icon');
+        icon.appendChild(makeEl('i', `fa-solid ${item.icon}`));
+        card.appendChild(icon);
+
+        const info = makeEl('div');
+        info.appendChild(makeEl('div', 'text-[10px] font-semibold text-white', item.title));
+        info.appendChild(makeEl('div', 'text-[9px] muted', item.description));
+        const price = makeEl('div', 'text-[9px] text-amber-400 font-bold');
+        price.appendChild(makeEl('i', 'fa-solid fa-star'));
+        price.appendChild(makeEl('span', '', ` ${item.priceXtr} XTR`));
+        info.appendChild(price);
+        card.appendChild(info);
+
+        const button = makeEl('button');
+        button.type = 'button';
+        button.dataset.buy = item.id;
+        setShopButton(button, item, owned);
+        card.appendChild(button);
+        rigShop.appendChild(card);
       });
+    }
+
+    function renderPurchaseHistory() {
+      const box = document.getElementById('purchase-history');
+      if (!box) return;
+      box.textContent = '';
+      if (!state.purchases.length) {
+        box.appendChild(makeEl('p', 'text-[10px] muted', 'Brak zakupów.'));
+        return;
+      }
+      state.purchases.forEach(entry => {
+        const product = getCatalog().find(item => item.id === entry.productId);
+        const date = new Date(entry.createdAt);
+        const row = makeEl('div', 'flex items-center justify-between gap-2 text-[10px] bg-slate-900/60 rounded-lg px-3 py-2');
+        const left = makeEl('div');
+        left.appendChild(makeEl('div', 'font-semibold text-white', product ? product.title : String(entry.productId)));
+        left.appendChild(makeEl('div', 'muted', isNaN(date) ? '' : date.toLocaleString('pl-PL')));
+        const right = makeEl('div', 'text-right');
+        right.appendChild(makeEl('div', 'text-amber-400 font-bold', `${Number(entry.priceXtr) || 0} XTR`));
+        right.appendChild(makeEl('div', entry.status === 'paid' ? 'text-emerald-400' : 'muted', PURCHASE_STATUS[entry.status] || String(entry.status)));
+        row.appendChild(left);
+        row.appendChild(right);
+        box.appendChild(row);
+      });
+    }
+
+    async function buyProduct(id) {
+      const item = getCatalog().find(p => p.id === id);
+      const payments = window.Payments;
+      if (!item || !payments) return;
+      if (ownedCount(id) >= item.maxOwned) {
+        showToast(`${item.title} jest już zakupione.`);
+        return;
+      }
+      if (shopUi.loading.has(id)) return;
+      if (!payments.isMock && !payments.inTelegram()) {
+        showToast('Zakupy za Telegram Stars działają tylko w aplikacji Telegram.');
+        return;
+      }
+      shopUi.loading.add(id);
+      shopUi.errors.delete(id);
+      renderRigShop();
+      const result = await payments.purchase(id);
+      shopUi.loading.delete(id);
+      const mockTag = payments.isMock ? ' (MOCK)' : '';
+      if (result.status === 'paid') {
+        applyServerState(result.data);
+        if (window.FX) window.FX.haptic('notify', 'success');
+        showToast(`${item.title} zakupione za ${item.priceXtr} XTR!${mockTag}`);
+        return;
+      }
+      if (result.status === 'cancelled') {
+        showToast('Płatność anulowana.');
+      } else if (result.status === 'pending') {
+        if (result.data) applyServerState(result.data, true);
+        showToast('Płatność oczekuje na potwierdzenie serwera.');
+      } else if (result.status === 'unavailable') {
+        showToast('Zakupy za Telegram Stars działają tylko w aplikacji Telegram.');
+      } else if (result.status !== 'busy') {
+        shopUi.errors.add(id);
+        if (window.FX) window.FX.haptic('notify', 'error');
+        showToast(`Płatność nie powiodła się.${mockTag}`);
+      }
+      renderRigShop();
+    }
+
+    function initShop() {
+      const rigShop = document.getElementById('rig-shop');
+      if (rigShop) {
+        rigShop.addEventListener('click', event => {
+          const button = event.target.closest('[data-buy]');
+          if (button && !button.disabled) buyProduct(button.dataset.buy);
+        });
+      }
+      renderRigShop();
+      renderPurchaseHistory();
+      if (window.RigBuilder) window.RigBuilder.init();
+      // Restore owned goods from the server (GET /api/me); mock mode uses localStorage.
+      if (window.Payments) {
+        window.Payments.loadMe().then(data => applyServerState(data, true)).catch(() => {});
+      }
+    }
+
+    function renderEmission(snap) {
+      const set = (id, text) => { const node = document.getElementById(id); if (node) node.textContent = text; };
+      const pct = `${Math.min(snap.ratio * 100, 100).toFixed(2)}%`;
+      const fill = document.getElementById('tech-progress-fill');
+      const capsule = document.getElementById('tech-capsule-fill');
+      if (fill) fill.style.width = pct;
+      if (capsule) capsule.style.width = pct;
+      set('tech-mined-value', formatK(Math.floor(snap.mined)));
+      set('tech-progress-text', `${formatK(Math.floor(snap.mined))} / ${formatK(snap.supply)}`);
+      set('tech-supply-limit', formatK(snap.supply));
+      set('tech-remaining-time', snap.ended ? 'Cykl zakończony' : snap.remainingText);
+      set('tech-daily-rate', formatK(snap.perDay));
+      set('tech-status-word', snap.status);
     }
 
     function initCryptoGame() {
       const techTokenCount = document.getElementById('tech-token-count');
-      const techProgressFill = document.getElementById('tech-progress-fill');
-      const techProgressText = document.getElementById('tech-progress-text');
-      const techRemaining = document.getElementById('tech-remaining-time');
-      const techMinedValue = document.getElementById('tech-mined-value');
       const energyValue = document.getElementById('energyValue');
       const energyMax = document.getElementById('energyMax');
       const energyFill = document.getElementById('energyFill');
+      const energyBar = energyFill ? energyFill.parentElement : null;
       const tpBalance = document.getElementById('tpBalance');
-      const techTokenFill = document.getElementById('tech-capsule-fill');
       const coreClicker = document.getElementById('tech-core-clicker');
+      const fx = window.FX;
 
       let mined = 0;
-      let totalSupply = 100000000;
-      let currentCycle = 60 * 60 * 24 * 60;
+      let energyExact = state.energy;
+      let regenRunning = false;
 
       function syncCryptoUI() {
-        const ratio = mined / totalSupply;
-        if (techProgressFill) techProgressFill.style.width = `${Math.min(ratio * 100, 100)}%`;
-        if (techTokenFill) techTokenFill.style.width = `${Math.min(ratio * 100, 100)}%`;
-
-        const remainingSeconds = Math.max(0, currentCycle);
-        const days = Math.floor(remainingSeconds / 86400);
-        const hrs = Math.floor((remainingSeconds % 86400) / 3600);
-        const mins = Math.floor((remainingSeconds % 3600) / 60);
-        const secs = remainingSeconds % 60;
-
-        if (techRemaining) techRemaining.textContent = `${days}d ${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-        if (techTokenCount) techTokenCount.textContent = formatK(Math.round(mined));
-        if (techMinedValue) techMinedValue.textContent = formatK(Math.round(mined));
-        if (techProgressText) techProgressText.textContent = `${formatK(mined)} / ${formatK(totalSupply)}`;
+        state.energy = Math.floor(energyExact);
+        const ratio = state.energyMax ? Math.min(1, energyExact / state.energyMax) : 0;
+        if (techTokenCount) fx ? fx.countTo(techTokenCount, mined, formatK) : (techTokenCount.textContent = formatK(mined));
         if (energyValue) energyValue.textContent = state.energy;
         if (energyMax) energyMax.textContent = state.energyMax;
-        if (tpBalance) tpBalance.textContent = formatK(state.tp);
-        if (energyFill) energyFill.style.width = `${(state.energy / state.energyMax) * 100}%`;
+        if (tpBalance) fx ? fx.countTo(tpBalance, state.tp, formatK) : (tpBalance.textContent = formatK(state.tp));
+        if (energyFill) energyFill.style.transform = `scaleX(${ratio.toFixed(3)})`;
+        if (energyBar) energyBar.classList.toggle('energy-low', ratio < 0.2);
+        if (energyExact < state.energyMax) ensureRegen();
       }
+      window.syncCryptoUI = syncCryptoUI;
 
-      if (coreClicker) {
-        coreClicker.addEventListener('click', () => {
-          if (state.energy < 15) {
-            showToast('Brakuje energii! Poczekaj na regenerację.');
-            return;
-          }
-          state.energy = Math.max(0, state.energy - 15);
-          state.tp += 25;
-          mined = Math.min(totalSupply, mined + 25);
+      function ensureRegen() {
+        if (regenRunning || !fx) return;
+        regenRunning = true;
+        fx.addTask(dt => {
+          if (energyExact >= state.energyMax) { regenRunning = false; syncCryptoUI(); return false; }
+          energyExact = Math.min(state.energyMax, energyExact + 5 * dt);
           syncCryptoUI();
         });
       }
 
-      syncCryptoUI();
-
-      setInterval(() => {
-        currentCycle = Math.max(0, currentCycle - 1);
-        if (state.energy < state.energyMax) {
-          state.energy = Math.min(state.energyMax, state.energy + 5);
+      function tap() {
+        if (energyExact < 15) {
+          showToast('Brakuje energii! Poczekaj na regenerację.');
+          if (energyBar && fx) fx.pop(energyBar);
+          return { ok: false };
         }
+        energyExact -= 15;
+        state.tp += 25;
+        mined += 25;
         syncCryptoUI();
-      }, 1000);
+        ensureRegen();
+        return { ok: true, label: '+25' };
+      }
+
+      if (coreClicker) {
+        if (fx) {
+          fx.bindTapCore(coreClicker, tap);
+        } else {
+          coreClicker.addEventListener('pointerdown', tap);
+        }
+      }
+
+      syncCryptoUI();
+      ensureRegen();
+      if (!fx) {
+        setInterval(() => { energyExact = Math.min(state.energyMax, energyExact + 5); syncCryptoUI(); }, 1000);
+      }
+
+      if (window.Emission) {
+        window.Emission.subscribe(renderEmission);
+        window.Emission.init();
+      }
     }
 
     function bindGlobalActions() {
@@ -678,13 +826,14 @@
       renderRewardLog();
       renderPostsFeed();
       renderChannelFeed();
-      renderRigShop();
+      initShop();
       initTelegramProfile();
       renderHomeSubtabs();
       initChatViewport();
       renderRewardTabs();
       bindGlobalActions();
       initCryptoGame();
+      if (window.FX) window.FX.bindRipples();
       show('home', 'Sieć społeczna');
     }
 
