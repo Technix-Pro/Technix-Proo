@@ -1,19 +1,21 @@
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            brand: {
-              bg: '#080b14',
-              panel: '#111827',
-              border: '#1f293d',
-              accent: '#8b5cf6',
-              cyan: '#22d3ee',
-              pink: '#ec4899'
+    if (window.tailwind) {
+      window.tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                bg: '#080b14',
+                panel: '#111827',
+                border: '#1f293d',
+                accent: '#8b5cf6',
+                cyan: '#22d3ee',
+                pink: '#ec4899'
+              }
+            },
+            fontFamily: {
+              sans: ['Inter', 'sans-serif']
             }
-          },
-          fontFamily: {
-            sans: ['Inter', 'sans-serif']
           }
         }
       }
@@ -32,9 +34,8 @@
       id: 0,
       photo_url: ''
     };
-
-    // WPISZ TUTAJ SWOJE TELEGRAM ID, ABY WIDZIEĆ PANEL ADMINA
-    const ADMIN_TELEGRAM_ID = 0; // np. 123456789
+    let communityConfig = null;
+    let communityPreview = false;
 
     const state = {
       stars: 1280,
@@ -49,21 +50,9 @@
         { author: 'System', text: 'TechnixPro Core Engine online. Wersja 2.7 Edge aktywna.', media: '', time: '2 min temu' },
         { author: 'System', text: 'Nowa seria zadań społecznościowych została dodana do sekcji gwiazd.', media: '', time: '12 min temu' }
       ],
-      channelPosts: [
-        { author: 'TechnixPro', text: 'Nowa wersja systemu nagród trafiła do mini app. Włącz tryb aktywności i zbieraj gwiazdki.', media: '', time: '8 min temu' },
-        { author: 'Core Team', text: 'Mining Engine osiągnął 64% wydajności. Kolejny etap odblokowuje automatyczne pakiety TP.', media: '', time: '23 min temu' }
-      ],
-      tasks: [
-        { title: 'Aktywność w kanale', reward: 25, label: 'Kanał' },
-        { title: 'Wspólnota: post do grupy', reward: 40, label: 'Grupa' },
-        { title: 'Mining boost', reward: 60, label: 'TP' },
-        { title: 'Referral invite', reward: 100, label: 'Referral' }
-      ],
-      liveEvent: {
-        title: 'Cyber Week — Community Sprint',
-        desc: 'Wykonuj zadania społecznościowe, zbieraj gwiazdki i odblokuj limitowaną odznakę.',
-        reward: 50
-      },
+      channelPosts: [],
+      tasks: [],
+      liveEvent: null,
       rigParts: {
         mouse: false,
         keyboard: false,
@@ -139,37 +128,46 @@
     function renderTaskList() {
       const taskList = document.getElementById('task-list');
       if (!taskList) return;
-
-      taskList.innerHTML = state.tasks.map(task => `
-        <button data-task="${task.label.toLowerCase()}" data-reward="${task.reward}" data-label="${task.title}" class="task-action w-full text-left panel px-3 py-3 rounded-xl flex items-center justify-between gap-3">
-          <div>
-            <div class="text-xs font-semibold text-white">${task.title}</div>
-            <div class="text-[10px] muted">+${task.reward} ★</div>
-          </div>
-          <span class="text-[10px] text-violet-300 font-bold">Złap</span>
-        </button>
-      `).join('');
-
-      document.querySelectorAll('#task-list .task-action').forEach(button => {
-        button.addEventListener('click', () => {
-          const reward = Number(button.dataset.reward || 0);
-          const label = button.dataset.label || 'Zadanie';
-          addStars(reward, label);
-        });
+      taskList.replaceChildren();
+      state.tasks.filter(task => task.active !== false).sort((a, b) => Number(a.order || 0) - Number(b.order || 0)).forEach(task => {
+        const button = document.createElement('button');
+        button.className = 'task-action w-full text-left panel px-3 py-3 rounded-xl flex items-center justify-between gap-3';
+        button.dataset.task = String(task.label || 'zadanie').toLowerCase();
+        button.dataset.reward = String(task.reward);
+        button.dataset.label = task.title;
+        const details = document.createElement('div');
+        const title = document.createElement('div');
+        title.className = 'text-xs font-semibold text-white';
+        title.textContent = task.title;
+        const reward = document.createElement('div');
+        reward.className = 'text-[10px] muted';
+        reward.textContent = `+${task.reward} ★`;
+        details.append(title, reward);
+        const action = document.createElement('span');
+        action.className = 'text-[10px] text-violet-300 font-bold';
+        action.textContent = 'Złap';
+        button.append(details, action);
+        button.addEventListener('click', () => addStars(Number(task.reward), task.title));
+        taskList.append(button);
       });
     }
 
     function renderRewardLog() {
       const rewardLog = document.getElementById('reward-log');
       if (!rewardLog) return;
-      const items = state.taskHistory.slice(0, 5);
-
-      rewardLog.innerHTML = items.map(item => `
-        <div class="flex items-center justify-between text-xs rounded-xl bg-slate-900/60 border border-slate-800 px-3 py-2">
-          <span class="text-slate-300">${item.label}</span>
-          <span class="font-bold text-emerald-400">+${item.value} ★</span>
-        </div>
-      `).join('');
+      rewardLog.replaceChildren();
+      state.taskHistory.slice(0, 5).forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'flex items-center justify-between text-xs rounded-xl bg-slate-900/60 border border-slate-800 px-3 py-2';
+        const label = document.createElement('span');
+        label.className = 'text-slate-300';
+        label.textContent = item.label;
+        const reward = document.createElement('span');
+        reward.className = 'font-bold text-emerald-400';
+        reward.textContent = `+${item.value} ★`;
+        row.append(label, reward);
+        rewardLog.append(row);
+      });
     }
 
     function addStars(amount, label) {
@@ -289,6 +287,7 @@
       document.querySelectorAll('[data-reward-tab]').forEach(btn => {
         btn.addEventListener('click', () => {
           const key = btn.dataset.rewardTab;
+          if (btn.style.display === 'none') return;
           document.querySelectorAll('.reward-view').forEach(view => view.classList.add('hidden'));
           const target = document.getElementById(`reward-${key}`);
           if (target) target.classList.remove('hidden');
@@ -314,7 +313,7 @@
         admin: 'Administrator',
         system: 'System'
       };
-      postsFeed.innerHTML = state.posts.slice().reverse().map(post => {
+      postsFeed.innerHTML = state.posts.filter(post => post.visible !== false).slice().reverse().map(post => {
         const author = post.author || 'Użytkownik';
         const requestedRole = post.role;
         const role = roles[requestedRole] ? requestedRole
@@ -351,23 +350,96 @@
     function renderChannelFeed() {
       const feed = document.getElementById('channel-feed');
       if (!feed) return;
-      feed.innerHTML = state.channelPosts.map(post => `
-        <article class="panel p-3.5">
-          <div class="flex items-center justify-between gap-3 mb-2">
-            <div class="flex items-center gap-2">
-              <div class="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-cyan-400 flex items-center justify-center text-[10px] font-bold text-slate-950">${(post.author || 'T').slice(0, 1).toUpperCase()}</div>
-              <div>
-                <div class="text-[10px] font-semibold text-white">${post.author}</div>
-                <div class="text-[9px] muted">${post.time}</div>
-              </div>
-            </div>
-            <span class="text-[10px] text-violet-300 bg-violet-500/10 border border-violet-500/20 rounded-full px-2 py-0.5">Official</span>
-          </div>
-          <p class="text-xs text-slate-200 leading-relaxed">${post.text}</p>
-          ${post.media ? `<img src="${post.media}" class="mt-3 rounded-xl w-full object-cover max-h-44 border border-slate-800" alt="channel" />` : ''}
-          ${post.link ? `<a href="${post.link}" target="_blank" class="block mt-2 text-xs text-cyan-400 underline">${post.link}</a>` : ''}
-        </article>
-      `).join('');
+      feed.replaceChildren();
+      state.channelPosts.filter(post => post.visible !== false).forEach(post => feed.append(createPostCard(post, true)));
+    }
+
+    function safeWebUrl(value) {
+      try {
+        const url = new URL(value, window.location.href);
+        return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
+      } catch (error) {
+        return '';
+      }
+    }
+
+    function createPostCard(post, channel) {
+      const article = document.createElement(channel ? 'article' : 'div');
+      article.className = `panel ${channel ? 'p-3.5' : 'p-3 space-y-2'}`;
+      const heading = document.createElement('div');
+      heading.className = 'flex items-center justify-between gap-3 mb-2';
+      const identity = document.createElement('div');
+      identity.className = 'flex items-center gap-2';
+      const avatar = document.createElement('div');
+      avatar.className = 'w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-cyan-400 flex items-center justify-center text-[10px] font-bold text-slate-950';
+      avatar.textContent = (post.author || 'T').slice(0, 1).toUpperCase();
+      const identityText = document.createElement('div');
+      const author = document.createElement('div');
+      author.className = 'text-[10px] font-semibold text-white';
+      author.textContent = post.author || 'TechnixPro';
+      const time = document.createElement('div');
+      time.className = 'text-[9px] muted';
+      time.textContent = post.time || '';
+      identityText.append(author, time);
+      identity.append(avatar, identityText);
+      heading.append(identity);
+      if (channel) {
+        const badge = document.createElement('span');
+        badge.className = 'text-[10px] text-violet-300 bg-violet-500/10 border border-violet-500/20 rounded-full px-2 py-0.5';
+        badge.textContent = post.pinned ? 'Przypięty' : 'Official';
+        heading.append(badge);
+      }
+      const text = document.createElement('p');
+      text.className = 'text-xs text-slate-200 leading-relaxed';
+      text.textContent = post.text || '';
+      article.append(heading, text);
+      const mediaUrl = safeWebUrl(post.media || '');
+      if (mediaUrl) {
+        const image = document.createElement('img');
+        image.src = mediaUrl;
+        image.alt = 'Post';
+        image.className = 'mt-3 rounded-xl w-full object-cover max-h-44 border border-slate-800';
+        article.append(image);
+      }
+      const linkUrl = safeWebUrl(post.link || '');
+      if (channel && linkUrl) {
+        const link = document.createElement('a');
+        link.href = linkUrl;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.className = 'block mt-2 text-xs text-cyan-400 underline';
+        link.textContent = post.link;
+        article.append(link);
+      }
+      return article;
+    }
+
+    function renderNotifications() {
+      const list = document.getElementById('notification-list');
+      if (!list) return;
+      list.replaceChildren();
+      const config = window.TechnixStore.getVisible(communityPreview);
+      const notifications = config.notifications.filter(item => item.sent
+        && (!item.scheduledAt || new Date(item.scheduledAt).getTime() <= Date.now())
+        && (item.audience === 'all' || item.audience === `phase-${config.activePhase}`));
+      if (!notifications.length) {
+        const empty = document.createElement('div');
+        empty.className = 'panel p-4 text-xs muted';
+        empty.textContent = 'Brak nowych powiadomień.';
+        list.append(empty);
+      }
+      notifications.forEach(item => {
+        const card = document.createElement('article');
+        card.className = 'panel p-4 text-xs space-y-2';
+        const title = document.createElement('div');
+        title.className = 'font-bold text-white';
+        title.textContent = item.title;
+        const text = document.createElement('p');
+        text.className = 'muted';
+        text.textContent = item.text;
+        card.append(title, text);
+        list.append(card);
+      });
     }
 
     function createNewPost() {
@@ -387,44 +459,6 @@
       addStars(12, 'Nowy post');
     }
 
-    // Panel Admina - Przełączanie podzakładek
-    window.switchAdminTab = function(tabKey, button = document.querySelector(`[data-admin-tab="${tabKey}"]`)) {
-      const activeView = document.getElementById(`admin-sub-${tabKey}`);
-      if (!activeView) return;
-
-      document.querySelectorAll('.admin-sub-view').forEach(view => view.classList.add('hidden'));
-      activeView.classList.remove('hidden');
-      document.querySelectorAll('.admin-tab-btn').forEach(btn => {
-        btn.classList.remove('text-violet-400', 'border-violet-500', 'border-b-2');
-        btn.classList.add('text-slate-400', 'border-transparent');
-      });
-      if (button) {
-        button.classList.remove('text-slate-400', 'border-transparent');
-        button.classList.add('text-violet-400', 'border-violet-500', 'border-b-2');
-      }
-    }
-
-    function publishChannelPost() {
-      const input = document.getElementById('admin-post-input');
-      const media = document.getElementById('admin-media-input');
-      const link = document.getElementById('admin-link-input');
-      const text = input.value.trim();
-      if (!text) { showToast('Wpisz treść posta kanałowego.'); return; }
-      state.channelPosts.unshift({
-        author: 'Admin (Ty)',
-        text,
-        media: media.value.trim(),
-        link: link.value.trim(),
-        time: 'teraz'
-      });
-      renderChannelFeed();
-      input.value = '';
-      media.value = '';
-      link.value = '';
-      showToast('Opublikowano post, grafikę lub załącznik na kanale.');
-      addStars(25, 'Panel Administratora');
-    }
-
     function initTelegramProfile() {
       const user = parseTelegramUser();
       const username = document.getElementById('telegram-username');
@@ -433,7 +467,6 @@
       const avatarFallback = document.getElementById('profile-avatar-fallback');
       const avatarImg = document.getElementById('profile-avatar-img');
       const headerAvatar = document.getElementById('header-avatar');
-      const adminPanelContainer = document.getElementById('admin-panel-container');
 
       const name = [user.first_name, user.last_name].filter(Boolean).join(' ') || 'Guest';
       const usernameText = user.username ? `@${user.username}` : '@guest';
@@ -443,12 +476,7 @@
       if (profileId) profileId.textContent = user.id ? `TG ID: ${user.id}` : 'TG ID: brak danych';
       if (headerAvatar) headerAvatar.textContent = name.slice(0, 2).toUpperCase();
 
-      // Sprawdzenie uprawnień administratora wg ID (lub jeśli ADMIN_TELEGRAM_ID to 0 dla testów lokalnych możesz dostosować)
-      // Jeśli chcesz, aby na testach lokalnych panel był widoczny, zmień warunek lub ustaw ADMIN_TELEGRAM_ID równe Twojemu ID.
-      const isOwner = (user.id === ADMIN_TELEGRAM_ID) || (ADMIN_TELEGRAM_ID === 0); 
-      if (adminPanelContainer && isOwner) {
-        adminPanelContainer.classList.remove('hidden');
-      }
+      window.AdminControlCenter.initialize(window.applyCommunityConfig, user.id);
 
       if (user.photo_url && avatarImg && avatarFallback && headerAvatar) {
         avatarImg.src = user.photo_url;
@@ -577,22 +605,22 @@
     }
 
     function bindGlobalActions() {
-      document.querySelectorAll('[data-admin-tab]').forEach(button => {
-        button.addEventListener('click', () => window.switchAdminTab(button.dataset.adminTab, button));
-      });
-
       document.querySelectorAll('[data-screen]').forEach(button => {
         button.addEventListener('click', () => {
           const key = button.dataset.screen;
           if (key === 'home') show('home', 'Sieć społeczna');
-          if (key === 'crypto') show('crypto', 'TechnixPro');
+          if (key === 'crypto' && (communityConfig.features.clicker || communityConfig.features.rigBuilder)) show('crypto', 'TechnixPro');
           if (key === 'gift') show('gift', 'Bonusy');
-          if (key === 'wallet') show('wallet', 'Portfel');
+          if (key === 'wallet' && communityConfig.features.wallet) show('wallet', 'Portfel');
           if (key === 'profile') show('profile', 'Profil');
           if (key === 'menu') show('menu', 'Menu Główne');
           if (key === 'search') show('search', 'Wyszukiwarka');
-          if (key === 'notifications') show('notifications', 'Powiadomienia');
+          if (key === 'notifications' && communityConfig.features.notifications) show('notifications', 'Powiadomienia');
         });
+      });
+      const eventButton = document.getElementById('live-event-action-btn');
+      if (eventButton) eventButton.addEventListener('click', () => {
+        if (state.liveEvent) addStars(Number(state.liveEvent.reward), state.liveEvent.title);
       });
 
       document.querySelectorAll('.claim-reward').forEach(button => {
@@ -615,54 +643,8 @@
         });
       }
 
-      const pubPostBtn = document.getElementById('publish-post-btn');
-      if (pubPostBtn) pubPostBtn.addEventListener('click', publishChannelPost);
-
       const createPostBtn = document.getElementById('create-post-btn');
       if (createPostBtn) createPostBtn.addEventListener('click', createNewPost);
-
-      // Obsługa formularza zapisywania eventu live z panelu admina
-      const saveEventBtn = document.getElementById('save-event-btn');
-      if (saveEventBtn) {
-        saveEventBtn.addEventListener('click', () => {
-          const titleInput = document.getElementById('admin-event-title').value.trim();
-          const descInput = document.getElementById('admin-event-desc').value.trim();
-          const rewardInput = Number(document.getElementById('admin-event-reward').value);
-
-          if (titleInput) state.liveEvent.title = titleInput;
-          if (descInput) state.liveEvent.desc = descInput;
-          if (rewardInput) state.liveEvent.reward = rewardInput;
-
-          // Aktualizacja widoku eventu w sekcji Bonusy -> Eventy Live
-          document.getElementById('live-event-title').textContent = state.liveEvent.title;
-          document.getElementById('live-event-desc').textContent = state.liveEvent.desc;
-          const eventBtn = document.getElementById('live-event-action-btn');
-          eventBtn.dataset.reward = state.liveEvent.reward;
-          eventBtn.textContent = `Dodaj +${state.liveEvent.reward} ★`;
-
-          showToast('Event live został zaktualizowany.');
-        });
-      }
-
-      // Obsługa dodawania nowych zadań z panelu admina
-      const addTaskBtn = document.getElementById('add-task-btn');
-      if (addTaskBtn) {
-        addTaskBtn.addEventListener('click', () => {
-          const titleInput = document.getElementById('admin-new-task-title').value.trim();
-          const rewardInput = Number(document.getElementById('admin-new-task-reward').value);
-
-          if (!titleInput || !rewardInput) {
-            showToast('Wypełnij pola nowego zadania.');
-            return;
-          }
-
-          state.tasks.push({ title: titleInput, reward: rewardInput, label: 'Admin' });
-          renderTaskList();
-          document.getElementById('admin-new-task-title').value = '';
-          document.getElementById('admin-new-task-reward').value = '';
-          showToast('Nowe zadanie zostało dodane do zakładki Zadania.');
-        });
-      }
 
       document.querySelectorAll('.wallet-toast-btn, .profile-toast-btn').forEach(button => {
         button.addEventListener('click', () => {
@@ -672,20 +654,69 @@
       });
     }
 
-    function seedInitialState() {
-      updateStarsDisplay();
+    window.applyCommunityConfig = function (config, preview) {
+      communityConfig = config;
+      communityPreview = Boolean(preview);
+      state.tasks = config.tasks;
+      state.channelPosts = config.posts;
+      const now = Date.now();
+      state.liveEvent = config.events.find(event => event.active !== false
+        && (!event.startAt || new Date(event.startAt).getTime() <= now)
+        && (!event.endAt || new Date(event.endAt).getTime() >= now)) || null;
+      document.querySelectorAll('[data-feature]').forEach(element => {
+        element.style.display = config.features[element.dataset.feature] === false ? 'none' : '';
+      });
+      const cryptoEnabled = config.features.clicker || config.features.rigBuilder;
+      document.querySelector('[data-screen="crypto"]').style.display = cryptoEnabled ? '' : 'none';
+      document.getElementById('screen-crypto').style.display = cryptoEnabled ? '' : 'none';
+      document.querySelectorAll('[data-reward-tab="events"]').forEach(element => {
+        element.style.display = config.features.events && Boolean(state.liveEvent) ? '' : 'none';
+      });
+      document.getElementById('reward-events').style.display = config.features.events && Boolean(state.liveEvent) ? '' : 'none';
+      const title = document.getElementById('live-event-title');
+      const description = document.getElementById('live-event-desc');
+      const eventButton = document.getElementById('live-event-action-btn');
+      if (state.liveEvent) {
+        title.textContent = state.liveEvent.title;
+        description.textContent = state.liveEvent.desc;
+        eventButton.textContent = `Dodaj +${state.liveEvent.reward} ★`;
+      }
+      const statusBanner = document.getElementById('system-status-banner');
+      const statusText = document.getElementById('system-status-text');
+      statusBanner.style.display = config.statusBanner.visible ? '' : 'none';
+      statusBanner.dataset.statusLevel = config.statusBanner.level;
+      statusText.textContent = config.statusBanner.text;
+      document.querySelectorAll('.phase-label').forEach(label => { label.textContent = `Faza ${config.activePhase}`; });
+      Object.entries(config.animations).forEach(([key, enabled]) => {
+        if (key === 'reduceMotion') return;
+        const cssKey = key.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`);
+        document.body.classList.toggle(`no-${cssKey}`, !enabled);
+      });
+      document.body.classList.toggle('reduce-motion', Boolean(config.animations.reduceMotion));
       renderTaskList();
-      renderRewardLog();
-      renderPostsFeed();
       renderChannelFeed();
-      renderRigShop();
-      initTelegramProfile();
-      renderHomeSubtabs();
-      initChatViewport();
-      renderRewardTabs();
-      bindGlobalActions();
-      initCryptoGame();
-      show('home', 'Sieć społeczna');
+      renderNotifications();
+      const selectedView = document.querySelector('.reward-view:not(.hidden)');
+      if (selectedView && selectedView.style.display === 'none') {
+        document.querySelector('[data-reward-tab="overview"]').click();
+      }
+    };
+
+    function seedInitialState() {
+      window.TechnixStore.init().then(initial => {
+        window.applyCommunityConfig(initial.published, false);
+        updateStarsDisplay();
+        renderRewardLog();
+        renderPostsFeed();
+        renderRigShop();
+        initTelegramProfile();
+        renderHomeSubtabs();
+        initChatViewport();
+        renderRewardTabs();
+        bindGlobalActions();
+        initCryptoGame();
+        show('home', 'Sieć społeczna');
+      }).catch(error => showToast(`Nie udało się wczytać konfiguracji: ${error.message}`));
     }
 
     window.addEventListener('load', seedInitialState);

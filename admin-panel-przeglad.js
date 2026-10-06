@@ -5,7 +5,7 @@
 (function () {
   'use strict';
 
-  const ADMIN_ID = '7777540542';
+  const ADMIN_ID = (window.TECHNIX_CONFIG && window.TECHNIX_CONFIG.ADMIN_IDS && window.TECHNIX_CONFIG.ADMIN_IDS[0]) || '';
   const KEY = {
     posts: 'tp_public_materials',
     tasks: 'tp_bonus_tasks',
