@@ -3,4 +3,6 @@ window.CONFIG = Object.freeze({
   API_BASE_URL: '',
   TELEGRAM_BOT_USERNAME: 'TechnixProBot',
   ENABLE_ANIMATIONS: true
+  BOT_USERNAME: 'TechnixProBot',
+  ANIMATIONS_ENABLED: true
 });
