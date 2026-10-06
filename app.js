@@ -1,4 +1,4 @@
-    tailwind.config = {
+    if (window.tailwind) window.tailwind.config = {
       darkMode: 'class',
       theme: {
         extend: {
@@ -25,13 +25,15 @@
       tg.expand();
     }
 
-    const defaultUser = {
-      first_name: 'Guest',
-      last_name: '',
-      username: 'guest',
-      id: 0,
-      photo_url: ''
+    const telegramUser = tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user : {};
+    const currentUser = {
+      id: telegramUser.id || 0,
+      username: telegramUser.username || '',
+      first_name: telegramUser.first_name || 'Gość',
+      photo_url: telegramUser.photo_url || '',
+      language_code: telegramUser.language_code || 'pl'
     };
+    window.currentUser = currentUser;
 
     // WPISZ TUTAJ SWOJE TELEGRAM ID, ABY WIDZIEĆ PANEL ADMINA
     const ADMIN_TELEGRAM_ID = 0; // np. 123456789
@@ -42,6 +44,8 @@
       energy: 1000,
       energyMax: 1000,
       tp: 240,
+      taps: 0,
+      mined: 0,
       taskHistory: [
         { label: 'Pierwsze logowanie', value: 25, time: 'dziś' }
       ],
@@ -70,7 +74,8 @@
         monitor: false,
         case: false,
         ram: false,
-        gpu: false
+        gpu: false,
+        fan: false
       },
       rigCatalog: [
         { key: 'mouse', name: 'Myszka', icon: 'fa-computer-mouse', cost: 40 },
@@ -78,21 +83,179 @@
         { key: 'monitor', name: 'Monitor', icon: 'fa-display', cost: 180 },
         { key: 'case', name: 'Obudowa', icon: 'fa-cube', cost: 100 },
         { key: 'ram', name: 'RAM', icon: 'fa-memory', cost: 80 },
-        { key: 'gpu', name: 'GPU', icon: 'fa-microchip', cost: 270 }
+        { key: 'gpu', name: 'GPU', icon: 'fa-microchip', cost: 270 },
+        { key: 'fan', name: 'Chłodzenie', icon: 'fa-fan', cost: 120 }
       ]
     };
+    const dataLoads = new Map();
+    let syncTimer;
+    let syncInFlight = false;
+    let syncPending = false;
 
     function formatK(value) {
-      return new Intl.NumberFormat('pl-PL', { maximumFractionDigits: 0 }).format(value);
+      return new Intl.NumberFormat('pl-PL', { maximumFractionDigits: 0 }).format(Number.isFinite(Number(value)) ? Number(value) : 0);
+    }
+
+    function escapeHTML(value) {
+      return String(value == null ? '' : value).replace(/[&<>"']/g, character => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[character]));
+    }
+
+    function safeMediaURL(value) {
+      if (typeof value !== 'string' || !value.trim()) return '';
+      try {
+        const url = new URL(value, window.location.href);
+        return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
+      } catch (error) {
+        return '';
+      }
     }
 
     function parseTelegramUser() {
-      const raw = tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user : defaultUser;
+      return currentUser;
+    }
+
+    function gameStateSnapshot() {
       return {
-        ...defaultUser,
-        ...raw
+        stars: Number.isFinite(state.stars) ? state.stars : 0,
+        energy: Number.isFinite(state.energy) ? state.energy : 0,
+        energyMax: Number.isFinite(state.energyMax) ? state.energyMax : 1000,
+        tp: Number.isFinite(state.tp) ? state.tp : 0,
+        taps: Number.isFinite(state.taps) ? state.taps : 0,
+        mined: Number.isFinite(state.mined) ? state.mined : 0,
+        rigParts: Object.fromEntries(state.rigCatalog.map(item => [item.key, Boolean(state.rigParts[item.key])]))
       };
     }
+
+    function flushGameState(keepalive = false) {
+      clearTimeout(syncTimer);
+      const payload = {
+        clientRequestId: window.crypto && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        timestamp: new Date().toISOString(),
+        state: gameStateSnapshot()
+      };
+      window.TechnixAPI.cacheState(payload.state);
+      if (syncInFlight) { syncPending = true; return; }
+      syncInFlight = true;
+      window.TechnixAPI.syncState(payload, keepalive).catch(() => {}).finally(() => {
+        syncInFlight = false;
+        if (syncPending) {
+          syncPending = false;
+          flushGameState();
+        }
+      });
+    }
+
+    function scheduleGameSync() {
+      window.TechnixAPI.cacheState(gameStateSnapshot());
+      clearTimeout(syncTimer);
+      syncTimer = setTimeout(flushGameState, 3000);
+    }
+
+    function applyMeData(me) {
+      if (!me || typeof me !== 'object') return;
+      const game = me.gameState || {};
+      ['stars', 'energy', 'energyMax', 'tp', 'taps', 'mined'].forEach(key => {
+        if (Number.isFinite(Number(game[key]))) state[key] = Number(game[key]);
+      });
+      if (game.rigParts && typeof game.rigParts === 'object') {
+        state.rigParts = { ...state.rigParts, ...game.rigParts };
+      }
+      updateStarsDisplay();
+    }
+
+    function setApiStatus(screenName, status, message = '') {
+      const screen = document.getElementById(`screen-${screenName}`);
+      if (!screen) return;
+      let host = screen.querySelector('.api-state');
+      if (!host) {
+        host = document.createElement('div');
+        host.className = 'api-state';
+        host.setAttribute('aria-live', 'polite');
+        screen.prepend(host);
+      }
+      host.replaceChildren();
+      if (status === 'ready') return host.remove();
+      const card = document.createElement('div');
+      card.className = `api-state-card ${status}`;
+      if (status === 'loading') {
+        card.innerHTML = '<span class="api-skeleton"></span><span class="api-skeleton short"></span><span class="sr-only">Ładowanie danych…</span>';
+      } else {
+        const text = document.createElement('span');
+        text.textContent = status === 'error' ? message || 'Nie udało się pobrać danych.' : 'Brak danych do wyświetlenia.';
+        card.append(text);
+        if (status === 'error') {
+          const retry = document.createElement('button');
+          retry.type = 'button';
+          retry.className = 'api-retry';
+          retry.textContent = 'Spróbuj ponownie';
+          retry.dataset.retryScreen = screenName;
+          card.append(retry);
+        }
+      }
+      host.append(card);
+    }
+
+    async function loadScreenData(screenName, force = false) {
+      if (!window.TechnixAPI) return;
+      if (!force && dataLoads.has(screenName)) return dataLoads.get(screenName);
+      const requests = {
+        home: () => [window.TechnixAPI.getPosts(), window.TechnixAPI.getChannelPosts()],
+        crypto: () => [window.TechnixAPI.getRig()],
+        gift: () => [window.TechnixAPI.getTasks(), window.TechnixAPI.getLeaderboard(), window.TechnixAPI.getReferrals()],
+        wallet: () => [window.TechnixAPI.getWallet()],
+        profile: () => [window.TechnixAPI.getMe()],
+        notifications: () => [window.TechnixAPI.getNotifications()]
+      }[screenName];
+      if (!requests) return;
+      setApiStatus(screenName, 'loading');
+      const requestPromise = Promise.all(requests()).then(results => {
+        let empty = false;
+        if (screenName === 'home') {
+          state.posts = Array.isArray(results[0]) ? results[0] : [];
+          state.channelPosts = Array.isArray(results[1]) ? results[1] : [];
+          renderPostsFeed();
+          renderChannelFeed();
+          empty = state.posts.length === 0 && state.channelPosts.length === 0;
+        } else if (screenName === 'crypto') {
+          const rig = results[0] || {};
+          state.rigParts = { ...state.rigParts, ...(rig.parts || rig.rigParts || {}) };
+          window.rigBuilder.renderRig(state.rigParts);
+          renderRigShop();
+          empty = false;
+        } else if (screenName === 'gift') {
+          state.tasks = Array.isArray(results[0]) ? results[0] : [];
+          state.leaderboard = Array.isArray(results[1]) ? results[1] : [];
+          state.referrals = results[2] || { count: 0, rewards: 0, items: [] };
+          renderTaskList();
+          renderLeaderboard();
+          renderReferrals();
+          empty = !state.tasks.length && !state.leaderboard.length;
+        } else if (screenName === 'wallet') {
+          renderWallet(results[0] || {});
+          empty = !results[0] || !Object.keys(results[0]).length;
+        } else if (screenName === 'profile') {
+          applyMeData(results[0]);
+          empty = !results[0] || !Object.keys(results[0]).length;
+        } else if (screenName === 'notifications') {
+          renderNotifications(Array.isArray(results[0]) ? results[0] : []);
+          empty = !results[0] || !results[0].length;
+        }
+        setApiStatus(screenName, empty ? 'empty' : 'ready');
+      }).catch(error => setApiStatus(screenName, 'error', error.message));
+      dataLoads.set(screenName, requestPromise);
+      return requestPromise;
+    }
+
+    document.addEventListener('click', event => {
+      const retry = event.target.closest('[data-retry-screen]');
+      if (retry) loadScreenData(retry.dataset.retryScreen, true);
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) flushGameState();
+    });
+    window.addEventListener('beforeunload', () => flushGameState(true));
 
     function computeLevel(stars) {
       if (stars < 1500) return 1;
@@ -141,10 +304,10 @@
       if (!taskList) return;
 
       taskList.innerHTML = state.tasks.map(task => `
-        <button data-task="${task.label.toLowerCase()}" data-reward="${task.reward}" data-label="${task.title}" class="task-action w-full text-left panel px-3 py-3 rounded-xl flex items-center justify-between gap-3">
+        <button data-task="${escapeHTML(task.label).toLowerCase()}" data-reward="${Number(task.reward) || 0}" data-label="${escapeHTML(task.title)}" class="task-action w-full text-left panel px-3 py-3 rounded-xl flex items-center justify-between gap-3">
           <div>
-            <div class="text-xs font-semibold text-white">${task.title}</div>
-            <div class="text-[10px] muted">+${task.reward} ★</div>
+            <div class="text-xs font-semibold text-white">${escapeHTML(task.title)}</div>
+            <div class="text-[10px] muted">+${Number(task.reward) || 0} ★</div>
           </div>
           <span class="text-[10px] text-violet-300 font-bold">Złap</span>
         </button>
@@ -166,8 +329,8 @@
 
       rewardLog.innerHTML = items.map(item => `
         <div class="flex items-center justify-between text-xs rounded-xl bg-slate-900/60 border border-slate-800 px-3 py-2">
-          <span class="text-slate-300">${item.label}</span>
-          <span class="font-bold text-emerald-400">+${item.value} ★</span>
+          <span class="text-slate-300">${escapeHTML(item.label)}</span>
+          <span class="font-bold text-emerald-400">+${Number(item.value) || 0} ★</span>
         </div>
       `).join('');
     }
@@ -177,6 +340,7 @@
       state.taskHistory.unshift({ label, value: amount, time: 'teraz' });
       updateStarsDisplay();
       renderRewardLog();
+      scheduleGameSync();
       showToast(`Dodano ${amount} ★ do profilu (${label})`);
     }
 
@@ -205,6 +369,8 @@
       if (giftSubtabs) giftSubtabs.classList.toggle('hidden', screenName !== 'gift');
 
       document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.screen === screenName));
+      if (window.rigBuilder) window.rigBuilder.setVisible(screenName === 'crypto');
+      loadScreenData(screenName);
     }
 
     function renderHomeSubtabs() {
@@ -308,66 +474,133 @@
     function renderPostsFeed() {
       const postsFeed = document.getElementById('posts-feed');
       if (!postsFeed) return;
+      postsFeed.replaceChildren();
       const roles = {
         user: 'Użytkownik',
         moderator: 'Moderator',
         admin: 'Administrator',
         system: 'System'
       };
-      postsFeed.innerHTML = state.posts.slice().reverse().map(post => {
-        const author = post.author || 'Użytkownik';
+      state.posts.slice().reverse().forEach(post => {
+        const author = String(post.author || 'Użytkownik');
+        const mediaURL = safeMediaURL(post.media);
         const requestedRole = post.role;
-        const role = roles[requestedRole] ? requestedRole
+        const role = Object.prototype.hasOwnProperty.call(roles, requestedRole) ? requestedRole
           : author === 'System' ? 'system'
           : author.toLowerCase().includes('admin') ? 'admin'
           : author.toLowerCase().includes('moderator') ? 'moderator'
           : 'user';
-        return `
-        <article class="panel chat-message space-y-2" data-message-role="${role}">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <div class="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-cyan-400 flex items-center justify-center text-[10px] font-black text-slate-950">${author.slice(0, 1).toUpperCase()}</div>
-              <div>
-                <div class="text-[10px] font-semibold text-white">${author}</div>
-                <div class="text-[9px] muted">${post.time}</div>
-              </div>
-            </div>
-            <span class="text-[9px] text-cyan-300" data-role="${role}">${roles[role]}</span>
-          </div>
-          <p class="text-xs text-slate-200 leading-relaxed">${post.text}</p>
-          ${post.media ? `<img src="${post.media}" alt="media" class="w-full rounded-xl border border-slate-800 object-cover max-h-48" />` : ''}
-          <div class="flex items-center gap-3 text-[10px] text-slate-400">
-            <span><i class="fa-regular fa-heart"></i> 42</span>
-            <span><i class="fa-regular fa-comment"></i> 9</span>
-            <span><i class="fa-regular fa-share-from-square"></i> 3</span>
-          </div>
-          <div class="chat-message-actions" data-message-actions aria-label="Przyszłe akcje moderacyjne"></div>
-        </article>
-      `;
-      }).join('');
+        const article = document.createElement('article');
+        article.className = 'panel chat-message space-y-2';
+        article.dataset.messageRole = role;
+        const header = document.createElement('div');
+        header.className = 'flex items-center justify-between';
+        const authorGroup = document.createElement('div');
+        authorGroup.className = 'flex items-center gap-2';
+        const avatar = document.createElement('div');
+        avatar.className = 'w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-cyan-400 flex items-center justify-center text-[10px] font-black text-slate-950';
+        avatar.textContent = author.slice(0, 1).toUpperCase();
+        const details = document.createElement('div');
+        const authorNode = document.createElement('div');
+        authorNode.className = 'text-[10px] font-semibold text-white';
+        authorNode.textContent = author;
+        const time = document.createElement('div');
+        time.className = 'text-[9px] muted';
+        time.textContent = post.time || '';
+        details.append(authorNode, time);
+        authorGroup.append(avatar, details);
+        const roleNode = document.createElement('span');
+        roleNode.className = 'text-[9px] text-cyan-300';
+        roleNode.dataset.role = role;
+        roleNode.textContent = roles[role];
+        header.append(authorGroup, roleNode);
+        const content = document.createElement('p');
+        content.className = 'text-xs text-slate-200 leading-relaxed';
+        content.textContent = post.text || '';
+        article.append(header, content);
+        if (mediaURL) {
+          const image = document.createElement('img');
+          image.src = mediaURL;
+          image.alt = 'media';
+          image.className = 'w-full rounded-xl border border-slate-800 object-cover max-h-48';
+          article.append(image);
+        }
+        const actions = document.createElement('div');
+        actions.className = 'flex items-center gap-3 text-[10px] text-slate-400';
+        [['fa-heart', '42'], ['fa-comment', '9'], ['fa-share-from-square', '3']].forEach(([iconName, count]) => {
+          const item = document.createElement('span');
+          const icon = document.createElement('i');
+          icon.className = `fa-regular ${iconName}`;
+          item.append(icon, document.createTextNode(` ${count}`));
+          actions.append(item);
+        });
+        const moderation = document.createElement('div');
+        moderation.className = 'chat-message-actions';
+        moderation.dataset.messageActions = '';
+        moderation.setAttribute('aria-label', 'Przyszłe akcje moderacyjne');
+        article.append(actions, moderation);
+        postsFeed.append(article);
+      });
+      if (!state.posts.length) {
+        const empty = document.createElement('p');
+        empty.textContent = 'Nie ma jeszcze wiadomości.';
+        postsFeed.append(empty);
+      }
       postsFeed.scrollTop = postsFeed.scrollHeight;
     }
 
     function renderChannelFeed() {
       const feed = document.getElementById('channel-feed');
       if (!feed) return;
-      feed.innerHTML = state.channelPosts.map(post => `
-        <article class="panel p-3.5">
-          <div class="flex items-center justify-between gap-3 mb-2">
-            <div class="flex items-center gap-2">
-              <div class="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-cyan-400 flex items-center justify-center text-[10px] font-bold text-slate-950">${(post.author || 'T').slice(0, 1).toUpperCase()}</div>
-              <div>
-                <div class="text-[10px] font-semibold text-white">${post.author}</div>
-                <div class="text-[9px] muted">${post.time}</div>
-              </div>
-            </div>
-            <span class="text-[10px] text-violet-300 bg-violet-500/10 border border-violet-500/20 rounded-full px-2 py-0.5">Official</span>
-          </div>
-          <p class="text-xs text-slate-200 leading-relaxed">${post.text}</p>
-          ${post.media ? `<img src="${post.media}" class="mt-3 rounded-xl w-full object-cover max-h-44 border border-slate-800" alt="channel" />` : ''}
-          ${post.link ? `<a href="${post.link}" target="_blank" class="block mt-2 text-xs text-cyan-400 underline">${post.link}</a>` : ''}
-        </article>
-      `).join('');
+      feed.replaceChildren();
+      state.channelPosts.forEach(post => {
+        const article = document.createElement('article');
+        article.className = 'panel p-3.5';
+        const header = document.createElement('div');
+        header.className = 'flex items-center justify-between gap-3 mb-2';
+        const identity = document.createElement('div');
+        identity.className = 'flex items-center gap-2';
+        const avatar = document.createElement('div');
+        avatar.className = 'w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-cyan-400 flex items-center justify-center text-[10px] font-bold text-slate-950';
+        avatar.textContent = String(post.author || 'T').slice(0, 1).toUpperCase();
+        const details = document.createElement('div');
+        const author = document.createElement('div');
+        author.className = 'text-[10px] font-semibold text-white';
+        author.textContent = post.author || '';
+        const time = document.createElement('div');
+        time.className = 'text-[9px] muted';
+        time.textContent = post.time || '';
+        details.append(author, time);
+        identity.append(avatar, details);
+        const official = document.createElement('span');
+        official.className = 'text-[10px] text-violet-300 bg-violet-500/10 border border-violet-500/20 rounded-full px-2 py-0.5';
+        official.textContent = 'Official';
+        header.append(identity, official);
+        const content = document.createElement('p');
+        content.className = 'text-xs text-slate-200 leading-relaxed';
+        content.textContent = post.text || '';
+        article.append(header, content);
+        const mediaURL = safeMediaURL(post.media);
+        if (mediaURL) {
+          const image = document.createElement('img');
+          image.src = mediaURL;
+          image.className = 'mt-3 rounded-xl w-full object-cover max-h-44 border border-slate-800';
+          image.alt = 'channel';
+          article.append(image);
+        }
+        const linkURL = safeMediaURL(post.link);
+        if (linkURL) {
+          const link = document.createElement('a');
+          link.href = linkURL;
+          link.rel = 'noopener noreferrer';
+          link.target = '_blank';
+          link.className = 'block mt-2 text-xs text-cyan-400 underline';
+          link.textContent = post.link;
+          article.append(link);
+        }
+        feed.append(article);
+      });
+      if (!state.channelPosts.length) feed.textContent = 'Brak postów kanałowych.';
     }
 
     function createNewPost() {
@@ -375,7 +608,7 @@
       const text = input.value.trim();
       if (!text) { showToast('Napisz treść posta zanim opublikujesz.'); return; }
       state.posts.unshift({
-        author: 'Ty',
+        author: currentUser.username ? `@${currentUser.username}` : currentUser.first_name,
         text,
         media: '',
         time: 'teraz'
@@ -441,6 +674,10 @@
       if (username) username.textContent = usernameText;
       if (profileName) profileName.textContent = name;
       if (profileId) profileId.textContent = user.id ? `TG ID: ${user.id}` : 'TG ID: brak danych';
+      const rankUserLabel = document.getElementById('rank-user-label');
+      if (rankUserLabel) rankUserLabel.textContent = `Ty (${usernameText})`;
+      const refLink = document.getElementById('ref-link-input');
+      if (refLink) refLink.value = user.id ? `https://t.me/${window.CONFIG.BOT_USERNAME}?start=ref_${encodeURIComponent(user.id)}` : '';
       if (headerAvatar) headerAvatar.textContent = name.slice(0, 2).toUpperCase();
 
       // Sprawdzenie uprawnień administratora wg ID (lub jeśli ADMIN_TELEGRAM_ID to 0 dla testów lokalnych możesz dostosować)
@@ -450,15 +687,73 @@
         adminPanelContainer.classList.remove('hidden');
       }
 
-      if (user.photo_url && avatarImg && avatarFallback && headerAvatar) {
-        avatarImg.src = user.photo_url;
+      const photoURL = safeMediaURL(user.photo_url);
+      if (photoURL && avatarImg && avatarFallback && headerAvatar) {
+        avatarImg.src = photoURL;
         avatarImg.classList.remove('hidden');
         avatarFallback.classList.add('hidden');
         headerAvatar.textContent = '';
-        headerAvatar.style.backgroundImage = `url(${user.photo_url})`;
+        headerAvatar.style.backgroundImage = `url("${photoURL}")`;
         headerAvatar.style.backgroundSize = 'cover';
         headerAvatar.style.backgroundPosition = 'center';
       }
+    }
+
+    function renderLeaderboard() {
+      const container = document.querySelector('#reward-leaderboard .space-y-2');
+      if (!container) return;
+      container.replaceChildren();
+      const rows = state.leaderboard || [];
+      if (!rows.length) {
+        const empty = document.createElement('p');
+        empty.className = 'api-empty-note';
+        empty.textContent = 'Ranking pojawi się, gdy będą dostępne wyniki.';
+        container.append(empty);
+        return;
+      }
+      rows.forEach((row, index) => {
+        const line = document.createElement('div');
+        line.className = 'flex items-center justify-between bg-violet-900/30 p-2.5 rounded-xl border border-violet-500/30 text-xs font-semibold';
+        const name = document.createElement('span');
+        name.textContent = row.username ? `@${row.username}` : row.name || `Gracz ${index + 1}`;
+        const score = document.createElement('span');
+        score.className = 'font-bold text-violet-300';
+        score.textContent = `${formatK(row.stars)} ★`;
+        line.append(name, score);
+        container.append(line);
+      });
+    }
+
+    function renderReferrals() {
+      const card = document.querySelector('#reward-referrals .panel');
+      if (!card) return;
+      const labels = card.querySelectorAll('.border-t span.font-bold');
+      const referralData = state.referrals || {};
+      if (labels[0]) labels[0].textContent = `${formatK(referralData.count)} osób`;
+      if (labels[1]) labels[1].textContent = `+${formatK(referralData.rewards)} ★`;
+    }
+
+    function renderNotifications(items) {
+      const list = document.getElementById('notification-list');
+      if (!list) return;
+      list.replaceChildren();
+      items.forEach(item => {
+        const card = document.createElement('article');
+        card.className = 'panel p-4 text-xs space-y-2';
+        const title = document.createElement('div');
+        title.className = 'font-bold text-white';
+        title.textContent = item.title || 'Powiadomienie';
+        const text = document.createElement('p');
+        text.className = 'muted';
+        text.textContent = item.text || '';
+        card.append(title, text);
+        list.append(card);
+      });
+    }
+
+    function renderWallet(wallet) {
+      const balance = document.getElementById('wallet-balance');
+      if (balance) balance.textContent = `${formatK(wallet.balance)} ${wallet.currency || 'PLN'}`;
     }
 
     function buyRigPartWithStars(itemKey, cost) {
@@ -474,12 +769,19 @@
     function completePurchase(key) {
       const item = state.rigCatalog.find(i => i.key === key);
       state.rigParts[key] = true;
-      const partElement = document.querySelector(`.station-part[data-part="${key}"]`);
-      if (partElement) {
-        partElement.classList.add('active');
-      }
+      if (window.rigBuilder) window.rigBuilder.renderRig(state.rigParts, { animateNew: true });
       renderRigShop();
-      showToast(`${item ? item.name : 'Część'} została pomyślnie kupiona!`);
+      if (item) showToast(`${item.name} została pomyślnie kupiona!`);
+      const scene = document.getElementById('rig-scene');
+      if (scene && document.getElementById('screen-crypto').classList.contains('hidden')) {
+        show('crypto', 'TechnixPro');
+      }
+      if (scene && (scene.getBoundingClientRect().top < 0 || scene.getBoundingClientRect().bottom > window.innerHeight)) {
+        scene.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      if (scene) scene.focus({ preventScroll: true });
+      window.TechnixAPI.saveRig(state.rigParts).catch(() => {});
+      scheduleGameSync();
     }
 
     function renderRigShop() {
@@ -488,14 +790,15 @@
       rigShop.innerHTML = state.rigCatalog.map(item => {
         const owned = state.rigParts[item.key];
         return `
-          <div class="shop-item">
-            <div class="shop-item-icon"><i class="fa-solid ${item.icon}"></i></div>
+          <div class="shop-item ${owned ? 'is-owned' : ''}">
+            <div class="shop-item-icon">${window.rigBuilder ? window.rigBuilder.preview(item.key) : `<i class="fa-solid ${item.icon}"></i>`}</div>
             <div>
-              <div class="text-[10px] font-semibold text-white">${item.name}</div>
+              <div class="text-[10px] font-semibold text-white">${escapeHTML(item.name)}</div>
               <div class="text-[9px] text-amber-400 font-bold">${item.cost} ★ Telegram Stars</div>
+              <div class="shop-owned-label">${owned ? 'Zamontowano' : 'Do zbudowania'}</div>
             </div>
-            <button data-rig="${item.key}" data-cost="${item.cost}" class="${owned ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/20' : 'bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-extrabold'} px-2 py-2 rounded-lg transition active:scale-95">
-              ${owned ? 'Kupione' : 'Kup (Stars)'}
+            <button type="button" data-rig="${item.key}" data-cost="${item.cost}" ${owned ? 'disabled' : ''} class="${owned ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/20' : 'bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-extrabold'} px-2 py-2 rounded-lg transition active:scale-95">
+              ${owned ? 'Zamontowano' : 'Kup (Stars)'}
             </button>
           </div>
         `;
@@ -527,7 +830,7 @@
       const techTokenFill = document.getElementById('tech-capsule-fill');
       const coreClicker = document.getElementById('tech-core-clicker');
 
-      let mined = 0;
+      let mined = Number(state.mined) || 0;
       let totalSupply = 100000000;
       let currentCycle = 60 * 60 * 24 * 60;
 
@@ -561,7 +864,10 @@
           state.energy = Math.max(0, state.energy - 15);
           state.tp += 25;
           mined = Math.min(totalSupply, mined + 25);
+          state.mined = mined;
+          state.taps += 1;
           syncCryptoUI();
+          scheduleGameSync();
         });
       }
 
@@ -574,6 +880,7 @@
         }
         syncCryptoUI();
       }, 1000);
+      setInterval(flushGameState, 10000);
     }
 
     function bindGlobalActions() {
@@ -672,12 +979,20 @@
       });
     }
 
-    function seedInitialState() {
+    async function seedInitialState() {
+      try {
+        applyMeData(await window.TechnixAPI.getMe());
+      } catch (error) {
+        setApiStatus('profile', 'error', error.message);
+      }
       updateStarsDisplay();
       renderTaskList();
       renderRewardLog();
       renderPostsFeed();
       renderChannelFeed();
+      if (window.rigBuilder) {
+        window.rigBuilder.renderRig(state.rigParts);
+      }
       renderRigShop();
       initTelegramProfile();
       renderHomeSubtabs();

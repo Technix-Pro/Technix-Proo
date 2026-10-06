@@ -279,67 +279,111 @@
 
     .rig-station {
       position: relative;
-      min-height: 220px;
+      width: 100%;
       border-radius: 22px;
       border: 1px solid rgba(148,163,184,0.16);
-      background: linear-gradient(180deg, rgba(2,6,23,0.92), rgba(15,23,42,0.95));
+      background:
+        radial-gradient(ellipse at 50% 70%, rgba(34,211,238,0.1), transparent 55%),
+        linear-gradient(180deg, rgba(2,6,23,0.96), rgba(15,23,42,0.95));
       overflow: hidden;
-      padding: 14px;
+      padding: 8px;
     }
 
-    .rig-station::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(circle at center, rgba(34,211,238,0.15), transparent 60%);
-      pointer-events: none;
-    }
-
-    .station-motherboard {
-      position: relative;
+    .rig-svg {
+      display: block;
       width: 100%;
-      height: 140px;
-      border-radius: 16px;
-      background: linear-gradient(180deg, rgba(17,24,39,0.9), rgba(15,23,42,0.8));
-      border: 1px solid rgba(148,163,184,0.22);
-      box-shadow: inset 0 0 25px rgba(34,211,238,0.06);
-      margin-top: 8px;
+      height: auto;
+      aspect-ratio: 16 / 9;
     }
 
-    .station-part {
-      position: absolute;
-      opacity: 0;
-      transform: scale(0.6);
-      transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-      pointer-events: none;
+    .rig-part {
+      opacity: .14;
+      transform-box: fill-box;
+      transform-origin: center;
+      transition: opacity .2s ease;
     }
 
-    .station-part.active {
-      opacity: 1;
-      transform: scale(1);
-      pointer-events: auto;
-      animation: partGlow 2.5s ease-in-out infinite alternate;
+    .rig-part.owned { opacity: 1; }
+    .rig-part.assembling { opacity: 1; }
+    .rig-sparks { opacity: 0; transform-box: fill-box; transform-origin: center; pointer-events: none; }
+    .rig-monitor.owned .monitor-screen {
+      fill: #082d42;
+      animation: screenGlow 3s ease-in-out infinite alternate;
+    }
+    .rig-monitor.owned .boot-line { animation: screenBoot 1s ease-out both; }
+    .rig-fan.owned .fan-blades,
+    .rig-gpu.owned .gpu-fan { animation: rigSpin 1.4s linear infinite; transform-box: fill-box; transform-origin: center; }
+    .rig-ram.owned .ram-led { animation: blink 1.2s ease-in-out infinite; }
+    .rig-gpu.owned { animation: gpuGlow 2.4s ease-in-out infinite alternate; }
+    .rig-online-label { opacity: 0; transition: opacity .25s ease; }
+    .rig-online .rig-online-label { opacity: 1; }
+    .rig-online .rig-case { filter: drop-shadow(0 0 5px rgba(34,211,238,.42)); }
+    .rig-paused .rig-svg *,
+    .rig-paused .rig-svg *::before,
+    .rig-paused .rig-svg *::after { animation-play-state: paused !important; }
+    .rig-status { padding: 0 5px 3px; color: var(--muted); font-size: 9px; text-align: center; }
+    .rig-progress-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .rig-replay {
+      border: 1px solid rgba(34,211,238,.25);
+      border-radius: 999px;
+      padding: 5px 9px;
+      color: #a5f3fc;
+      background: rgba(34,211,238,.08);
+      font-size: 9px;
+      font-weight: 700;
     }
 
-    .station-mouse { left: 10%; top: 28%; width: 44px; height: 36px; }
-    .station-keyboard { left: 30%; top: 22%; width: 88px; height: 38px; }
-    .station-monitor { left: 62%; top: 8%; width: 92px; height: 60px; }
-    .station-case { left: 14%; bottom: 8%; width: 78px; height: 58px; }
-    .station-ram { left: 44%; bottom: 14%; width: 56px; height: 40px; }
-    .station-gpu { right: 8%; bottom: 10%; width: 78px; height: 78px; }
+    .rig-preview-svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+      opacity: .9;
+      animation: previewFloat 3s ease-in-out infinite;
+    }
+    .shop-item:hover .rig-preview-svg { opacity: 1; }
+    .shop-item-icon {
+      width: 46px;
+      height: 46px;
+      overflow: hidden;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(34,211,238,.12), rgba(168,85,247,.12));
+      border: 1px solid rgba(34,211,238,.2);
+      color: #a5f3fc;
+    }
+    .shop-owned-label { margin-top: 3px; color: var(--muted); font-size: 8px; }
+    .shop-item.is-owned .shop-owned-label { color: #6ee7b7; }
+    .api-state-card {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+      border: 1px solid rgba(148,163,184,.14);
+      border-radius: 13px;
+      background: rgba(15,23,42,.72);
+      padding: 12px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+    .api-state-card.error { border-color: rgba(248,113,113,.3); color: #fecaca; }
+    .api-skeleton { display: block; width: 72%; height: 9px; border-radius: 8px; background: rgba(148,163,184,.18); }
+    .api-skeleton.short { width: 42%; }
+    .api-retry { align-self: flex-start; color: #a5f3fc; font-weight: 700; }
+    .api-empty-note { padding: 10px; color: var(--muted); text-align: center; font-size: 11px; }
 
-    .rig-part-box {
+    @keyframes rigSpin { to { transform: rotate(360deg); } }
+    @keyframes screenGlow { from { opacity: .75; } to { opacity: 1; } }
+    @keyframes screenBoot { 0% { opacity: 0; } 30% { opacity: 1; } 100% { opacity: .55; } }
+    @keyframes gpuGlow { from { opacity: .86; } to { opacity: 1; } }
+    @keyframes previewFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+
+    @media (prefers-reduced-motion: reduce) {
+      .rig-part, .rig-online-label, .rig-preview-svg { transition: none; animation-duration: 20s !important; }
+    }
+
+    .shop-item-icon {
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 100%;
-      height: 100%;
-      border-radius: 14px;
-      background: linear-gradient(135deg, rgba(34,211,238,0.25), rgba(139,92,246,0.3));
-      border: 1px solid rgba(34,211,238,0.5);
-      box-shadow: 0 0 22px rgba(34,211,238,0.3);
-      font-size: 22px;
-      color: #a5f3fc;
     }
 
     .rig-shop {
@@ -357,19 +401,6 @@
       border: 1px solid rgba(148,163,184,0.14);
       border-radius: 14px;
       padding: 10px 10px;
-    }
-
-    .shop-item-icon {
-      width: 42px;
-      height: 42px;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(135deg, rgba(34,211,238,0.12), rgba(168,85,247,0.12));
-      border: 1px solid rgba(34,211,238,0.2);
-      color: #a5f3fc;
-      font-size: 17px;
     }
 
     .shop-item button {
@@ -598,11 +629,6 @@
     @keyframes pulseGlow {
       0%, 100% { transform: scale(1); filter: brightness(1); }
       50% { transform: scale(1.05); filter: brightness(1.25); }
-    }
-
-    @keyframes partGlow {
-      0% { filter: drop-shadow(0 0 6px rgba(34,211,238,0.4)); }
-      100% { filter: drop-shadow(0 0 14px rgba(168,85,247,0.7)); }
     }
 
     @keyframes blink {
