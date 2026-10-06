@@ -27,11 +27,15 @@
 
     const defaultUser = {
       first_name: 'Guest',
-      last_name: '',
       username: 'guest',
       id: 0,
-      photo_url: ''
+      photo_url: '',
+      language_code: 'pl'
     };
+    let currentUser = defaultUser;
+    let minedAmount = 0;
+    let emissionEndsAt = 0;
+    let syncTimer = null;
 
     // WPISZ TUTAJ SWOJE TELEGRAM ID, ABY WIDZIEĆ PANEL ADMINA
     const ADMIN_TELEGRAM_ID = 0; // np. 123456789
@@ -70,15 +74,17 @@
         monitor: false,
         case: false,
         ram: false,
-        gpu: false
+        gpu: false,
+        fan: false
       },
       rigCatalog: [
-        { key: 'mouse', name: 'Myszka', icon: 'fa-computer-mouse', cost: 40 },
-        { key: 'keyboard', name: 'Klawiatura', icon: 'fa-keyboard', cost: 60 },
-        { key: 'monitor', name: 'Monitor', icon: 'fa-display', cost: 180 },
-        { key: 'case', name: 'Obudowa', icon: 'fa-cube', cost: 100 },
-        { key: 'ram', name: 'RAM', icon: 'fa-memory', cost: 80 },
-        { key: 'gpu', name: 'GPU', icon: 'fa-microchip', cost: 270 }
+        { key: 'mouse', name: 'Mysz', cost: 40 },
+        { key: 'keyboard', name: 'Klawiatura', cost: 60 },
+        { key: 'monitor', name: 'Monitor', cost: 180 },
+        { key: 'case', name: 'Obudowa', cost: 100 },
+        { key: 'ram', name: 'RAM', cost: 80 },
+        { key: 'gpu', name: 'GPU', cost: 270 },
+        { key: 'fan', name: 'Chłodzenie', cost: 90 }
       ]
     };
 
@@ -88,10 +94,15 @@
 
     function parseTelegramUser() {
       const raw = tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user : defaultUser;
-      return {
-        ...defaultUser,
-        ...raw
+      currentUser = {
+        id: Number(raw.id) || 0,
+        username: raw.username || 'guest',
+        first_name: raw.first_name || 'Guest',
+        photo_url: raw.photo_url || '',
+        language_code: raw.language_code || 'pl'
       };
+      window.currentUser = currentUser;
+      return currentUser;
     }
 
     function computeLevel(stars) {
@@ -140,15 +151,22 @@
       const taskList = document.getElementById('task-list');
       if (!taskList) return;
 
-      taskList.innerHTML = state.tasks.map(task => `
-        <button data-task="${task.label.toLowerCase()}" data-reward="${task.reward}" data-label="${task.title}" class="task-action w-full text-left panel px-3 py-3 rounded-xl flex items-center justify-between gap-3">
-          <div>
-            <div class="text-xs font-semibold text-white">${task.title}</div>
-            <div class="text-[10px] muted">+${task.reward} ★</div>
-          </div>
-          <span class="text-[10px] text-violet-300 font-bold">Złap</span>
-        </button>
-      `).join('');
+      taskList.replaceChildren();
+      if (!state.tasks.length) {
+        taskList.textContent = 'Brak dostępnych zadań.';
+        return;
+      }
+      state.tasks.forEach(task => {
+        const button = document.createElement('button');
+        button.className = 'task-action w-full text-left panel px-3 py-3 rounded-xl flex items-center justify-between gap-3';
+        button.dataset.task = String(task.label || 'zadanie').toLowerCase();
+        button.dataset.reward = String(Number(task.reward) || 0);
+        button.dataset.label = String(task.title || 'Zadanie');
+        button.innerHTML = '<div><div class="task-title text-xs font-semibold text-white"></div><div class="task-reward text-[10px] muted"></div></div><span class="text-[10px] text-violet-300 font-bold">Złap</span>';
+        button.querySelector('.task-title').textContent = String(task.title || 'Zadanie');
+        button.querySelector('.task-reward').textContent = `+${Number(task.reward) || 0} ★`;
+        taskList.appendChild(button);
+      });
 
       document.querySelectorAll('#task-list .task-action').forEach(button => {
         button.addEventListener('click', () => {
@@ -177,7 +195,36 @@
       state.taskHistory.unshift({ label, value: amount, time: 'teraz' });
       updateStarsDisplay();
       renderRewardLog();
+      scheduleStateSync();
       showToast(`Dodano ${amount} ★ do profilu (${label})`);
+    }
+
+    function snapshotGameState() {
+      return {
+        stars: Number(state.stars) || 0,
+        energy: Number(state.energy) || 0,
+        energyMax: Number(state.energyMax) || 0,
+        tp: Number(state.tp) || 0,
+        rigParts: { ...state.rigParts },
+        mined: Number(minedAmount) || 0,
+        emissionEndsAt
+      };
+    }
+
+    function scheduleStateSync() {
+      if (!window.TechnixAPI) return;
+      const snapshot = snapshotGameState();
+      TechnixAPI.saveLocalState(snapshot);
+      clearTimeout(syncTimer);
+      syncTimer = setTimeout(() => TechnixAPI.syncState(snapshot).catch(() => {}), 2500);
+    }
+
+    function flushState() {
+      if (!window.TechnixAPI) return;
+      clearTimeout(syncTimer);
+      const snapshot = snapshotGameState();
+      TechnixAPI.saveLocalState(snapshot);
+      TechnixAPI.syncState(snapshot).catch(() => {});
     }
 
     function showToast(msg) {
@@ -205,6 +252,118 @@
       if (giftSubtabs) giftSubtabs.classList.toggle('hidden', screenName !== 'gift');
 
       document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.screen === screenName));
+      if (window.rigBuilder) window.rigBuilder.setVisible(screenName === 'crypto');
+      loadScreenData(screenName);
+    }
+
+    const SCREEN_LOADERS = {
+      home: () => TechnixAPI.getNotifications(),
+      crypto: () => TechnixAPI.getRig(),
+      gift: () => Promise.all([TechnixAPI.getTasks(), TechnixAPI.getLeaderboard(), TechnixAPI.getReferrals()]),
+      wallet: () => TechnixAPI.getWallet(),
+      profile: () => TechnixAPI.getMe(),
+      menu: () => TechnixAPI.getMe(),
+      search: () => TechnixAPI.getLeaderboard(),
+      notifications: () => TechnixAPI.getNotifications()
+    };
+
+    function getScreenStatus(screen) {
+      let status = screen.querySelector('.screen-data-status');
+      if (!status) {
+        status = document.createElement('div');
+        status.className = 'screen-data-status hidden';
+        status.setAttribute('aria-live', 'polite');
+        screen.prepend(status);
+      }
+      return status;
+    }
+
+    function showScreenStatus(screen, type, message) {
+      const status = getScreenStatus(screen);
+      status.replaceChildren();
+      status.className = `screen-data-status ${type === 'loading' ? 'rig-loading' : type === 'error' ? 'rig-error panel p-3' : 'muted text-xs'}`;
+      if (type === 'loading') {
+        status.innerHTML = '<span class="inline-block h-3 w-3 animate-pulse rounded-full bg-cyan-400 mr-2"></span><span></span>';
+        status.lastElementChild.textContent = message || 'Ładowanie danych…';
+      } else {
+        const text = document.createElement('span');
+        text.textContent = message;
+        status.appendChild(text);
+        if (type === 'error') {
+          const retry = document.createElement('button');
+          retry.type = 'button';
+          retry.className = 'ml-2 text-cyan-300 underline';
+          retry.textContent = 'Spróbuj ponownie';
+          retry.addEventListener('click', () => loadScreenData(screen.id.replace('screen-', '')));
+          status.appendChild(retry);
+        }
+      }
+    }
+
+    function loadScreenData(screenName) {
+      const loader = SCREEN_LOADERS[screenName];
+      const screen = document.getElementById(`screen-${screenName}`);
+      if (!loader || !screen || !window.TechnixAPI) return;
+      const token = Number(screen.dataset.loadToken || 0) + 1;
+      screen.dataset.loadToken = String(token);
+      showScreenStatus(screen, 'loading', 'Ładowanie danych…');
+      loader().then(data => {
+        if (Number(screen.dataset.loadToken) !== token) return;
+        applyScreenData(screenName, data);
+        const status = getScreenStatus(screen);
+        status.className = 'screen-data-status hidden';
+        if ((screenName === 'gift' && !state.tasks.length) || (screenName === 'notifications' && !(Array.isArray(data) ? data.length : data?.length))) {
+          showScreenStatus(screen, 'empty', 'Brak danych do wyświetlenia.');
+        }
+      }).catch(() => {
+        if (Number(screen.dataset.loadToken) === token) showScreenStatus(screen, 'error', 'Nie udało się pobrać danych.');
+      });
+    }
+
+    function applyScreenData(screenName, data) {
+      if (screenName === 'crypto') {
+        const parts = data && (data.parts || data.rigParts) || {};
+        state.rigParts = { ...state.rigParts, ...parts };
+        window.rigBuilder.renderRig(state.rigParts);
+      } else if (screenName === 'gift') {
+        const [tasks, leaderboard, referrals] = data;
+        const taskList = Array.isArray(tasks) ? tasks : (tasks && tasks.tasks);
+        state.tasks = Array.isArray(taskList) ? taskList : [];
+        renderTaskList();
+        const rankName = document.getElementById('rank-user-label');
+        if (rankName) rankName.textContent = `Ty (@${currentUser.username})`;
+        const count = document.getElementById('referral-count');
+        const rewards = document.getElementById('referral-rewards');
+        if (count) count.textContent = `${Number(referrals?.count) || 0} osób`;
+        if (rewards) rewards.textContent = `+${Number(referrals?.rewards) || 0} ★`;
+        const firstRank = Array.isArray(leaderboard) ? leaderboard[0] : null;
+        if (firstRank && firstRank.id === currentUser.id && document.getElementById('rank-stars-display')) {
+          document.getElementById('rank-stars-display').textContent = `${formatK(Number(firstRank.stars) || 0)} ★`;
+        }
+      } else if (screenName === 'wallet') {
+        const balance = document.getElementById('wallet-balance');
+        if (balance) balance.textContent = `${(Number(data?.balance) || 0).toFixed(2).replace('.', ',')} ${String(data?.currency || 'PLN')}`;
+      } else if (screenName === 'notifications' || screenName === 'home') {
+        const notifications = Array.isArray(data) ? data : data && data.notifications;
+        if (screenName === 'notifications' && Array.isArray(notifications)) {
+          const container = document.getElementById('notifications-list');
+          if (container) {
+            container.replaceChildren();
+            notifications.forEach(item => {
+              const entry = document.createElement('article');
+              entry.className = 'panel p-4 text-xs space-y-2';
+              const title = document.createElement('div');
+              title.className = 'font-bold text-white';
+              title.textContent = String(item.title || 'Powiadomienie');
+              const body = document.createElement('p');
+              body.className = 'muted';
+              body.textContent = String(item.text || '');
+              entry.append(title, body);
+              container.appendChild(entry);
+            });
+          }
+        }
+      }
     }
 
     function renderHomeSubtabs() {
@@ -314,60 +473,82 @@
         admin: 'Administrator',
         system: 'System'
       };
-      postsFeed.innerHTML = state.posts.slice().reverse().map(post => {
-        const author = post.author || 'Użytkownik';
+      postsFeed.replaceChildren();
+      state.posts.slice().reverse().forEach(post => {
+        const author = String(post.author || 'Użytkownik');
         const requestedRole = post.role;
         const role = roles[requestedRole] ? requestedRole
           : author === 'System' ? 'system'
           : author.toLowerCase().includes('admin') ? 'admin'
           : author.toLowerCase().includes('moderator') ? 'moderator'
           : 'user';
-        return `
-        <article class="panel chat-message space-y-2" data-message-role="${role}">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <div class="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-cyan-400 flex items-center justify-center text-[10px] font-black text-slate-950">${author.slice(0, 1).toUpperCase()}</div>
-              <div>
-                <div class="text-[10px] font-semibold text-white">${author}</div>
-                <div class="text-[9px] muted">${post.time}</div>
-              </div>
-            </div>
-            <span class="text-[9px] text-cyan-300" data-role="${role}">${roles[role]}</span>
-          </div>
-          <p class="text-xs text-slate-200 leading-relaxed">${post.text}</p>
-          ${post.media ? `<img src="${post.media}" alt="media" class="w-full rounded-xl border border-slate-800 object-cover max-h-48" />` : ''}
-          <div class="flex items-center gap-3 text-[10px] text-slate-400">
-            <span><i class="fa-regular fa-heart"></i> 42</span>
-            <span><i class="fa-regular fa-comment"></i> 9</span>
-            <span><i class="fa-regular fa-share-from-square"></i> 3</span>
-          </div>
-          <div class="chat-message-actions" data-message-actions aria-label="Przyszłe akcje moderacyjne"></div>
-        </article>
-      `;
-      }).join('');
+        const article = document.createElement('article');
+        article.className = 'panel chat-message space-y-2';
+        article.dataset.messageRole = role;
+        article.innerHTML = '<div class="flex items-center justify-between"><div class="flex items-center gap-2"><div class="post-avatar w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-cyan-400 flex items-center justify-center text-[10px] font-black text-slate-950"></div><div><div class="post-author text-[10px] font-semibold text-white"></div><div class="post-time text-[9px] muted"></div></div></div><span class="post-role text-[9px] text-cyan-300"></span></div><p class="post-text text-xs text-slate-200 leading-relaxed"></p><div class="post-media"></div><div class="flex items-center gap-3 text-[10px] text-slate-400"><span>♡ 42</span><span>◌ 9</span><span>↗ 3</span></div><div class="chat-message-actions" data-message-actions aria-label="Przyszłe akcje moderacyjne"></div>';
+        article.querySelector('.post-avatar').textContent = author.slice(0, 1).toUpperCase();
+        article.querySelector('.post-author').textContent = author;
+        article.querySelector('.post-time').textContent = String(post.time || '');
+        article.querySelector('.post-role').textContent = roles[role];
+        article.querySelector('.post-text').textContent = String(post.text || '');
+        if (post.media) {
+          try {
+            const mediaUrl = new URL(post.media, window.location.href);
+            if (['http:', 'https:'].includes(mediaUrl.protocol)) {
+              const image = document.createElement('img');
+              image.src = mediaUrl.href;
+              image.alt = 'Załącznik do posta';
+              image.className = 'w-full rounded-xl border border-slate-800 object-cover max-h-48';
+              article.querySelector('.post-media').appendChild(image);
+            }
+          } catch (_) {}
+        }
+        postsFeed.appendChild(article);
+      });
       postsFeed.scrollTop = postsFeed.scrollHeight;
     }
 
     function renderChannelFeed() {
       const feed = document.getElementById('channel-feed');
       if (!feed) return;
-      feed.innerHTML = state.channelPosts.map(post => `
-        <article class="panel p-3.5">
-          <div class="flex items-center justify-between gap-3 mb-2">
-            <div class="flex items-center gap-2">
-              <div class="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-cyan-400 flex items-center justify-center text-[10px] font-bold text-slate-950">${(post.author || 'T').slice(0, 1).toUpperCase()}</div>
-              <div>
-                <div class="text-[10px] font-semibold text-white">${post.author}</div>
-                <div class="text-[9px] muted">${post.time}</div>
-              </div>
-            </div>
-            <span class="text-[10px] text-violet-300 bg-violet-500/10 border border-violet-500/20 rounded-full px-2 py-0.5">Official</span>
-          </div>
-          <p class="text-xs text-slate-200 leading-relaxed">${post.text}</p>
-          ${post.media ? `<img src="${post.media}" class="mt-3 rounded-xl w-full object-cover max-h-44 border border-slate-800" alt="channel" />` : ''}
-          ${post.link ? `<a href="${post.link}" target="_blank" class="block mt-2 text-xs text-cyan-400 underline">${post.link}</a>` : ''}
-        </article>
-      `).join('');
+      feed.replaceChildren();
+      state.channelPosts.forEach(post => {
+        const article = document.createElement('article');
+        article.className = 'panel p-3.5';
+        article.innerHTML = '<div class="flex items-center justify-between gap-3 mb-2"><div class="flex items-center gap-2"><div class="channel-avatar w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-cyan-400 flex items-center justify-center text-[10px] font-bold text-slate-950"></div><div><div class="channel-author text-[10px] font-semibold text-white"></div><div class="channel-time text-[9px] muted"></div></div></div><span class="text-[10px] text-violet-300 bg-violet-500/10 border border-violet-500/20 rounded-full px-2 py-0.5">Official</span></div><p class="channel-text text-xs text-slate-200 leading-relaxed"></p><div class="channel-media"></div><div class="channel-link"></div>';
+        const author = String(post.author || 'TechnixPro');
+        article.querySelector('.channel-avatar').textContent = author.slice(0, 1).toUpperCase();
+        article.querySelector('.channel-author').textContent = author;
+        article.querySelector('.channel-time').textContent = String(post.time || '');
+        article.querySelector('.channel-text').textContent = String(post.text || '');
+        if (post.media) {
+          try {
+            const mediaUrl = new URL(post.media, window.location.href);
+            if (['http:', 'https:'].includes(mediaUrl.protocol)) {
+              const image = document.createElement('img');
+              image.src = mediaUrl.href;
+              image.alt = 'Załącznik kanału';
+              image.className = 'mt-3 rounded-xl w-full object-cover max-h-44 border border-slate-800';
+              article.querySelector('.channel-media').appendChild(image);
+            }
+          } catch (_) {}
+        }
+        if (post.link) {
+          try {
+            const linkUrl = new URL(post.link, window.location.href);
+            if (['http:', 'https:'].includes(linkUrl.protocol)) {
+              const link = document.createElement('a');
+              link.href = linkUrl.href;
+              link.target = '_blank';
+              link.rel = 'noopener noreferrer';
+              link.className = 'block mt-2 text-xs text-cyan-400 underline';
+              link.textContent = String(post.link);
+              article.querySelector('.channel-link').appendChild(link);
+            }
+          } catch (_) {}
+        }
+        feed.appendChild(article);
+      });
     }
 
     function createNewPost() {
@@ -435,13 +616,20 @@
       const headerAvatar = document.getElementById('header-avatar');
       const adminPanelContainer = document.getElementById('admin-panel-container');
 
-      const name = [user.first_name, user.last_name].filter(Boolean).join(' ') || 'Guest';
+      const name = user.first_name || 'Guest';
       const usernameText = user.username ? `@${user.username}` : '@guest';
 
       if (username) username.textContent = usernameText;
       if (profileName) profileName.textContent = name;
       if (profileId) profileId.textContent = user.id ? `TG ID: ${user.id}` : 'TG ID: brak danych';
       if (headerAvatar) headerAvatar.textContent = name.slice(0, 2).toUpperCase();
+      const referralLink = document.getElementById('ref-link-input');
+      if (referralLink) {
+        const bot = (window.CONFIG && window.CONFIG.TELEGRAM_BOT_USERNAME) || 'TechnixProBot';
+        referralLink.value = `https://t.me/${bot}?start=ref_${user.id}`;
+      }
+      const rankName = document.getElementById('rank-user-label');
+      if (rankName) rankName.textContent = `Ty (@${user.username})`;
 
       // Sprawdzenie uprawnień administratora wg ID (lub jeśli ADMIN_TELEGRAM_ID to 0 dla testów lokalnych możesz dostosować)
       // Jeśli chcesz, aby na testach lokalnych panel był widoczny, zmień warunek lub ustaw ADMIN_TELEGRAM_ID równe Twojemu ID.
@@ -473,10 +661,14 @@
 
     function completePurchase(key) {
       const item = state.rigCatalog.find(i => i.key === key);
+      if (!item) return;
       state.rigParts[key] = true;
-      const partElement = document.querySelector(`.station-part[data-part="${key}"]`);
-      if (partElement) {
-        partElement.classList.add('active');
+      window.rigBuilder.renderRig(state.rigParts, { animateNew: true });
+      TechnixAPI.saveRig(state.rigParts).catch(() => showToast('Część zapisana lokalnie; synchronizacja nie powiodła się.'));
+      scheduleStateSync();
+      const scene = document.querySelector('.rig-station');
+      if (scene && (scene.getBoundingClientRect().top < 0 || scene.getBoundingClientRect().bottom > window.innerHeight)) {
+        scene.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
       renderRigShop();
       showToast(`${item ? item.name : 'Część'} została pomyślnie kupiona!`);
@@ -485,28 +677,45 @@
     function renderRigShop() {
       const rigShop = document.getElementById('rig-shop');
       if (!rigShop) return;
-      rigShop.innerHTML = state.rigCatalog.map(item => {
+      const previewViews = {
+        monitor: '170 60 180 160',
+        keyboard: '292 214 154 36',
+        mouse: '450 210 54 36',
+        case: '394 239 142 100',
+        fan: '423 256 62 62',
+        ram: '414 250 32 68',
+        gpu: '404 294 84 36'
+      };
+      rigShop.replaceChildren();
+      state.rigCatalog.forEach(item => {
         const owned = state.rigParts[item.key];
-        return `
-          <div class="shop-item">
-            <div class="shop-item-icon"><i class="fa-solid ${item.icon}"></i></div>
-            <div>
-              <div class="text-[10px] font-semibold text-white">${item.name}</div>
-              <div class="text-[9px] text-amber-400 font-bold">${item.cost} ★ Telegram Stars</div>
-            </div>
-            <button data-rig="${item.key}" data-cost="${item.cost}" class="${owned ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/20' : 'bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-extrabold'} px-2 py-2 rounded-lg transition active:scale-95">
-              ${owned ? 'Kupione' : 'Kup (Stars)'}
-            </button>
-          </div>
-        `;
-      }).join('');
+        const card = document.createElement('div');
+        card.className = `shop-item${owned ? ' shop-item-owned' : ''}`;
+        card.innerHTML = '<div class="shop-item-preview" data-preview><svg viewBox=""><use></use></svg></div><div><div class="shop-item-title text-[10px] font-semibold text-white"></div><div class="shop-item-cost text-[9px] text-amber-400 font-bold"></div><div class="shop-installed hidden text-[9px] font-bold">Zamontowano</div></div><button type="button" data-rig class="px-2 py-2 rounded-lg transition active:scale-95"></button>';
+        const preview = card.querySelector('[data-preview]');
+        preview.dataset.preview = item.key;
+        preview.querySelector('svg').setAttribute('viewBox', previewViews[item.key]);
+        preview.querySelector('use').setAttribute('href', `#rig-${item.key}`);
+        card.querySelector('.shop-item-title').textContent = item.name;
+        card.querySelector('.shop-item-cost').textContent = `${item.cost} ★ Telegram Stars`;
+        card.querySelector('.shop-installed').classList.toggle('hidden', !owned);
+        const button = card.querySelector('[data-rig]');
+        button.dataset.rig = item.key;
+        button.dataset.cost = String(item.cost);
+        button.className += owned
+          ? ' bg-emerald-500/20 text-emerald-300 border border-emerald-500/20'
+          : ' bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-extrabold';
+        button.textContent = owned ? 'Zamontowano' : 'Kup (Stars)';
+        button.disabled = Boolean(owned);
+        rigShop.appendChild(card);
+      });
 
       document.querySelectorAll('[data-rig]').forEach(button => {
         button.addEventListener('click', () => {
           const key = button.dataset.rig;
           const cost = Number(button.dataset.cost || 0);
           if (state.rigParts[key]) {
-            showToast(`${state.rigCatalog.find(item => item.key === key).name} jest już odblokowany.`);
+            showToast(`${state.rigCatalog.find(item => item.key === key)?.name || 'Część'} jest już odblokowana.`);
             return;
           }
           buyRigPartWithStars(key, cost);
@@ -527,25 +736,23 @@
       const techTokenFill = document.getElementById('tech-capsule-fill');
       const coreClicker = document.getElementById('tech-core-clicker');
 
-      let mined = 0;
       let totalSupply = 100000000;
-      let currentCycle = 60 * 60 * 24 * 60;
 
       function syncCryptoUI() {
-        const ratio = mined / totalSupply;
+        const ratio = minedAmount / totalSupply;
         if (techProgressFill) techProgressFill.style.width = `${Math.min(ratio * 100, 100)}%`;
         if (techTokenFill) techTokenFill.style.width = `${Math.min(ratio * 100, 100)}%`;
 
-        const remainingSeconds = Math.max(0, currentCycle);
+        const remainingSeconds = Math.max(0, Math.floor((emissionEndsAt - Date.now()) / 1000));
         const days = Math.floor(remainingSeconds / 86400);
         const hrs = Math.floor((remainingSeconds % 86400) / 3600);
         const mins = Math.floor((remainingSeconds % 3600) / 60);
         const secs = remainingSeconds % 60;
 
         if (techRemaining) techRemaining.textContent = `${days}d ${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-        if (techTokenCount) techTokenCount.textContent = formatK(Math.round(mined));
-        if (techMinedValue) techMinedValue.textContent = formatK(Math.round(mined));
-        if (techProgressText) techProgressText.textContent = `${formatK(mined)} / ${formatK(totalSupply)}`;
+        if (techTokenCount) techTokenCount.textContent = formatK(Math.round(minedAmount));
+        if (techMinedValue) techMinedValue.textContent = formatK(Math.round(minedAmount));
+        if (techProgressText) techProgressText.textContent = `${formatK(minedAmount)} / ${formatK(totalSupply)}`;
         if (energyValue) energyValue.textContent = state.energy;
         if (energyMax) energyMax.textContent = state.energyMax;
         if (tpBalance) tpBalance.textContent = formatK(state.tp);
@@ -560,15 +767,15 @@
           }
           state.energy = Math.max(0, state.energy - 15);
           state.tp += 25;
-          mined = Math.min(totalSupply, mined + 25);
+          minedAmount = Math.min(totalSupply, minedAmount + 25);
           syncCryptoUI();
+          scheduleStateSync();
         });
       }
 
       syncCryptoUI();
 
       setInterval(() => {
-        currentCycle = Math.max(0, currentCycle - 1);
         if (state.energy < state.energyMax) {
           state.energy = Math.min(state.energyMax, state.energy + 5);
         }
@@ -669,17 +876,42 @@
           const msg = button.textContent.trim() || 'Akcja aktywowana';
           showToast(`${msg}: moduł w fazie 3.`);
         });
+        document.addEventListener('visibilitychange', () => {
+          if (document.hidden) flushState();
+        });
+        window.addEventListener('beforeunload', flushState);
       });
     }
 
-    function seedInitialState() {
+    async function seedInitialState() {
+      currentUser = parseTelegramUser();
+      try {
+        const me = await TechnixAPI.getMe();
+        state.stars = Number.isFinite(Number(me?.stars)) ? Number(me.stars) : state.stars;
+        state.energy = Number.isFinite(Number(me?.energy)) ? Number(me.energy) : state.energy;
+        state.energyMax = Number.isFinite(Number(me?.energyMax)) ? Number(me.energyMax) : state.energyMax;
+        state.tp = Number.isFinite(Number(me?.tp)) ? Number(me.tp) : state.tp;
+        state.rigParts = { ...state.rigParts, ...(me?.rigParts || {}) };
+        minedAmount = Number(me?.mined) || 0;
+        emissionEndsAt = Number(me?.emissionEndsAt) || 0;
+      } catch (_) {
+        showToast('Nie udało się pobrać profilu. Używam danych lokalnych.');
+      }
+      const storedEmissionEnd = Number(localStorage.getItem('technixpro-emission-ends-at')) || 0;
+      emissionEndsAt = emissionEndsAt || storedEmissionEnd || Date.now() + 60 * 24 * 60 * 60 * 1000;
+      try {
+        localStorage.setItem('technixpro-emission-ends-at', String(emissionEndsAt));
+      } catch (_) {}
       updateStarsDisplay();
       renderTaskList();
       renderRewardLog();
       renderPostsFeed();
       renderChannelFeed();
+      window.rigBuilder.bindScene();
+      window.rigBuilder.renderRig(state.rigParts);
       renderRigShop();
       initTelegramProfile();
+      window.rigBuilder.bindThumbnails();
       renderHomeSubtabs();
       initChatViewport();
       renderRewardTabs();
