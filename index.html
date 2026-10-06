@@ -13,8 +13,10 @@
   <script src="app-config.js"></script>
   <script src="config.js"></script>
   <script src="core.js"></script>
+  <script src="admin-core.js"></script>
   <script src="data.js"></script>
   <script src="rig-builder.js"></script>
+  <script src="admin-ui.js"></script>
   <script src="app.js" defer></script>
 </head>
 <body>
@@ -28,7 +30,12 @@
           <p id="header-sub" class="text-[11px] text-slate-400 truncate"></p>
         </div>
       </div>
-      <span id="header-level" class="text-xs font-bold text-violet-300 bg-violet-600/20 border border-violet-500/40 rounded-full px-3 py-1 whitespace-nowrap"></span>
+      <div class="flex items-center gap-1.5 shrink-0">
+        <button id="header-clicker" type="button" class="hidden text-xs font-bold text-amber-200 bg-amber-500/10 border border-amber-500/30 rounded-full px-2.5 py-1 whitespace-nowrap"></button>
+        <button id="header-chat" type="button" class="hidden w-8 h-8 rounded-full bg-slate-800 text-cyan-300 text-xs"><i class="fa-solid fa-comments" aria-hidden="true"></i></button>
+        <button id="header-admin" type="button" class="hidden w-8 h-8 rounded-full bg-amber-500/20 border border-amber-500/50 text-amber-300 text-xs" aria-haspopup="dialog"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i></button>
+        <span id="header-level" class="text-xs font-bold text-violet-300 bg-violet-600/20 border border-violet-500/40 rounded-full px-3 py-1 whitespace-nowrap"></span>
+      </div>
     </header>
     <div id="app-content" class="p-4 space-y-4 flex-1">
       <noscript>Aplikacja wymaga włączonego JavaScript.</noscript>

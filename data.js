@@ -79,10 +79,16 @@
       write('user:' + u.id, u);
       remote('POST', 'users', [u]).catch(function () {});
     },
-    rigPartsCatalog: function () { return CFG.RIG_PARTS; },
+    rigPartsCatalog: function () {
+      var prices = (read('admin', {}).config || {}).rig_prices || {};
+      return CFG.RIG_PARTS.map(function (part) {
+        var v = Number(prices[part.key]);
+        return part.key !== 'desk' && isFinite(v) && v >= 0 ? { key: part.key, title: part.title, price: Math.round(v) } : part;
+      });
+    },
     rigParts: function (id) { return read('rig:' + id, ['desk']); },
     buyRigPart: function (user, partKey) {
-      var part = CFG.RIG_PARTS.filter(function (item) { return item.key === partKey; })[0];
+      var part = Data.rigPartsCatalog().filter(function (item) { return item.key === partKey; })[0];
       if (!part) return { ok: false, reason: 'unknown_part' };
       var owned = Data.rigParts(user.id);
       if (owned.indexOf(partKey) !== -1) return { ok: false, reason: 'owned' };
@@ -133,8 +139,87 @@
     },
 
     getPosts: function () { return read('posts', []); },
-    savePosts: function (list) { write('posts', list); },
+    savePosts: function (list) { return write('posts', list); },
     newId: uid,
+
+    /* ----- admin data (Supabase-ready: audit_actions, phases, notifications, post_trash) ----- */
+    getAdminState: function () {
+      var raw = read('admin', null);
+      return window.TPAdmin ? window.TPAdmin.normalizeState(raw) : (raw || {});
+    },
+    saveAdminState: function (state) { return write('admin', state); },
+    getList: function (name) { var v = read('admin:' + name, []); return Array.isArray(v) ? v : []; },
+    saveList: function (name, list, limit) { return write('admin:' + name, limit ? list.slice(0, limit) : list); },
+    mirror: function (table, row) { remote('POST', table, [row]).catch(function () {}); },
+    audit: function (adminId, action, entityType, entityId, changes) {
+      var row = { id: uid(), admin_id: adminId, action: action, entity_type: entityType, entity_id: entityId == null ? null : String(entityId), changes: changes || null, timestamp: new Date().toISOString() };
+      Data.saveList('audit', [row].concat(Data.getList('audit')), 200);
+      Data.mirror('admin_actions', row);
+      return row;
+    },
+    taskStats: function () { return read('admin:taskstats', {}); },
+    recordTaskCompletion: function (taskId) {
+      var st = Data.taskStats();
+      st[taskId] = (st[taskId] || 0) + 1;
+      write('admin:taskstats', st);
+    },
+    touchActivity: function (id) {
+      var a = read('activity', {});
+      a[id] = new Date().toISOString();
+      write('activity', a);
+    },
+    activity: function () { return read('activity', {}); },
+    localUsers: function () {
+      var out = [];
+      try {
+        Object.keys(localStorage).forEach(function (k) {
+          if (k.indexOf(PREFIX + 'user:') !== 0) return;
+          try { var u = JSON.parse(localStorage.getItem(k)); if (u && typeof u === 'object') out.push(u); } catch (e) { /* skip corrupt */ }
+        });
+      } catch (e) { /* storage unavailable */ }
+      return out;
+    },
+    localTransactions: function () {
+      var out = [];
+      try {
+        Object.keys(localStorage).forEach(function (k) {
+          if (k.indexOf(PREFIX + 'tx:') !== 0) return;
+          try { out = out.concat(JSON.parse(localStorage.getItem(k)) || []); } catch (e) { /* skip corrupt */ }
+        });
+      } catch (e) { /* storage unavailable */ }
+      return out;
+    },
+
+    exportBackup: function () {
+      return { app: 'technixpro-admin', version: 1, exported_at: new Date().toISOString(), admin: Data.getAdminState(), posts: Data.getPosts(), notifications: Data.getList('notifications'), phases: Data.getList('phases') };
+    },
+    importBackup: function (obj) {
+      var check = window.TPAdmin.validateBackup(obj);
+      if (!check.ok) return check;
+      write('admin', window.TPAdmin.normalizeState(obj.admin));
+      write('posts', obj.posts);
+      if (Array.isArray(obj.notifications)) write('admin:notifications', obj.notifications);
+      if (Array.isArray(obj.phases)) write('admin:phases', obj.phases);
+      return { ok: true };
+    },
+    snapshot: function (label) {
+      var snap = { id: uid(), label: label, created_at: new Date().toISOString(), data: Data.exportBackup() };
+      Data.saveList('history', [snap].concat(Data.getList('history')), 5);
+      return snap;
+    },
+
+    testConnection: function () {
+      if (!remoteOn) return Promise.resolve({ ok: false, reason: 'not_configured' });
+      var t0 = Date.now();
+      return remote('GET', 'users?select=id&limit=1').then(function () { return { ok: true, ms: Date.now() - t0 }; }, function (e) { return { ok: false, reason: e.message }; });
+    },
+    validateSchema: function () {
+      var tables = ['users', 'messages', 'posts', 'admin_actions', 'phases', 'notifications', 'post_trash'];
+      if (!remoteOn) return Promise.resolve({ ok: false, reason: 'not_configured', missing: tables });
+      return Promise.all(tables.map(function (t) {
+        return remote('GET', t + '?select=*&limit=0').then(function () { return null; }, function () { return t; });
+      })).then(function (r) { var missing = r.filter(Boolean); return { ok: !missing.length, missing: missing }; });
+    },
 
     subscribeStorage: function (cb) {
       window.addEventListener('storage', function (e) { if (e.key && e.key.indexOf(PREFIX) === 0) cb(e.key.slice(PREFIX.length)); });

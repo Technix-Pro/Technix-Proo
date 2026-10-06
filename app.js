@@ -1,14 +1,22 @@
 (function () {
   'use strict';
-  var CFG = window.TP_CONFIG, SEC = window.TECHNIX_CONFIG || {}, Core = window.TPCore, Data = window.TPData, TPRig = window.TPRig;
+  var CFG = window.TP_CONFIG, SEC = window.TECHNIX_CONFIG || {}, Core = window.TPCore, Data = window.TPData, TPRig = window.TPRig, Admin = window.TPAdmin;
   var tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
   if (tg) { try { tg.ready(); tg.expand(); } catch (e) { /* ignore */ } }
 
   var I18N = {
-    pl: { channel: 'Kanał', chat: 'Chat', bonus: 'Bonusy', rig: 'Warsztat', profile: 'Profil' },
-    en: { channel: 'Channel', chat: 'Chat', bonus: 'Bonuses', rig: 'Workshop', profile: 'Profile' }
+    pl: { channel: 'Kanał', chat: 'Chat', bonus: 'Bonusy', rig: 'Warsztat', profile: 'Profil', home: 'Home', technix: 'TechnixPro', wallet: 'Wallet', admin: 'Panel administratora', clicks: 'Kliknięcia', notifications: 'Powiadomienia', dismiss: 'Zamknij' },
+    en: { channel: 'Channel', chat: 'Chat', bonus: 'Bonuses', rig: 'Workshop', profile: 'Profile', home: 'Home', technix: 'TechnixPro', wallet: 'Wallet', admin: 'Admin panel', clicks: 'Clicks', notifications: 'Notifications', dismiss: 'Dismiss' }
   };
-  var TABS = [['channel', 'fa-bullhorn'], ['chat', 'fa-comments'], ['bonus', 'fa-gift'], ['rig', 'fa-computer'], ['profile', 'fa-user']];
+  // Bottom nav: Home, TechnixPro (bonuses), Workshop (middle), Wallet, Profile. Chat lives in the header; the full Bonusy section is reachable from TechnixPro.
+  var NAV = [
+    { id: 'home', tab: 'channel', icon: 'fa-house' },
+    { id: 'technix', tab: 'bonus', sub: 'overview', icon: 'fa-gamepad', feature: 'bonus' },
+    { id: 'rig', tab: 'rig', icon: 'fa-computer', feature: 'rig' },
+    { id: 'wallet', tab: 'profile', sub: 'wallet', icon: 'fa-wallet', feature: 'wallet' },
+    { id: 'profile', tab: 'profile', sub: 'info', icon: 'fa-user' }
+  ];
+  var TAB_FEATURE = { chat: 'chat', bonus: 'bonus', rig: 'rig' };
   var BONUS_SUBS = [['overview', 'Przegląd'], ['events', 'Live'], ['tasks', 'Zadania'], ['referral', 'Polecenia'], ['badges', 'Odznaki']];
   var PROFILE_SUBS = [['info', 'Profil'], ['wallet', 'Portfel'], ['settings', 'Ustawienia']];
   var SETTINGS_SUBS = [['account', 'Konto'], ['notifications', 'Powiadomienia'], ['privacy', 'Prywatność'], ['language', 'Język']];
@@ -16,9 +24,10 @@
   var identity = resolveIdentity();
   var me = Data.loadUser(identity.user);
   var claimed = Data.claimed(me.id);
-  var ui = { tab: 'channel', bonus: 'overview', profile: 'info', settings: 'account', preview: false, openComments: {}, chatDraft: '' };
+  var ui = { tab: 'channel', adminOpen: false, bonus: 'overview', profile: 'info', settings: 'account', preview: false, openComments: {}, chatDraft: '' };
   var content = document.getElementById('app-content');
-  var chatTimer = null, lastSend = 0, pendingRigPart = null;
+  var chatTimer = null, lastSend = 0, pendingRigPart = null, clickSaveTimer = null, lastClickAt = 0, lastNotifCount = 0;
+  var admin = null;
 
   /* ---------- helpers ---------- */
   function h(tag, attrs) {
@@ -70,8 +79,16 @@
 
   function isLocal() { return /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) || location.protocol === 'file:'; }
   function isAdmin() {
-    var ids = (SEC.ADMIN_IDS || []).map(Number);
-    return ids.indexOf(Number(me.id)) !== -1 || (!!SEC.DEV_MODE && isLocal() && /[?&]admin=1/.test(location.search));
+    return Admin.isAdminId(me.id, SEC.ADMIN_IDS) || (!!SEC.DEV_MODE && isLocal() && /[?&]admin=1/.test(location.search));
+  }
+  function adminView() { return isAdmin() && !ui.preview; }
+  function visible(feature) { return Admin.featureVisible(Data.getAdminState(), feature, adminView()); }
+  function cfg() { return Admin.effectiveConfig(Data.getAdminState()); }
+  function activeTasks() { var s = Data.getAdminState(); return (s.tasks || CFG.TASKS).filter(function (t) { return t.enabled !== false; }); }
+  function activeEvents() { return Data.getAdminState().events || CFG.EVENTS; }
+  function applyConfig() {
+    var c = cfg(), reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    document.documentElement.style.setProperty('--tp-anim-speed', reduce ? '0' : String(1 / c.animationSpeed));
   }
 
   function rankCtx() {
@@ -96,7 +113,7 @@
   function grantXp(amount) {
     var before = me.level;
     Core.addXp(me, amount);
-    var gained = Core.claimReferralMilestones(me);
+    var gained = Core.claimReferralMilestones(me, cfg().milestones);
     gained.forEach(function (m) { toast('Nagroda za ' + m.count + ' poleconych: +' + m.rewardXp + ' XP'); });
     if (me.level > before) toast('Nowy poziom: ' + Core.levelFor(me.xp_total).name + '!');
   }
@@ -110,12 +127,56 @@
     document.getElementById('header-title').textContent = me.username;
     document.getElementById('header-sub').textContent = 'ID: ' + me.id + ' · ' + fmt(me.xp_total) + ' XP';
     document.getElementById('header-level').replaceChildren(icon(l.icon), ' Lv ' + l.level);
-    document.getElementById('bottom-nav').replaceChildren.apply(document.getElementById('bottom-nav'), TABS.map(function (t) {
-      return h('button', { class: 'nav-btn' + (ui.tab === t[0] ? ' active' : ''), type: 'button', onclick: function () { setTab(t[0]); } }, icon(t[1]), tr(t[0]));
+    var adminBtn = document.getElementById('header-admin');
+    adminBtn.classList.toggle('hidden', !isAdmin());
+    adminBtn.setAttribute('aria-label', tr('admin'));
+    adminBtn.onclick = function () { if (isAdmin()) admin.open(); };
+    var chatBtn = document.getElementById('header-chat');
+    chatBtn.classList.toggle('hidden', !visible('chat'));
+    chatBtn.setAttribute('aria-label', tr('chat'));
+    chatBtn.onclick = function () { setTab('chat'); };
+    var clickBtn = document.getElementById('header-clicker');
+    clickBtn.classList.toggle('hidden', !visible('bonus'));
+    clickBtn.setAttribute('aria-label', tr('clicks'));
+    clickBtn.replaceChildren(h('span', { 'aria-hidden': 'true' }, '🖱️'), ' ' + fmt(me.clicks || 0));
+    clickBtn.onclick = onClick;
+    var nav = document.getElementById('bottom-nav');
+    var items = NAV.filter(function (n) { return !n.feature || visible(n.feature); });
+    nav.style.gridTemplateColumns = 'repeat(' + items.length + ', minmax(0, 1fr))';
+    nav.replaceChildren.apply(nav, items.map(function (n) {
+      var active = ui.tab === n.tab && (n.tab !== 'profile' || (n.sub === 'wallet') === (ui.profile === 'wallet'));
+      return h('button', { class: 'nav-btn' + (active ? ' active' : ''), type: 'button', 'aria-current': active ? 'page' : null, onclick: function () { if (n.tab === 'bonus') ui.bonus = n.sub; if (n.tab === 'profile') ui.profile = n.sub; setTab(n.tab); } }, icon(n.icon), tr(n.id));
     }));
   }
 
+  /* ---------- clicker ---------- */
+  function onClick() {
+    if (!visible('bonus')) return;
+    var now = Date.now();
+    if (now - lastClickAt < 100) return;
+    lastClickAt = now;
+    var prev = me.clicks || 0, c = cfg();
+    me.clicks = prev + 1;
+    var r = Admin.clickReward(prev, me.clicks, c.clicks);
+    if (r.xp) { grantXp(Admin.scaleXp(r.xp, c.xpMultiplier)); toast('+' + Admin.scaleXp(r.xp, c.xpMultiplier) + ' XP'); }
+    if (r.lootbox) { lootBox(); }
+    if (r.achievement) toast('🏆 ' + fmt(me.clicks) + ' ' + tr('clicks'));
+    var btn = document.getElementById('header-clicker');
+    btn.replaceChildren(h('span', { 'aria-hidden': 'true' }, '🖱️'), ' ' + fmt(me.clicks));
+    document.getElementById('header-sub').textContent = 'ID: ' + me.id + ' · ' + fmt(me.xp_total) + ' XP';
+    clearTimeout(clickSaveTimer);
+    clickSaveTimer = setTimeout(save, 800);
+    if (r.xp || r.lootbox) renderShell();
+  }
+  function lootBox() {
+    var el = h('div', { class: 'lootbox', 'aria-hidden': 'true' }, '🎁');
+    document.body.appendChild(el);
+    setTimeout(function () { el.remove(); }, 1400);
+  }
+
   function setTab(t) { ui.tab = t; render(); window.scrollTo(0, 0); }
+
+  function tabAllowed(t) { return !TAB_FEATURE[t] || visible(TAB_FEATURE[t]); }
 
   function subtabs(list, current, onPick) {
     return h('div', { class: 'subtabs', role: 'tablist' }, list.map(function (s) {
@@ -125,6 +186,9 @@
 
   function render() {
     clearInterval(chatTimer); chatTimer = null;
+    applyConfig();
+    if (!tabAllowed(ui.tab)) ui.tab = 'channel';
+    if (ui.profile === 'wallet' && !visible('wallet')) ui.profile = 'info';
     renderShell();
     var view = { channel: viewChannel, chat: viewChat, bonus: viewBonus, rig: viewRig, profile: viewProfile }[ui.tab]();
     content.replaceChildren(h('section', { class: 'screen space-y-4' }, view));
@@ -154,14 +218,15 @@
 
   /* ---------- CHANNEL + ADMIN ---------- */
   function visiblePosts() {
-    var admin = isAdmin() && !ui.preview;
-    return Data.getPosts().filter(function (p) { return p.published || admin; })
+    var asAdmin = adminView(), now = Date.now();
+    return Data.getPosts().filter(function (p) { return Admin.postVisible(p, asAdmin, now); })
       .sort(function (a, b) { return Date.parse(b.created_at) - Date.parse(a.created_at); });
   }
 
   function viewChannel() {
     var out = [];
     if (isAdmin()) out.push(adminPanel());
+    pendingNotifications().forEach(function (n) { out.push(notificationCard(n)); });
     var posts = visiblePosts();
     if (!posts.length) out.push(h('div', { class: 'panel text-sm muted text-center' }, 'Brak postów. ' + (isAdmin() ? 'Dodaj pierwszy powyżej.' : 'Wróć wkrótce!')));
     posts.forEach(function (p) { out.push(postCard(p)); });
@@ -172,11 +237,13 @@
     var wrap = h('div', { class: 'panel space-y-3 border-amber-500/40' });
     wrap.appendChild(h('div', { class: 'flex items-center justify-between' },
       h('h2', { class: 'font-bold text-amber-300 text-sm' }, icon('fa-shield-halved'), ' Panel administratora'),
-      h('button', { type: 'button', class: 'btn btn-ghost', onclick: function () { ui.preview = !ui.preview; render(); } }, ui.preview ? 'Wróć do panelu' : 'Podgląd użytkownika')));
+      h('div', { class: 'flex gap-2' },
+        h('button', { type: 'button', class: 'btn', onclick: function () { admin.open(); } }, icon('fa-sliders'), ' ' + tr('admin')),
+        h('button', { type: 'button', class: 'btn btn-ghost', onclick: function () { ui.preview = !ui.preview; render(); } }, ui.preview ? 'Wróć do panelu' : 'Podgląd użytkownika'))));
     if (ui.preview) { wrap.appendChild(h('p', { class: 'text-xs muted' }, 'Tryb podglądu: widzisz tylko opublikowane posty tak jak użytkownicy.')); return wrap; }
-    var nextClaim = Date.now() + Core.msUntil(me.last_xp_claim, CFG.XP_TIMER_HOURS);
-    wrap.appendChild(h('div', { class: 'text-xs flex justify-between' }, h('span', { class: 'muted' }, 'Timer XP (' + CFG.XP_TIMER_HOURS + 'h)'),
-      Core.msUntil(me.last_xp_claim, CFG.XP_TIMER_HOURS) > 0 ? countdown(nextClaim) : h('span', { class: 'text-emerald-400 font-bold' }, 'Gotowy do odbioru')));
+    var nextClaim = Date.now() + Core.msUntil(me.last_xp_claim, cfg().xpTimerHours);
+    wrap.appendChild(h('div', { class: 'text-xs flex justify-between' }, h('span', { class: 'muted' }, 'Timer XP (' + cfg().xpTimerHours + 'h)'),
+      Core.msUntil(me.last_xp_claim, cfg().xpTimerHours) > 0 ? countdown(nextClaim) : h('span', { class: 'text-emerald-400 font-bold' }, 'Gotowy do odbioru')));
     var text = h('textarea', { class: 'field', rows: '3', maxlength: String(CFG.POST_MAX_LENGTH), placeholder: 'Treść posta…' });
     var imgs = h('textarea', { class: 'field', rows: '2', placeholder: 'Obrazy — URL, po jednym w linii' });
     var vids = h('textarea', { class: 'field', rows: '2', placeholder: 'Wideo — URL (.mp4/.webm), po jednym w linii' });
@@ -196,14 +263,30 @@
     return wrap;
   }
 
+  function pendingNotifications() {
+    return Admin.pendingNotifications(Data.getList('notifications'), Data.getList('seen:' + me.id), Date.now());
+  }
+
+  function notificationCard(n) {
+    return h('div', { class: 'panel space-y-1 border-cyan-500/40', role: 'alert' },
+      h('div', { class: 'flex items-center justify-between gap-2' }, h('b', { class: 'text-sm text-cyan-300', text: n.title }),
+        h('button', { type: 'button', class: 'btn btn-ghost', 'aria-label': tr('dismiss'), onclick: function () {
+          Data.saveList('seen:' + me.id, [n.id].concat(Data.getList('seen:' + me.id)), 200);
+          Data.saveList('notifications', Data.getList('notifications').map(function (x) { return x.id === n.id ? Object.assign({}, x, { delivered_count: (x.delivered_count || 0) + 1 }) : x; }), 100);
+          render();
+        } }, icon('fa-xmark'))),
+      h('p', { class: 'text-xs break-words', text: n.message }),
+      n.link && Core.safeUrl(n.link) ? h('a', { class: 'btn inline-block', href: n.link, target: '_blank', rel: 'noopener noreferrer' }, 'Otwórz') : null);
+  }
+
   function postCard(p) {
-    var admin = isAdmin() && !ui.preview;
+    var admin = adminView();
     var card = h('article', { class: 'panel space-y-3' });
     card.appendChild(h('div', { class: 'flex items-center justify-between text-xs' },
       h('span', { class: 'font-bold text-cyan-300' }, 'TechnixPro'),
-      h('span', { class: 'muted' }, (p.published ? '' : '[SZKIC] ') + fmtDate(p.created_at))));
+      h('span', { class: 'muted' }, (p.published ? '' : p.scheduled_at && Admin.postVisible(p, false) ? '' : p.scheduled_at ? '[ZAPLANOWANY] ' : '[SZKIC] ') + fmtDate(p.created_at))));
     if (p.content) card.appendChild(h('p', { class: 'text-sm whitespace-pre-wrap break-words', text: p.content }));
-    (p.images || []).forEach(function (u) { if (Core.safeUrl(u)) card.appendChild(h('img', { class: 'post-media', src: u, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' })); });
+    (p.images || []).forEach(function (u) { if (Admin.safeImage(u)) card.appendChild(h('img', { class: 'post-media', src: u, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' })); });
     (p.videos || []).forEach(function (u) { if (Core.safeUrl(u)) card.appendChild(h('video', { class: 'post-media', src: u, controls: true, preload: 'metadata' })); });
     (p.links || []).forEach(function (u) { if (Core.safeUrl(u)) card.appendChild(h('a', { class: 'block text-xs text-cyan-300 underline break-all', href: u, target: '_blank', rel: 'noopener noreferrer' }, icon('fa-link'), ' ' + u)); });
     var liked = (p.likes || []).indexOf(me.id) !== -1;
@@ -214,7 +297,10 @@
     if (admin) {
       row.appendChild(h('span', { class: 'flex-1' }));
       row.appendChild(h('button', { type: 'button', class: 'btn btn-ghost', onclick: function () { mutatePost(p.id, function (x) { x.published = !x.published; }); } }, p.published ? 'Ukryj' : 'Publikuj'));
-      row.appendChild(h('button', { type: 'button', class: 'btn btn-danger', 'aria-label': 'Usuń post', onclick: function () { if (confirm('Usunąć post?')) { Data.savePosts(Data.getPosts().filter(function (x) { return x.id !== p.id; })); render(); } } }, icon('fa-trash')));
+      row.appendChild(h('button', { type: 'button', class: 'btn btn-danger', 'aria-label': 'Usuń post', onclick: function () { if (!isAdmin() || !confirm('Usunąć post? (trafi do kosza)')) return;
+        var tr_ = Admin.trashPost(Data.getPosts(), Data.getList('trash'), p.id, me.id, new Date().toISOString(), Data.newId());
+        if (tr_.ok) { Data.savePosts(tr_.posts); Data.saveList('trash', tr_.trash, 100); Data.audit(me.id, 'post.delete', 'post', p.id); }
+        render(); } }, icon('fa-trash')));
     }
     card.appendChild(row);
     if (ui.openComments[p.id]) card.appendChild(commentsBlock(p, admin));
@@ -305,11 +391,11 @@
         h('div', { class: 'bar', role: 'progressbar', 'aria-valuenow': String(p.percent), 'aria-valuemin': '0', 'aria-valuemax': '100' }, h('div', { style: 'width:' + p.percent + '%' })),
         h('div', { class: 'text-xs muted' }, p.next ? fmt(me.xp_total) + ' / ' + fmt(p.next.xp) + ' XP — do ' + p.next.name + ': ' + fmt(p.xpToNext) + ' XP' : 'Maksymalny poziom osiągnięty!')),
       h('div', { class: 'grid grid-cols-3 gap-2' }, stat('XP', fmt(me.xp_total)), stat('Gwiazdki ★', fmt(me.stars)), stat('Zadania', me.tasks_completed)),
-      claimRow('Bonus XP co ' + CFG.XP_TIMER_HOURS + 'h', '+' + CFG.XP_TIMER_REWARD + ' XP', Core.msUntil(me.last_xp_claim, CFG.XP_TIMER_HOURS), function () {
-        var r = Core.claimTimer(me); if (r.ok) { grantXp(0); save(); toast('+' + r.xp + ' XP'); render(); }
+      claimRow('Bonus XP co ' + cfg().xpTimerHours + 'h', '+' + Admin.scaleXp(cfg().xpTimerReward, cfg().xpMultiplier) + ' XP', Core.msUntil(me.last_xp_claim, cfg().xpTimerHours), function () {
+        var r = Core.claimTimer(me, null, { hours: cfg().xpTimerHours, reward: Admin.scaleXp(cfg().xpTimerReward, cfg().xpMultiplier) }); if (r.ok) { grantXp(0); save(); toast('+' + r.xp + ' XP'); render(); }
       }),
-      claimRow('Codzienny bonus', '+' + CFG.DAILY_REWARD_XP + ' XP', Core.msUntil(me.last_daily, 24), function () {
-        var r = Core.claimDaily(me); if (r.ok) { grantXp(0); save(); toast('+' + r.xp + ' XP'); render(); }
+      claimRow('Codzienny bonus', '+' + Admin.scaleXp(cfg().dailyReward, cfg().xpMultiplier) + ' XP', Core.msUntil(me.last_daily, 24), function () {
+        var r = Core.claimDaily(me, null, { reward: Admin.scaleXp(cfg().dailyReward, cfg().xpMultiplier) }); if (r.ok) { grantXp(0); save(); toast('+' + r.xp + ' XP'); render(); }
       }),
       h('div', { class: 'panel space-y-2' }, h('h3', { class: 'font-bold text-sm' }, 'Poziomy'),
         CFG.LEVELS.map(function (l) {
@@ -320,32 +406,32 @@
   }
 
   function bonusEvents() {
-    return CFG.EVENTS.map(function (e) {
+    return activeEvents().map(function (e) {
       return h('div', { class: 'panel space-y-2' },
         h('div', { class: 'flex items-center justify-between' }, h('h3', { class: 'font-bold text-sm' }, e.title),
           h('span', { class: 'text-[10px] font-bold px-2 py-0.5 rounded-full ' + (e.live ? 'bg-rose-600/30 text-rose-300' : 'bg-slate-700 text-slate-300') }, e.live ? 'LIVE' : 'WKRÓTCE')),
-        h('p', { class: 'text-xs muted' }, e.desc), h('div', { class: 'text-xs text-amber-300 font-bold' }, 'Nagroda: ' + e.reward));
+        h('p', { class: 'text-xs muted' }, e.desc), e.starts_at || e.ends_at ? h('div', { class: 'text-[11px] muted' }, (e.starts_at ? fmtDate(e.starts_at) : '') + ' → ' + (e.ends_at ? fmtDate(e.ends_at) : '')) : null, h('div', { class: 'text-xs text-amber-300 font-bold' }, 'Nagroda: ' + e.reward));
     });
   }
 
   function bonusTasks() {
     var ctx = rankCtx();
-    return [h('p', { class: 'text-xs muted' }, 'Nagrody za zadania to gwiazdki ★. Ukończone zadania: ' + me.tasks_completed)].concat(CFG.TASKS.map(function (t) {
+    return [h('p', { class: 'text-xs muted' }, 'Nagrody za zadania to gwiazdki ★. Ukończone zadania: ' + me.tasks_completed)].concat(activeTasks().map(function (t) {
       var st = Core.taskStatus(me, t, claimed, ctx);
       return h('div', { class: 'panel space-y-2' },
-        h('div', { class: 'flex items-center justify-between' }, h('span', { class: 'text-sm font-bold' }, t.title), h('span', { class: 'text-xs text-amber-300 font-bold' }, '+' + t.rewardStars + ' ★')),
+        h('div', { class: 'flex items-center justify-between' }, h('span', { class: 'text-sm font-bold' }, t.title), h('span', { class: 'text-xs text-amber-300 font-bold' }, '+' + (t.rewardStars || 0) + ' ★' + (t.rewardXp ? ' +' + t.rewardXp + ' XP' : ''))),
         h('div', { class: 'bar' }, h('div', { style: 'width:' + Math.round(st.value / st.goal * 100) + '%' })),
         h('div', { class: 'flex items-center justify-between' }, h('span', { class: 'text-xs muted' }, st.value + ' / ' + st.goal),
           h('button', { type: 'button', class: 'btn', disabled: !st.completable, onclick: function () {
-            var r = Core.claimTask(me, t, claimed, ctx);
-            if (r.ok) { grantXp(0); save(); toast('+' + t.rewardStars + ' ★'); render(); }
+            var r = Core.claimTask(me, Object.assign({}, t, { rewardXp: Admin.scaleXp(t.rewardXp, cfg().xpMultiplier), rewardStars: t.rewardStars || 0 }), claimed, ctx);
+            if (r.ok) { Data.recordTaskCompletion(t.id); grantXp(0); save(); toast('+' + (t.rewardStars || 0) + ' ★' + (t.rewardXp ? ' +' + Admin.scaleXp(t.rewardXp, cfg().xpMultiplier) + ' XP' : '')); render(); }
           } }, st.done ? 'Odebrano' : 'Odbierz')));
     }));
   }
 
   function bonusReferral() {
     var link = Core.referralLink(me.id, SEC.BOT_USERNAME);
-    var earned = CFG.REFERRAL_MILESTONES.filter(function (m) { return me.referral_claimed.indexOf(m.count) !== -1; }).reduce(function (s, m) { return s + m.rewardXp; }, 0);
+    var earned = cfg().milestones.filter(function (m) { return me.referral_claimed.indexOf(m.count) !== -1; }).reduce(function (s, m) { return s + m.rewardXp; }, 0);
     var nodes = [
       h('div', { class: 'panel space-y-2' }, h('h3', { class: 'font-bold text-sm' }, 'Twój link polecający'),
         h('input', { class: 'field', readonly: true, value: link, 'aria-label': 'Link polecający' }),
@@ -360,7 +446,7 @@
         h('div', { class: 'text-xs muted' }, 'Kod: ' + me.referral_code)),
       h('div', { class: 'grid grid-cols-2 gap-2' }, stat('Zaproszeni', me.referral_count), stat('Zarobione XP', earned)),
       h('div', { class: 'panel space-y-2' }, h('h3', { class: 'font-bold text-sm' }, 'Nagrody'),
-        CFG.REFERRAL_MILESTONES.map(function (m) {
+        cfg().milestones.map(function (m) {
           var done = me.referral_claimed.indexOf(m.count) !== -1;
           return h('div', { class: 'flex justify-between text-xs ' + (done ? 'text-emerald-400' : '') },
             h('span', {}, icon(done ? 'fa-circle-check' : 'fa-circle', 'mr-1'), 'Zaproś ' + m.count + ' osób (' + Math.min(me.referral_count, m.count) + '/' + m.count + ')'), h('b', {}, '+' + fmt(m.rewardXp) + ' XP'));
@@ -482,7 +568,7 @@
   /* ---------- PROFILE ---------- */
   function viewProfile() {
     var sub = { info: profileInfo, wallet: profileWallet, settings: profileSettings }[ui.profile]();
-    return [subtabs(PROFILE_SUBS, ui.profile, function (s) { ui.profile = s; render(); }), sub];
+    return [subtabs(PROFILE_SUBS.filter(function (x) { return x[0] !== 'wallet' || visible('wallet'); }), ui.profile, function (s) { ui.profile = s; render(); }), sub];
   }
 
   function row(label, value) { return h('div', { class: 'flex justify-between text-xs py-1.5 border-b border-slate-800/70' }, h('span', { class: 'muted' }, label), h('span', { class: 'font-semibold text-right break-all' }, value)); }
@@ -527,7 +613,17 @@
       Data.addTransaction(me.id, { type: type, amount: v.value, status: 'pending' });
       save(); toast('Zlecenie zapisane (oczekuje na potwierdzenie).'); render();
     }
-    return [
+    var c = cfg(), extras = [];
+    if (visible('shop')) {
+      extras.push(h('div', { class: 'panel space-y-2' }, h('h3', { class: 'font-bold text-sm' }, icon('fa-star', 'text-amber-300'), ' Sklep (Telegram Stars)'),
+        h('p', { class: 'text-xs muted' }, 'Kupuj części RIG za ★ w Warsztacie. Saldo: ' + fmt(me.stars) + ' ★'),
+        visible('rig') ? h('button', { type: 'button', class: 'btn w-full', onclick: function () { setTab('rig'); } }, 'Otwórz Warsztat') : null));
+    }
+    if (visible('airdrop')) {
+      extras.push(h('div', { class: 'panel space-y-1' }, h('h3', { class: 'font-bold text-sm' }, icon('fa-parachute-box', 'text-cyan-300'), ' Airdrop'),
+        row('Pula tokenów', fmt(c.airdropPool)), row('Kurs', fmt(c.airdropRate) + ' XP = 1 token'), row('Twoje XP', fmt(me.xp_total))));
+    }
+    return extras.concat([
       h('div', { class: 'panel text-center space-y-1' }, h('div', { class: 'text-xs muted' }, 'Saldo'), h('div', { class: 'text-3xl font-black text-white' }, fmt(me.wallet_balance) + ' TON')),
       h('div', { class: 'panel space-y-2' },
         h('div', { class: 'flex items-center justify-between' }, h('span', { class: 'text-sm font-bold' }, icon('fa-wallet'), ' TON Keeper'), h('span', { class: 'text-xs ' + (me.ton_keeper_connected ? 'text-emerald-400' : 'muted') }, me.ton_keeper_connected ? 'Połączono' : 'Niepołączono')),
@@ -541,7 +637,7 @@
         h('button', { type: 'button', class: 'btn btn-ghost flex-1', onclick: function () { op('withdraw'); } }, 'Wypłać'))),
       h('div', { class: 'panel space-y-1' }, h('h3', { class: 'font-bold text-sm mb-1' }, 'Historia transakcji'),
         tx.length ? tx.map(function (t) { return row((t.type === 'deposit' ? 'Wpłata' : 'Wypłata') + ' · ' + fmtDate(t.created_at), fmt(t.amount) + ' TON (' + t.status + ')'); }) : h('div', { class: 'text-xs muted' }, 'Brak transakcji.'))
-    ];
+    ]);
   }
 
   function toggle(label, get, set) {
@@ -580,7 +676,26 @@
     var refId = Core.parseReferralCode(String(tg.initDataUnsafe.start_param).replace(/^ref_/, ''));
     if (refId && refId !== me.id) { me.referred_by = refId; save(); }
   }
-  grantXp(0); save();
-  Data.subscribeStorage(function (key) { if (key === 'posts' && ui.tab === 'channel') render(); });
+  admin = window.TPAdminUI.create({
+    h: h, icon: icon, toast: toast, fmt: fmt, fmtDate: fmtDate,
+    me: function () { return me; }, isAdmin: isAdmin, lang: function () { return me.settings.language; },
+    debug: function () { return cfg().debug; }, applyConfig: applyConfig, rerender: function () { render(); }
+  });
+  function editing() { var a = document.activeElement; return !!a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && content.contains(a); }
+  grantXp(0); save(); Data.touchActivity(me.id);
+  Data.subscribeStorage(function (key) {
+    if (key === 'user:' + me.id) {
+      var fresh = Data.loadUser(identity.user);
+      if ((fresh.clicks || 0) > (me.clicks || 0)) { me.clicks = fresh.clicks; me.xp_total = Math.max(me.xp_total, fresh.xp_total); me.level = Math.max(me.level, fresh.level); renderShell(); }
+    } else if ((key === 'posts' || key === 'admin' || key === 'admin:notifications') && !editing() && !admin.isOpen()) render();
+    else if (key === 'admin' && admin.isOpen()) admin.refresh();
+  });
+  // Notify (once per new item) when a scheduled notification becomes due; re-render only when nothing is being edited.
+  setInterval(function () {
+    var n = pendingNotifications().length;
+    if (n > lastNotifCount) { toast(tr('notifications') + ': ' + n); if (ui.tab === 'channel' && !editing() && !admin.isOpen()) render(); }
+    lastNotifCount = n;
+  }, 15000);
+  lastNotifCount = pendingNotifications().length;
   render();
 })();
