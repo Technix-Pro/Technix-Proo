@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const ADMIN_ID = '7777540542';
+  const ADMIN_ID = (window.TECHNIX_CONFIG && window.TECHNIX_CONFIG.ADMIN_IDS && window.TECHNIX_CONFIG.ADMIN_IDS[0]) || '';
 
   const STORAGE_KEYS = {
     materials: 'tp_materials_catalog',
