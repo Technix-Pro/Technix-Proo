@@ -40,8 +40,38 @@ window.TECHNIX_CONFIG = {
       { id: 'phase-1-stealth', name: 'Faza 1 – Stealth', config: { activePhase: 1 } },
       { id: 'phase-2-expansion', name: 'Faza 2 – Rozszerzenie', config: { activePhase: 2 } },
       { id: 'phase-3-launch', name: 'Faza 3 – Launch', config: { activePhase: 3 } },
-      { id: 'event-weekend', name: 'Event Weekend', config: { activePhase: 2 } },
-      { id: 'welcome-pack', name: 'Welcome pack', config: { activePhase: 1 } }
+      {
+        id: 'event-weekend',
+        name: 'Event Weekend',
+        config: {
+          activePhase: 2,
+          events: [{
+            id: 'weekend-sprint',
+            title: 'Weekend Community Sprint',
+            desc: 'Weekendowe wyzwanie społeczności — wykonaj zadania i odbierz bonus.',
+            reward: 75,
+            active: true,
+            startAt: '',
+            endAt: ''
+          }]
+        }
+      },
+      {
+        id: 'welcome-pack',
+        name: 'Welcome pack',
+        config: {
+          activePhase: 1,
+          statusBanner: { text: 'Witamy w TechnixPro!', level: 'info', visible: true },
+          notifications: [{
+            id: 'welcome-pack',
+            title: 'Witamy w TechnixPro',
+            text: 'Poznaj zadania, zdobywaj gwiazdki i rozwijaj swój profil.',
+            audience: 'all',
+            scheduledAt: '',
+            sent: true
+          }]
+        }
+      }
     ]
   }
 };

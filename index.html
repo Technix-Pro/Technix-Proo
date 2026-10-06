@@ -9,8 +9,12 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="app.js"></script>
   <link rel="stylesheet" href="styles.css" />
+  <script defer src="config.js"></script>
+  <script defer src="api.js"></script>
+  <script defer src="store.js"></script>
+  <script defer src="admin.js"></script>
+  <script defer src="app.js"></script>
 </head>
 <body>
   <div id="toast" class="floating-toast">Przykładowa wiadomość</div>
@@ -32,7 +36,7 @@
         <button data-screen="search" class="w-9 h-9 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-center hover:text-white transition active:scale-95">
           <i class="fa-solid fa-magnifying-glass text-xs"></i>
         </button>
-        <button data-screen="notifications" class="w-9 h-9 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-center hover:text-white relative transition active:scale-95">
+        <button data-screen="notifications" data-feature="notifications" class="w-9 h-9 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-center hover:text-white relative transition active:scale-95">
           <i class="fa-regular fa-bell text-xs"></i>
           <span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
           <span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-cyan-400"></span>
@@ -48,11 +52,11 @@
 
     <div id="gift-subtabs" class="hidden overflow-x-auto whitespace-nowrap scroll-none sticky top-[65px] z-20 bg-[#080b14]/95 backdrop-blur-md border-b border-slate-800/80 px-2">
       <button class="inline-block active-sub py-2.5 px-4 border-b-2 text-xs font-semibold text-white border-violet-500" data-reward-tab="overview">Przegląd</button>
-      <button class="inline-block py-2.5 px-4 border-b-2 border-transparent muted text-xs font-semibold" data-reward-tab="events">Eventy Live</button>
-      <button class="inline-block py-2.5 px-4 border-b-2 border-transparent muted text-xs font-semibold" data-reward-tab="tasks">Zadania</button>
-      <button class="inline-block py-2.5 px-4 border-b-2 border-transparent muted text-xs font-semibold" data-reward-tab="referrals">Referral</button>
+      <button class="inline-block py-2.5 px-4 border-b-2 border-transparent muted text-xs font-semibold" data-reward-tab="events" data-feature="events">Eventy Live</button>
+      <button class="inline-block py-2.5 px-4 border-b-2 border-transparent muted text-xs font-semibold" data-reward-tab="tasks" data-feature="tasks">Zadania</button>
+      <button class="inline-block py-2.5 px-4 border-b-2 border-transparent muted text-xs font-semibold" data-reward-tab="referrals" data-feature="referrals">Referral</button>
       <button class="inline-block py-2.5 px-4 border-b-2 border-transparent muted text-xs font-semibold" data-reward-tab="rewards">Nagrody</button>
-      <button class="inline-block py-2.5 px-4 border-b-2 border-transparent muted text-xs font-semibold" data-reward-tab="leaderboard">Ranking</button>
+      <button class="inline-block py-2.5 px-4 border-b-2 border-transparent muted text-xs font-semibold" data-reward-tab="leaderboard" data-feature="leaderboard">Ranking</button>
       <button class="inline-block py-2.5 px-4 border-b-2 border-transparent muted text-xs font-semibold" data-reward-tab="history">Historia</button>
       <button class="inline-block py-2.5 px-4 border-b-2 border-transparent muted text-xs font-semibold" data-reward-tab="ranks">Rangi</button>
     </div>
@@ -61,84 +65,19 @@
 
       <section id="screen-home" class="screen space-y-4">
         <div id="home-channel" class="sub space-y-4">
-          <div class="panel p-3.5 flex items-center justify-between">
+          <div id="system-status-banner" class="panel p-3.5 flex items-center justify-between">
             <div class="flex items-center gap-2">
               <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span class="text-xs font-medium text-slate-200">Core Engine Online</span>
+              <span id="system-status-text" class="text-xs font-medium text-slate-200">Core Engine Online</span>
             </div>
             <span class="text-[10px] text-violet-400 bg-violet-500/10 border border-violet-500/20 px-2 py-0.5 rounded-full font-mono">v2.7 Edge</span>
           </div>
 
-          <!-- PANEL ADMINISTRATORA (Widoczny tylko dla określonego ID) -->
-          <div id="admin-panel-container" class="panel p-4 space-y-3 bg-gradient-to-br from-violet-950/30 to-slate-900 border-violet-500/30 hidden">
-            <div class="flex items-center justify-between">
-              <span class="text-[10px] font-bold text-violet-400 bg-violet-500/10 border border-violet-500/20 px-2 py-0.5 rounded-full uppercase">Panel Administratora (Tylko Ty)</span>
-              <span class="text-[10px] muted">Zarządzanie Systemem</span>
-            </div>
-            
-            <!-- Zakładki/Opcje w panelu admina -->
-            <div class="flex gap-2 border-b border-slate-800 pb-2">
-              <button data-admin-tab="posts" class="admin-tab-btn text-xs font-bold text-violet-400 pb-1 border-b-2 border-violet-500">Posty</button>
-              <button data-admin-tab="events" class="admin-tab-btn text-xs font-semibold text-slate-400 pb-1 border-b-2 border-transparent">Event Live</button>
-              <button data-admin-tab="tasks" class="admin-tab-btn text-xs font-semibold text-slate-400 pb-1 border-b-2 border-transparent">Zadania</button>
-              <button data-admin-tab="stats" class="admin-tab-btn text-xs font-semibold text-slate-400 pb-1 border-b-2 border-transparent">Statystyki</button>
-            </div>
-
-            <!-- Podpanel: Publikowanie postów -->
-            <div id="admin-sub-posts" class="admin-sub-view space-y-3">
-              <textarea id="admin-post-input" rows="3" class="w-full rounded-xl bg-[#080b14] border border-slate-700/80 p-3 text-xs text-slate-200 focus:outline-none focus:border-violet-500 resize-none" placeholder="Napisz nowy post..."></textarea>
-              <input id="admin-media-input" type="text" class="w-full rounded-xl bg-[#080b14] border border-slate-700/80 p-2.5 text-xs text-slate-200 focus:outline-none focus:border-violet-500" placeholder="Link do zdjęcia / grafiki / załącznika" />
-              <input id="admin-link-input" type="text" class="w-full rounded-xl bg-[#080b14] border border-slate-700/80 p-2.5 text-xs text-slate-200 focus:outline-none focus:border-violet-500" placeholder="Opcjonalny link docelowy (URL)" />
-              <div class="flex justify-end">
-                <button id="publish-post-btn" class="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition active:scale-95">
-                  <i class="fa-solid fa-paper-plane text-[10px]"></i> Opublikuj Post
-                </button>
-              </div>
-            </div>
-
-            <!-- Podpanel: Zarządzanie Event Live -->
-            <div id="admin-sub-events" class="admin-sub-view space-y-3 hidden">
-              <p class="text-xs text-slate-300">Konfiguracja aktywnego eventu live:</p>
-              <input id="admin-event-title" type="text" class="w-full rounded-xl bg-[#080b14] border border-slate-700/80 p-2.5 text-xs text-slate-200" placeholder="Tytuł eventu (np. Cyber Week)" />
-              <textarea id="admin-event-desc" rows="2" class="w-full rounded-xl bg-[#080b14] border border-slate-700/80 p-2.5 text-xs text-slate-200 resize-none" placeholder="Opis eventu..."></textarea>
-              <input id="admin-event-reward" type="number" class="w-full rounded-xl bg-[#080b14] border border-slate-700/80 p-2.5 text-xs text-slate-200" placeholder="Nagroda w gwiazdkach (np. 50)" />
-              <div class="flex justify-end">
-                <button id="save-event-btn" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition active:scale-95">Zaktualizuj Event</button>
-              </div>
-            </div>
-
-            <!-- Podpanel: Zarządzanie Zadaniami -->
-            <div id="admin-sub-tasks" class="admin-sub-view space-y-3 hidden">
-              <p class="text-xs text-slate-300">Dodaj nowe zadanie do zakładki zadań:</p>
-              <input id="admin-new-task-title" type="text" class="w-full rounded-xl bg-[#080b14] border border-slate-700/80 p-2.5 text-xs text-slate-200" placeholder="Nazwa zadania" />
-              <input id="admin-new-task-reward" type="number" class="w-full rounded-xl bg-[#080b14] border border-slate-700/80 p-2.5 text-xs text-slate-200" placeholder="Wartość w gwiazdkach (np. 30)" />
-              <div class="flex justify-end">
-                <button id="add-task-btn" class="bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition active:scale-95">Dodaj Zadanie</button>
-              </div>
-            </div>
-
-            <!-- Podpanel: Statystyki Użytkowników -->
-            <div id="admin-sub-stats" class="admin-sub-view space-y-2 hidden">
-              <p class="text-xs text-slate-300">Statystyki globalne wszystkich użytkowników:</p>
-              <div class="grid grid-cols-2 gap-2">
-                <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800 text-center">
-                  <span class="block text-[10px] muted">Zarejestrowani gracze</span>
-                  <strong class="text-base text-cyan-400">1</strong>
-                </div>
-                <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800 text-center">
-                  <span class="block text-[10px] muted">Suma gwiazdek w obrocie</span>
-                  <strong id="admin-total-stars-stat" class="text-base text-violet-400">0 ★</strong>
-                </div>
-              </div>
-            </div>
-
-          </div>
-
-          <div id="channel-feed" class="space-y-4"></div>
+          <div id="channel-feed" data-feature="posts" class="space-y-4"></div>
         </div>
 
         <div id="home-group" class="sub hidden space-y-4">
-          <div class="panel p-4 space-y-3">
+          <div data-feature="posts" class="panel p-4 space-y-3">
             <h2 class="font-bold text-sm text-slate-200">Społeczność & Dyskusja</h2>
             <p class="text-xs muted">Twoje wpisy są zapisywane lokalnie na tym urządzeniu i będą dostępne po synchronizacji z backendem.</p>
             <textarea id="post-input" rows="3" class="w-full rounded-xl bg-[#080b14] border border-slate-700/80 p-3 text-xs text-slate-200 focus:outline-none focus:border-violet-500 resize-none" placeholder="Opowiedz o swoim postępie..."></textarea>
@@ -148,7 +87,7 @@
               </button>
             </div>
           </div>
-          <div id="posts-feed" class="space-y-3"></div>
+          <div id="posts-feed" data-feature="posts" class="space-y-3"></div>
         </div>
 
         <div id="home-info" class="sub hidden space-y-4">
@@ -222,7 +161,7 @@
           </div>
         </div>
 
-        <div id="reward-events" class="reward-view hidden space-y-3">
+        <div id="reward-events" data-feature="events" class="reward-view hidden space-y-3">
           <div class="panel p-4 space-y-3">
             <div class="flex justify-between items-center">
               <span class="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full">AKTYWNY EVENT</span>
@@ -234,14 +173,14 @@
           </div>
         </div>
 
-        <div id="reward-tasks" class="reward-view hidden space-y-3">
+        <div id="reward-tasks" data-feature="tasks" class="reward-view hidden space-y-3">
           <div class="panel p-4">
             <h3 class="font-bold text-sm text-slate-200 mb-3">Zadania</h3>
             <div id="task-list" class="space-y-2"></div>
           </div>
         </div>
 
-        <div id="reward-referrals" class="reward-view hidden space-y-4">
+        <div id="reward-referrals" data-feature="referrals" class="reward-view hidden space-y-4">
           <div class="panel p-4 space-y-3">
             <h3 class="font-bold text-sm text-slate-200">Zapraszaj znajomych</h3>
             <p class="text-xs muted">Zyskaj +100 ★ za każdego nowego użytkownika dołączającego z Twojego linku polecającego.</p>
@@ -266,7 +205,7 @@
           <div class="panel p-4">
             <h3 class="font-bold text-sm text-slate-200 mb-3">Dostępne nagrody</h3>
             <div id="badge-list" class="grid grid-cols-2 gap-2">
-              <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-3 flex flex-col justify-between">
+              <div data-feature="dailyBonus" class="bg-slate-900/80 border border-slate-800 rounded-xl p-3 flex flex-col justify-between">
                 <div>
                   <i class="fa-solid fa-gift text-cyan-400 text-lg"></i>
                   <span class="block font-bold text-xs mt-2">Bonus Dzienny</span>
@@ -286,7 +225,7 @@
           </div>
         </div>
 
-        <div id="reward-leaderboard" class="reward-view hidden space-y-3">
+        <div id="reward-leaderboard" data-feature="leaderboard" class="reward-view hidden space-y-3">
           <div class="panel p-4">
             <h3 class="font-bold text-sm text-slate-200">Ranking Społeczności</h3>
             <p class="text-[10px] muted mb-3">Ranking odzwierciedla bieżące gwiazdki w aktualnej sesji.</p>
@@ -368,7 +307,7 @@
           <span class="text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">60D cycle</span>
         </div>
 
-        <div class="panel p-4 space-y-4">
+        <div data-feature="clicker" class="panel p-4 space-y-4">
           <div class="tech-screen-shell">
             <div class="tech-circuit"></div>
             <div class="tech-token"></div>
@@ -427,7 +366,7 @@
           </div>
         </div>
 
-        <div class="panel p-4 space-y-3">
+        <div data-feature="clicker" class="panel p-4 space-y-3">
           <div class="flex items-center justify-between">
             <div>
               <p class="text-[9px] uppercase tracking-[0.25em] text-violet-300 font-bold">Zasoby</p>
@@ -445,13 +384,13 @@
           </div>
         </div>
 
-        <div class="panel p-4 space-y-3">
+        <div data-feature="rigBuilder" class="panel p-4 space-y-3">
           <div class="flex items-center justify-between">
             <div>
               <p class="text-[9px] uppercase tracking-[0.25em] text-cyan-300 font-bold">RIG Builder</p>
               <h3 class="text-base font-bold text-white">Budowa stanowiska</h3>
             </div>
-            <span class="text-[10px] muted">Faza 1</span>
+            <span class="text-[10px] muted phase-label">Faza 1</span>
           </div>
 
           <div class="rig-station">
@@ -469,7 +408,7 @@
         </div>
       </section>
 
-      <section id="screen-wallet" class="screen hidden space-y-4">
+      <section id="screen-wallet" data-feature="wallet" class="screen hidden space-y-4">
         <h2 class="text-lg font-bold text-white">Portfel Cyfrowy</h2>
 
         <div class="panel p-5 text-center space-y-3">
@@ -555,11 +494,8 @@
         <input class="panel w-full p-3 text-xs bg-[#080b14] text-white border border-slate-700 rounded-xl focus:outline-none" placeholder="Szukaj w TechnixPro..." />
       </section>
 
-      <section id="screen-notifications" class="screen hidden space-y-4">
-        <div class="panel p-4 text-xs space-y-2">
-          <div class="font-bold text-white">Powiadomienie Systemowe</div>
-          <p class="muted">Witaj w TechnixPro! Połączyliśmy Twoje konto z interfejsem Telegram Mini App.</p>
-        </div>
+      <section id="screen-notifications" data-feature="notifications" class="screen hidden space-y-4">
+        <div id="notification-list" class="space-y-3"></div>
       </section>
 
       <section id="screen-comments" class="screen hidden space-y-4">
@@ -576,7 +512,7 @@
         <i class="fa-solid fa-house"></i>
         <span>Home</span>
       </button>
-      <button data-screen="crypto" class="nav-btn flex flex-col items-center justify-center py-2 rounded-xl">
+      <button data-screen="crypto" data-feature="clicker" class="nav-btn flex flex-col items-center justify-center py-2 rounded-xl">
         <i class="fa-solid fa-microchip"></i>
         <span>TechnixPro</span>
       </button>
@@ -584,7 +520,7 @@
         <i class="fa-solid fa-gift"></i>
         <span>Bonusy</span>
       </button>
-      <button data-screen="wallet" class="nav-btn flex flex-col items-center justify-center py-2 rounded-xl">
+      <button data-screen="wallet" data-feature="wallet" class="nav-btn flex flex-col items-center justify-center py-2 rounded-xl">
         <i class="fa-solid fa-wallet"></i>
         <span>Portfel</span>
       </button>

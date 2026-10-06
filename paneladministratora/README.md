@@ -16,7 +16,7 @@ Dodaj do końca `index.html` przed `</body>`:
 
 ## Funkcjonalność
 
-- panel administratora aktywny tylko dla ID: `7777540542`
+- panel administratora sprawdza identyfikatory z `TECHNIX_CONFIG.ADMIN_IDS` w `config.js`
 - publiczny feed materiałów
 - event live
 - zadania bonusowe

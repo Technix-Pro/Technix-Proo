@@ -7,12 +7,21 @@
   }
 
   function merge(base, value) {
+    const flags = (defaults, incoming) => Object.keys(defaults).reduce((result, key) => {
+      result[key] = incoming && typeof incoming[key] === 'boolean' ? incoming[key] : defaults[key];
+      return result;
+    }, {});
+    const status = value.statusBanner || {};
     return {
       ...clone(base),
       ...clone(value),
-      features: { ...base.features, ...(value.features || {}) },
-      animations: { ...base.animations, ...(value.animations || {}) },
-      statusBanner: { ...base.statusBanner, ...(value.statusBanner || {}) },
+      features: flags(base.features, value.features),
+      animations: flags(base.animations, value.animations),
+      statusBanner: {
+        text: typeof status.text === 'string' ? status.text : base.statusBanner.text,
+        level: ['info', 'warn', 'ok'].includes(status.level) ? status.level : base.statusBanner.level,
+        visible: typeof status.visible === 'boolean' ? status.visible : base.statusBanner.visible
+      },
       tasks: Array.isArray(value.tasks) ? value.tasks : clone(base.tasks),
       events: Array.isArray(value.events) ? value.events : clone(base.events),
       posts: Array.isArray(value.posts) ? value.posts : clone(base.posts),
@@ -29,6 +38,9 @@
     for (const task of config.tasks) {
       if (!String(task.title || '').trim() || !Number.isFinite(Number(task.reward)) || Number(task.reward) < 0) {
         throw new Error('Każde zadanie musi mieć nazwę i nieujemną nagrodę.');
+      }
+      if (task.order !== undefined && (!Number.isFinite(Number(task.order)) || Number(task.order) < 0)) {
+        throw new Error('Kolejność zadania nie może być ujemna.');
       }
     }
     for (const event of config.events) {
@@ -57,6 +69,7 @@
     },
     async publish() {
       draft = merge(published, validate(draft));
+      draft.version = Number(published.version || 0) + 1;
       published = await window.TechnixAPI.publishConfig(draft);
       return clone(published);
     },
@@ -78,12 +91,16 @@
     async loadPreset(id) {
       const preset = draft.presets.find(item => item.id === id);
       if (!preset) throw new Error('Nie znaleziono presetu.');
-      const changes = preset.config || {};
-      if (changes.features || changes.animations || changes.activePhase || changes.statusBanner) {
-        draft = merge(draft, changes);
-      } else {
-        draft = merge(draft, changes);
+      const changes = clone(preset.config || {});
+      const defaultsByPhase = {
+        1: { clicker: true, rigBuilder: true, wallet: false, referrals: false, leaderboard: false, dailyBonus: true, tasks: true, events: true, posts: true, notifications: true },
+        2: { clicker: true, rigBuilder: true, wallet: false, referrals: true, leaderboard: true, dailyBonus: true, tasks: true, events: true, posts: true, notifications: true },
+        3: { clicker: true, rigBuilder: true, wallet: true, referrals: true, leaderboard: true, dailyBonus: true, tasks: true, events: true, posts: true, notifications: true }
+      };
+      if (changes.activePhase && !changes.features) {
+        changes.features = defaultsByPhase[changes.activePhase];
       }
+      draft = merge(draft, changes);
       validate(draft);
       await window.TechnixAPI.saveDraft(draft);
       return clone(draft);

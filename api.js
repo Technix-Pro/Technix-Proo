@@ -84,6 +84,9 @@
       return clone(currentDraft().presets || []);
     },
     async listTasks() { return clone(currentDraft().tasks); },
+    async listEvents() { return clone(currentDraft().events); },
+    async listPosts() { return clone(currentDraft().posts); },
+    async listNotifications() { return clone(currentDraft().notifications); },
     async createTask(item) { return updateCollection('tasks', item.id, item); },
     async updateTask(id, item) { return updateCollection('tasks', id, item); },
     async deleteTask(id) { return updateCollection('tasks', id, null); },
