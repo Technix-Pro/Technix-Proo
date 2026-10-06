@@ -1,6 +1,7 @@
 (function () {
   const CONFIG = window.CONFIG || { USE_MOCK_API: true, API_BASE_URL: '' };
-  const STORAGE_KEY = 'technixpro-api-cache';
+  const telegramId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
+  const STORAGE_KEY = `technixpro-api-cache:${telegramId || 'guest'}`;
   const DEFAULT_DATA = {
     me: { stars: 1280, level: 1, energy: 1000, energyMax: 1000, tp: 240, rigParts: {} },
     rig: { parts: {} },
@@ -73,6 +74,34 @@
           updateCache({ rig: { parts }, me: { ...cache.me, rigParts: parts } });
           return Promise.resolve(cache.rig);
         }
+      });
+    },
+    purchaseRigPart(part, stars) {
+      if (CONFIG.USE_MOCK_API) {
+        const parts = { ...(cache.me.rigParts || {}), [part]: true };
+        updateCache({ rig: { parts }, me: { ...cache.me, rigParts: parts } });
+        return Promise.resolve({ mock: true, owned: true, parts });
+      }
+      return request('/api/payments/stars/invoice', {
+        method: 'POST',
+        body: JSON.stringify({ part, currency: 'XTR', stars })
+      }).then(invoice => {
+        const telegram = window.Telegram && window.Telegram.WebApp;
+        if (!invoice?.invoiceLink || !telegram || typeof telegram.openInvoice !== 'function') {
+          throw new Error('Płatności Telegram Stars są dostępne wyłącznie w aplikacji Telegram.');
+        }
+        return new Promise((resolve, reject) => {
+          telegram.openInvoice(invoice.invoiceLink, status => {
+            if (status !== 'paid') {
+              resolve({ status });
+              return;
+            }
+            request('/api/payments/stars/confirm', {
+              method: 'POST',
+              body: JSON.stringify({ part, invoiceId: invoice.invoiceId })
+            }).then(resolve, reject);
+          });
+        });
       });
     },
     syncState(state) {

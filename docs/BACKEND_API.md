@@ -27,6 +27,12 @@ Odpowiedź:
 
 GET zwraca `{ "parts": { "monitor": true, "fan": false } }`. POST przyjmuje `{ "parts": { "monitor": true, "fan": false } }` i zwraca zapisane `{ "parts": { ... } }`. Serwer jest źródłem prawdy dla zakupów i własności.
 
+## Telegram Stars — `POST /api/payments/stars/invoice`, `POST /api/payments/stars/confirm`
+
+Frontend tworzy fakturę żądaniem `{ "part": "monitor", "currency": "XTR", "stars": 180 }`. Serwer musi sam sprawdzić cenę części w katalogu i utworzyć fakturę Telegram Stars; nie może ufać cenie przesłanej przez klienta. Odpowiedź zawiera `{ "invoiceLink": "https://t.me/$...", "invoiceId": "..." }`. Aplikacja otwiera fakturę przez `Telegram.WebApp.openInvoice`.
+
+Po statusie `paid` klient wywołuje potwierdzenie `{ "part": "monitor", "invoiceId": "..." }`. Serwer potwierdza płatność na podstawie zweryfikowanego update'u `successful_payment` od Telegrama, a nie statusu przekazanego przez przeglądarkę, i zwraca `{ "owned": true, "parts": { "monitor": true } }`. Tryb mock tylko symuluje zakup lokalnie; nie pobiera Stars.
+
 ## Synchronizacja gry — `POST /api/sync`
 
 Frontend wysyła partię stanu po zmianach, z opóźnieniem, przy ukryciu dokumentu oraz przy zamykaniu strony:

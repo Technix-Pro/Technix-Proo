@@ -1,19 +1,21 @@
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            brand: {
-              bg: '#080b14',
-              panel: '#111827',
-              border: '#1f293d',
-              accent: '#8b5cf6',
-              cyan: '#22d3ee',
-              pink: '#ec4899'
+    if (window.tailwind) {
+      window.tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                bg: '#080b14',
+                panel: '#111827',
+                border: '#1f293d',
+                accent: '#8b5cf6',
+                cyan: '#22d3ee',
+                pink: '#ec4899'
+              }
+            },
+            fontFamily: {
+              sans: ['Inter', 'sans-serif']
             }
-          },
-          fontFamily: {
-            sans: ['Inter', 'sans-serif']
           }
         }
       }
@@ -89,17 +91,19 @@
     };
 
     function formatK(value) {
-      return new Intl.NumberFormat('pl-PL', { maximumFractionDigits: 0 }).format(value);
+      const number = Number(value);
+      return new Intl.NumberFormat('pl-PL', { maximumFractionDigits: 0 }).format(Number.isFinite(number) ? number : 0);
     }
 
     function parseTelegramUser() {
       const raw = tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user : defaultUser;
+      const telegramId = Number(raw.id);
       currentUser = {
-        id: Number(raw.id) || 0,
-        username: raw.username || 'guest',
-        first_name: raw.first_name || 'Guest',
-        photo_url: raw.photo_url || '',
-        language_code: raw.language_code || 'pl'
+        id: Number.isFinite(telegramId) ? telegramId : 0,
+        username: String(raw.username || 'guest'),
+        first_name: String(raw.first_name || 'Guest'),
+        photo_url: String(raw.photo_url || ''),
+        language_code: String(raw.language_code || 'pl')
       };
       window.currentUser = currentUser;
       return currentUser;
@@ -157,14 +161,17 @@
         return;
       }
       state.tasks.forEach(task => {
+        const reward = Number(task.reward);
+        const safeReward = Number.isFinite(reward) ? reward : 0;
+        const title = String(task.title || 'Zadanie');
         const button = document.createElement('button');
         button.className = 'task-action w-full text-left panel px-3 py-3 rounded-xl flex items-center justify-between gap-3';
         button.dataset.task = String(task.label || 'zadanie').toLowerCase();
-        button.dataset.reward = String(Number(task.reward) || 0);
-        button.dataset.label = String(task.title || 'Zadanie');
+        button.dataset.reward = String(safeReward);
+        button.dataset.label = title;
         button.innerHTML = '<div><div class="task-title text-xs font-semibold text-white"></div><div class="task-reward text-[10px] muted"></div></div><span class="text-[10px] text-violet-300 font-bold">Złap</span>';
-        button.querySelector('.task-title').textContent = String(task.title || 'Zadanie');
-        button.querySelector('.task-reward').textContent = `+${Number(task.reward) || 0} ★`;
+        button.querySelector('.task-title').textContent = title;
+        button.querySelector('.task-reward').textContent = `+${safeReward} ★`;
         taskList.appendChild(button);
       });
 
@@ -182,15 +189,24 @@
       if (!rewardLog) return;
       const items = state.taskHistory.slice(0, 5);
 
-      rewardLog.innerHTML = items.map(item => `
-        <div class="flex items-center justify-between text-xs rounded-xl bg-slate-900/60 border border-slate-800 px-3 py-2">
-          <span class="text-slate-300">${item.label}</span>
-          <span class="font-bold text-emerald-400">+${item.value} ★</span>
-        </div>
-      `).join('');
+      rewardLog.replaceChildren();
+      items.forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'flex items-center justify-between text-xs rounded-xl bg-slate-900/60 border border-slate-800 px-3 py-2';
+        const label = document.createElement('span');
+        label.className = 'text-slate-300';
+        label.textContent = String(item.label || '');
+        const value = document.createElement('span');
+        value.className = 'font-bold text-emerald-400';
+        value.textContent = `+${Number(item.value) || 0} ★`;
+        row.append(label, value);
+        rewardLog.appendChild(row);
+      });
     }
 
     function addStars(amount, label) {
+      amount = Number(amount);
+      if (!Number.isFinite(amount) || amount <= 0) return;
       state.stars += amount;
       state.taskHistory.unshift({ label, value: amount, time: 'teraz' });
       updateStarsDisplay();
@@ -273,6 +289,7 @@
         status = document.createElement('div');
         status.className = 'screen-data-status hidden';
         status.setAttribute('aria-live', 'polite');
+        status.setAttribute('role', 'status');
         screen.prepend(status);
       }
       return status;
@@ -283,8 +300,8 @@
       status.replaceChildren();
       status.className = `screen-data-status ${type === 'loading' ? 'rig-loading' : type === 'error' ? 'rig-error panel p-3' : 'muted text-xs'}`;
       if (type === 'loading') {
-        status.innerHTML = '<span class="inline-block h-3 w-3 animate-pulse rounded-full bg-cyan-400 mr-2"></span><span></span>';
-        status.lastElementChild.textContent = message || 'Ładowanie danych…';
+        status.innerHTML = '<div class="space-y-2" aria-hidden="true"><div class="h-3 w-2/5 rounded bg-slate-700 animate-pulse"></div><div class="h-2 w-4/5 rounded bg-slate-800 animate-pulse"></div></div><span class="sr-only"></span>';
+        status.querySelector('.sr-only').textContent = message || 'Ładowanie danych…';
       } else {
         const text = document.createElement('span');
         text.textContent = message;
@@ -312,7 +329,8 @@
         applyScreenData(screenName, data);
         const status = getScreenStatus(screen);
         status.className = 'screen-data-status hidden';
-        if ((screenName === 'gift' && !state.tasks.length) || (screenName === 'notifications' && !(Array.isArray(data) ? data.length : data?.length))) {
+        const notifications = Array.isArray(data) ? data : data && data.notifications;
+        if ((screenName === 'gift' && !state.tasks.length) || (screenName === 'notifications' && Array.isArray(notifications) && !notifications.length)) {
           showScreenStatus(screen, 'empty', 'Brak danych do wyświetlenia.');
         }
       }).catch(() => {
@@ -328,28 +346,57 @@
       } else if (screenName === 'gift') {
         const [tasks, leaderboard, referrals] = data;
         const taskList = Array.isArray(tasks) ? tasks : (tasks && tasks.tasks);
-        state.tasks = Array.isArray(taskList) ? taskList : [];
+        state.tasks = Array.isArray(taskList) ? taskList.filter(task => task && typeof task === 'object') : [];
         renderTaskList();
         const rankName = document.getElementById('rank-user-label');
         if (rankName) rankName.textContent = `Ty (@${currentUser.username})`;
         const count = document.getElementById('referral-count');
         const rewards = document.getElementById('referral-rewards');
-        if (count) count.textContent = `${Number(referrals?.count) || 0} osób`;
-        if (rewards) rewards.textContent = `+${Number(referrals?.rewards) || 0} ★`;
+        const referralCount = Number(referrals?.count);
+        const referralRewards = Number(referrals?.rewards);
+        if (count) count.textContent = `${Number.isFinite(referralCount) ? Math.max(0, referralCount) : 0} osób`;
+        if (rewards) rewards.textContent = `+${Number.isFinite(referralRewards) ? Math.max(0, referralRewards) : 0} ★`;
         const firstRank = Array.isArray(leaderboard) ? leaderboard[0] : null;
-        if (firstRank && firstRank.id === currentUser.id && document.getElementById('rank-stars-display')) {
+        const rankingData = Array.isArray(leaderboard) ? leaderboard : leaderboard && leaderboard.items;
+        const ranking = Array.isArray(rankingData) ? rankingData.filter(entry => entry && typeof entry === 'object') : [];
+        const leaderboardList = document.getElementById('leaderboard-list');
+        const leaderboardEmpty = document.getElementById('leaderboard-empty');
+        if (leaderboardList) {
+          leaderboardList.replaceChildren();
+          ranking.slice(0, 10).forEach((entry, index) => {
+            const row = document.createElement('div');
+            row.className = 'flex items-center justify-between bg-slate-900/70 p-2.5 rounded-xl border border-slate-800 text-xs font-semibold';
+            const name = document.createElement('span');
+            const username = String(entry.username || 'użytkownik');
+            name.textContent = `${index + 1}. ${Number(entry.id) === currentUser.id ? `Ty (@${currentUser.username})` : `@${username}`}`;
+            const score = document.createElement('span');
+            score.className = 'font-bold text-violet-300';
+            score.textContent = `${formatK(Number(entry.stars) || 0)} ★`;
+            row.append(name, score);
+            leaderboardList.appendChild(row);
+          });
+        }
+        if (leaderboardEmpty) leaderboardEmpty.classList.toggle('hidden', ranking.length > 0);
+        if (firstRank && Number(firstRank.id) === currentUser.id && document.getElementById('rank-stars-display')) {
           document.getElementById('rank-stars-display').textContent = `${formatK(Number(firstRank.stars) || 0)} ★`;
         }
+      } else if (screenName === 'profile') {
+        if (data?.stars != null && Number.isFinite(Number(data.stars))) state.stars = Math.max(0, Number(data.stars));
+        if (data?.energyMax != null && Number.isFinite(Number(data.energyMax)) && Number(data.energyMax) > 0) state.energyMax = Number(data.energyMax);
+        if (data?.energy != null && Number.isFinite(Number(data.energy))) state.energy = Math.min(Math.max(Number(data.energy), 0), state.energyMax);
+        if (data?.tp != null && Number.isFinite(Number(data.tp))) state.tp = Math.max(0, Number(data.tp));
+        updateStarsDisplay();
       } else if (screenName === 'wallet') {
         const balance = document.getElementById('wallet-balance');
-        if (balance) balance.textContent = `${(Number(data?.balance) || 0).toFixed(2).replace('.', ',')} ${String(data?.currency || 'PLN')}`;
+        const amount = Number(data?.balance);
+        if (balance) balance.textContent = `${(Number.isFinite(amount) ? amount : 0).toFixed(2).replace('.', ',')} ${String(data?.currency || 'PLN')}`;
       } else if (screenName === 'notifications' || screenName === 'home') {
         const notifications = Array.isArray(data) ? data : data && data.notifications;
         if (screenName === 'notifications' && Array.isArray(notifications)) {
           const container = document.getElementById('notifications-list');
           if (container) {
             container.replaceChildren();
-            notifications.forEach(item => {
+            notifications.filter(item => item && typeof item === 'object').forEach(item => {
               const entry = document.createElement('article');
               entry.className = 'panel p-4 text-xs space-y-2';
               const title = document.createElement('div');
@@ -607,7 +654,7 @@
     }
 
     function initTelegramProfile() {
-      const user = parseTelegramUser();
+      const user = currentUser;
       const username = document.getElementById('telegram-username');
       const profileName = document.getElementById('profile-name');
       const profileId = document.getElementById('profile-id');
@@ -639,32 +686,50 @@
       }
 
       if (user.photo_url && avatarImg && avatarFallback && headerAvatar) {
-        avatarImg.src = user.photo_url;
-        avatarImg.classList.remove('hidden');
-        avatarFallback.classList.add('hidden');
-        headerAvatar.textContent = '';
-        headerAvatar.style.backgroundImage = `url(${user.photo_url})`;
-        headerAvatar.style.backgroundSize = 'cover';
-        headerAvatar.style.backgroundPosition = 'center';
+        try {
+          const avatarUrl = new URL(user.photo_url);
+          if (avatarUrl.protocol === 'https:') {
+            avatarImg.src = avatarUrl.href;
+            avatarImg.classList.remove('hidden');
+            avatarFallback.classList.add('hidden');
+            headerAvatar.textContent = '';
+            headerAvatar.style.backgroundImage = `url("${avatarUrl.href}")`;
+            headerAvatar.style.backgroundSize = 'cover';
+            headerAvatar.style.backgroundPosition = 'center';
+          }
+        } catch (_) {}
       }
     }
 
-    function buyRigPartWithStars(itemKey, cost) {
-      if (state.stars < cost) {
-        showToast(`Masz za mało gwiazdek! Potrzebujesz ${cost} ★.`);
-        return;
+    async function buyRigPartWithStars(itemKey, cost, button) {
+      button.disabled = true;
+      button.textContent = 'Łączenie z Telegramem…';
+      try {
+        const payment = await TechnixAPI.purchaseRigPart(itemKey, cost);
+        if (payment && payment.owned) {
+          completePurchase(itemKey, payment);
+        } else if (payment?.status === 'cancelled') {
+          showToast('Płatność została anulowana.');
+        } else if (payment?.status === 'failed') {
+          showToast('Płatność Telegram Stars nie powiodła się.');
+        } else {
+          showToast('Płatność oczekuje na potwierdzenie.');
+        }
+      } catch (error) {
+        showToast(error.message || 'Nie udało się rozpocząć płatności Telegram Stars.');
+      } finally {
+        if (button.isConnected && !state.rigParts[itemKey]) {
+          button.disabled = false;
+          button.textContent = `Kup za ${cost} ⭐`;
+        }
       }
-      state.stars -= cost;
-      updateStarsDisplay();
-      completePurchase(itemKey);
     }
 
-    function completePurchase(key) {
+    function completePurchase(key, payment) {
       const item = state.rigCatalog.find(i => i.key === key);
-      if (!item) return;
-      state.rigParts[key] = true;
+      if (!item || !payment?.owned) return;
+      state.rigParts = { ...state.rigParts, ...(payment.parts || {}), [key]: true };
       window.rigBuilder.renderRig(state.rigParts, { animateNew: true });
-      TechnixAPI.saveRig(state.rigParts).catch(() => showToast('Część zapisana lokalnie; synchronizacja nie powiodła się.'));
       scheduleStateSync();
       const scene = document.querySelector('.rig-station');
       if (scene && (scene.getBoundingClientRect().top < 0 || scene.getBoundingClientRect().bottom > window.innerHeight)) {
@@ -677,6 +742,10 @@
     function renderRigShop() {
       const rigShop = document.getElementById('rig-shop');
       if (!rigShop) return;
+      const paymentNote = document.getElementById('rig-payment-note');
+      if (paymentNote) paymentNote.textContent = window.CONFIG?.USE_MOCK_API
+        ? 'Tryb demonstracyjny — nie jest pobierana rzeczywista płatność.'
+        : 'Płatność przez Telegram Stars (XTR).';
       const previewViews = {
         monitor: '170 60 180 160',
         keyboard: '292 214 154 36',
@@ -705,7 +774,8 @@
         button.className += owned
           ? ' bg-emerald-500/20 text-emerald-300 border border-emerald-500/20'
           : ' bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-extrabold';
-        button.textContent = owned ? 'Zamontowano' : 'Kup (Stars)';
+        button.textContent = owned ? 'Zamontowano' : `Kup za ${item.cost} ⭐`;
+        button.setAttribute('aria-label', owned ? `${item.name}: zamontowano` : `Kup ${item.name} za ${item.cost} Telegram Stars`);
         button.disabled = Boolean(owned);
         rigShop.appendChild(card);
       });
@@ -718,7 +788,7 @@
             showToast(`${state.rigCatalog.find(item => item.key === key)?.name || 'Część'} jest już odblokowana.`);
             return;
           }
-          buyRigPartWithStars(key, cost);
+          buyRigPartWithStars(key, cost, button);
         });
       });
     }
@@ -756,7 +826,7 @@
         if (energyValue) energyValue.textContent = state.energy;
         if (energyMax) energyMax.textContent = state.energyMax;
         if (tpBalance) tpBalance.textContent = formatK(state.tp);
-        if (energyFill) energyFill.style.width = `${(state.energy / state.energyMax) * 100}%`;
+        if (energyFill) energyFill.style.width = `${Math.min(Math.max((state.energy / state.energyMax) * 100, 0), 100)}%`;
       }
 
       if (coreClicker) {
@@ -780,6 +850,7 @@
           state.energy = Math.min(state.energyMax, state.energy + 5);
         }
         syncCryptoUI();
+        if (Date.now() % 15000 < 1000) scheduleStateSync();
       }, 1000);
     }
 
@@ -876,28 +947,31 @@
           const msg = button.textContent.trim() || 'Akcja aktywowana';
           showToast(`${msg}: moduł w fazie 3.`);
         });
-        document.addEventListener('visibilitychange', () => {
-          if (document.hidden) flushState();
-        });
-        window.addEventListener('beforeunload', flushState);
       });
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) flushState();
+      });
+      window.addEventListener('beforeunload', flushState);
     }
 
     async function seedInitialState() {
       currentUser = parseTelegramUser();
       try {
         const me = await TechnixAPI.getMe();
-        state.stars = Number.isFinite(Number(me?.stars)) ? Number(me.stars) : state.stars;
-        state.energy = Number.isFinite(Number(me?.energy)) ? Number(me.energy) : state.energy;
-        state.energyMax = Number.isFinite(Number(me?.energyMax)) ? Number(me.energyMax) : state.energyMax;
-        state.tp = Number.isFinite(Number(me?.tp)) ? Number(me.tp) : state.tp;
+        if (me?.stars != null && Number.isFinite(Number(me.stars))) state.stars = Math.max(0, Number(me.stars));
+        if (me?.energyMax != null && Number.isFinite(Number(me.energyMax)) && Number(me.energyMax) > 0) state.energyMax = Number(me.energyMax);
+        if (me?.energy != null && Number.isFinite(Number(me.energy))) state.energy = Math.min(Math.max(Number(me.energy), 0), state.energyMax);
+        if (me?.tp != null && Number.isFinite(Number(me.tp))) state.tp = Math.max(0, Number(me.tp));
         state.rigParts = { ...state.rigParts, ...(me?.rigParts || {}) };
-        minedAmount = Number(me?.mined) || 0;
-        emissionEndsAt = Number(me?.emissionEndsAt) || 0;
+        minedAmount = Number.isFinite(Number(me?.mined)) ? Math.min(Math.max(0, Number(me.mined)), 100000000) : 0;
+        emissionEndsAt = Number.isFinite(Number(me?.emissionEndsAt)) ? Number(me.emissionEndsAt) : 0;
       } catch (_) {
         showToast('Nie udało się pobrać profilu. Używam danych lokalnych.');
       }
-      const storedEmissionEnd = Number(localStorage.getItem('technixpro-emission-ends-at')) || 0;
+      let storedEmissionEnd = 0;
+      try {
+        storedEmissionEnd = Number(localStorage.getItem('technixpro-emission-ends-at')) || 0;
+      } catch (_) {}
       emissionEndsAt = emissionEndsAt || storedEmissionEnd || Date.now() + 60 * 24 * 60 * 60 * 1000;
       try {
         localStorage.setItem('technixpro-emission-ends-at', String(emissionEndsAt));

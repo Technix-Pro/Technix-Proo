@@ -307,13 +307,14 @@
     .desk-leg, .desk-foot, .desk-support { fill: url(#rig-metal-gradient); stroke: rgba(148,163,184,.35); stroke-width: 1; }
     .desk-glow { fill: none; stroke: rgba(34,211,238,.2); stroke-width: 12; }
     .rig-ghosts { fill: none; stroke: rgba(103,232,249,.2); stroke-width: 2; stroke-dasharray: 5 7; }
-    .rig-part { opacity: 0; pointer-events: none; transform-box: fill-box; transform-origin: center; }
-    .rig-part.is-mounted { opacity: 1; }
+    .rig-part { pointer-events: none; transform-box: fill-box; transform-origin: center; }
+    .rig-scene > .rig-part { opacity: 0; }
+    .rig-scene > .rig-part.is-mounted { opacity: 1; }
     .monitor-frame, .case-shell { fill: #111827; stroke: #64748b; stroke-width: 3; }
     .monitor-screen { fill: url(#rig-screen-gradient); stroke: rgba(34,211,238,.45); stroke-width: 1; opacity: .14; }
-    .rig-monitor.is-running .monitor-screen { opacity: .94; }
+    #rig-monitor.is-running .monitor-screen { opacity: .94; }
     .monitor-boot { fill: none; stroke: #67e8f9; stroke-width: 2; opacity: 0; }
-    .rig-monitor.is-running .monitor-boot { opacity: .75; animation: rig-screen-pulse 3s ease-in-out infinite; }
+    #rig-monitor.is-running .monitor-boot { opacity: .75; animation: rig-screen-pulse 3s ease-in-out infinite; }
     .monitor-stand, .monitor-base { fill: #334155; stroke: rgba(148,163,184,.55); stroke-width: 1; }
     .keyboard-body, .mouse-body { fill: #111827; stroke: #22d3ee; stroke-width: 2; }
     .keyboard-keys, .mouse-seam { fill: none; stroke: rgba(103,232,249,.65); stroke-width: 1; }
@@ -321,21 +322,25 @@
     .case-side { fill: #0f172a; stroke: rgba(139,92,246,.65); stroke-width: 1; }
     .case-front { fill: #1e293b; stroke: #475569; stroke-width: 1; }
     .case-vent { stroke: #64748b; stroke-width: 2; }
-    .rig-case.is-running .case-power, .rig-mouse.is-running .mouse-led { animation: rig-led-pulse 1.3s ease-in-out infinite; }
+    #rig-case.is-running .case-power, #rig-mouse.is-running .mouse-led { animation: rig-led-pulse 1.3s ease-in-out infinite; }
     .fan-ring { fill: #0f172a; stroke: rgba(34,211,238,.7); stroke-width: 2; }
     .fan-blades { fill: rgba(34,211,238,.7); stroke: rgba(165,243,252,.8); stroke-width: 1; transform-box: fill-box; transform-origin: center; }
-    .rig-fan.is-running .fan-blades, .rig-gpu.is-running .gpu-fan { animation: spin 1.2s linear infinite; transform-origin: center; }
+    #rig-fan.is-running .fan-blades, #rig-gpu.is-running .gpu-fan { animation: spin 1.2s linear infinite; transform-origin: center; }
     .ram-stick { fill: #312e81; stroke: #a78bfa; stroke-width: 1; }
     .ram-led { fill: none; stroke: #67e8f9; stroke-width: 2; }
     .ram-contact { stroke: #fbbf24; stroke-width: 2; }
-    .rig-ram.is-running .ram-led { animation: rig-led-pulse .8s ease-in-out infinite; }
+    #rig-ram.is-running .ram-led { animation: rig-led-pulse .8s ease-in-out infinite; }
     .gpu-body { fill: #1e293b; stroke: #ec4899; stroke-width: 2; }
     .gpu-fan { fill: #312e81; stroke: #c4b5fd; stroke-width: 1; }
     .gpu-ports { stroke: #fbbf24; stroke-width: 2; }
-    .rig-gpu.is-running .gpu-body { animation: rig-glow-pulse 2.4s ease-in-out infinite; }
+    #rig-gpu.is-running .gpu-body { animation: rig-glow-pulse 2.4s ease-in-out infinite; }
     .rig-flash { fill: #a5f3fc; opacity: 0; filter: drop-shadow(0 0 7px #22d3ee); }
     .rig-paused .rig-part * { animation-play-state: paused !important; }
+    .rig-paused .shop-item-preview use { animation-play-state: paused !important; }
+    .rig-motion-disabled .rig-part *, .rig-motion-disabled #rig-online, html.animations-disabled .shop-item-preview use { animation-play-state: paused !important; }
+    .rig-online-active .desk-glow { opacity: 1; }
     .rig-online { color: #6ee7b7; font-weight: 800; letter-spacing: .12em; animation: rig-online-pulse 2s ease-in-out infinite; }
+    html.animations-disabled #rig-online { animation-play-state: paused !important; }
     .shop-item-preview {
       width: 42px;
       height: 42px;
@@ -348,9 +353,8 @@
 
     .shop-item:hover .shop-item-preview { transform: translateY(-2px) scale(1.04); }
     .shop-item-preview svg { width: 100%; height: 100%; }
-    .shop-item-preview use { opacity: .8; }
+    .shop-item-preview use { opacity: .8; animation: rig-preview-float 3.5s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
     .shop-item-owned .shop-item-preview use { opacity: 1; }
-    .shop-item-preview [id^="rig-"] { animation: none !important; }
     .shop-installed { color: #6ee7b7; }
     .rig-loading, .rig-error { color: var(--muted); font-size: 11px; }
 
@@ -363,10 +367,12 @@
     @keyframes rig-screen-pulse { 0%, 100% { opacity: .5; } 50% { opacity: 1; } }
     @keyframes rig-glow-pulse { 0%, 100% { opacity: .85; } 50% { opacity: 1; } }
     @keyframes rig-online-pulse { 0%, 100% { opacity: .65; } 50% { opacity: 1; } }
+    @keyframes rig-preview-float { from { transform: translateY(1px); } to { transform: translateY(-1px); } }
 
     @media (prefers-reduced-motion: reduce) {
       .rig-station *, .shop-item-preview { animation-duration: 24s !important; transition-duration: .01ms !important; }
       .rig-station .fan-blades, .rig-station .gpu-fan { animation-duration: 24s !important; }
+      #rig-online { animation-duration: 24s !important; }
     }
 
     .rig-shop {

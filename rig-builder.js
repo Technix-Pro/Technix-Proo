@@ -18,10 +18,11 @@
     gpu: [30, 0]
   };
   const stage = () => document.querySelector('.rig-station');
-  const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const reducedMotion = () => (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
     || (window.CONFIG && window.CONFIG.ENABLE_ANIMATIONS === false);
   let owned = {};
   let queue = Promise.resolve();
+  let sequenceId = 0;
   let runningAnimations = [];
   let visible = false;
   let intersectionVisible = true;
@@ -37,7 +38,13 @@
       else animation.pause();
     });
     const root = stage();
-    if (root) root.classList.toggle('rig-paused', !isVisible());
+    const screen = document.getElementById('screen-crypto');
+    if (root) {
+      root.classList.toggle('rig-paused', !isVisible());
+      root.classList.toggle('rig-motion-disabled', Boolean(window.CONFIG && window.CONFIG.ENABLE_ANIMATIONS === false));
+    }
+    if (screen) screen.classList.toggle('rig-paused', !isVisible());
+    document.documentElement.classList.toggle('animations-disabled', Boolean(window.CONFIG && window.CONFIG.ENABLE_ANIMATIONS === false));
   }
 
   function setMounted(key, mounted) {
@@ -50,13 +57,15 @@
 
   function updateStatus() {
     const keys = Object.keys(PART_NAMES);
-    const count = keys.filter(key => owned[key]).length;
+    const count = keys.filter(key => document.getElementById(`rig-${key}`)?.classList.contains('is-mounted')).length;
     const summary = document.getElementById('rig-status');
     const progress = document.getElementById('rig-progress');
     const badge = document.getElementById('rig-online');
     if (summary) summary.textContent = `${count} z ${keys.length} części zamontowanych`;
     if (progress) progress.textContent = `Zamontowano ${count}/${keys.length}`;
     if (badge) badge.classList.toggle('hidden', count !== keys.length || !online);
+    const root = stage();
+    if (root) root.classList.toggle('rig-online-active', count === keys.length && online);
     if (count !== keys.length) online = false;
   }
 
@@ -64,10 +73,12 @@
     const node = document.getElementById(`rig-${key}`);
     if (!node || reducedMotion()) {
       setMounted(key, true);
+      updateStatus();
       return Promise.resolve();
     }
     const [x, y] = DIRECTIONS[key];
     setMounted(key, true);
+    updateStatus();
     const animation = node.animate([
       { opacity: 0, transform: `translate(${x}px, ${y}px) scale(.78)` },
       { opacity: 1, transform: 'translate(0, 0) scale(1.06)', offset: .78 },
@@ -77,6 +88,10 @@
     if (flash) {
       const flashAnimation = flash.animate([{ opacity: 0 }, { opacity: .9, offset: .25 }, { opacity: 0 }], { duration: 850 });
       runningAnimations.push(flashAnimation);
+      flashAnimation.finished.catch(() => {}).then(() => {
+        runningAnimations = runningAnimations.filter(item => item !== flashAnimation);
+        flashAnimation.cancel();
+      });
     }
     runningAnimations.push(animation);
     updateAnimationPlayback();
@@ -88,9 +103,11 @@
     });
   }
 
-  async function playQueue(keys) {
+  async function playQueue(keys, id = sequenceId) {
     for (const key of keys) {
+      if (id !== sequenceId) return;
       await playInstall(key);
+      if (id !== sequenceId) return;
     }
     updateStatus();
     if (Object.keys(PART_NAMES).every(key => owned[key])) {
@@ -102,24 +119,31 @@
   function renderRig(parts = {}, options = {}) {
     const newlyOwned = [];
     Object.keys(PART_NAMES).forEach(key => {
-      const hasPart = Boolean(parts[key]);
-      if (hasPart && !owned[key] && options.animateNew) newlyOwned.push(key);
-      setMounted(key, hasPart);
+      const hasPart = parts[key] === true;
+      const animatePart = hasPart && !owned[key] && options.animateNew;
+      if (animatePart) newlyOwned.push(key);
+      setMounted(key, hasPart && !animatePart);
     });
     owned = { ...parts };
     if (!newlyOwned.length && Object.keys(PART_NAMES).every(key => owned[key])) online = true;
     updateStatus();
     if (newlyOwned.length) {
-      queue = queue.then(() => playQueue(newlyOwned));
+      const id = sequenceId;
+      queue = queue.then(() => playQueue(newlyOwned, id));
     }
     return queue;
   }
 
   function replay() {
     online = false;
+    sequenceId += 1;
+    runningAnimations.forEach(animation => animation.cancel());
+    runningAnimations = [];
+    const root = stage();
+    if (root) root.scrollIntoView({ behavior: 'auto', block: 'center' });
     Object.keys(PART_NAMES).forEach(key => setMounted(key, false));
     updateStatus();
-    queue = queue.then(() => playQueue(Object.keys(PART_NAMES).filter(key => owned[key])));
+    queue = Promise.resolve().then(() => playQueue(Object.keys(PART_NAMES).filter(key => owned[key]), sequenceId));
     return queue;
   }
 
