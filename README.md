@@ -1,9 +1,16 @@
 # TechnixPro
 
-TechnixPro is a dark, neon-styled frontend demo for a Telegram Mini App concept: a community hub with a crypto-clicker/mining interface, rewards, and an admin panel.
+TechnixPro is a dark, neon-styled Telegram Mini App frontend demo with a clicker, rewards, community content, and an Admin Control Center.
 
 ## Project structure
 
+- `index.html` — app markup and screens.
+- `styles.css` — app styles and configurable animations.
+- `config.js` — public defaults and admin UI configuration.
+- `api.js` — Promise-based localStorage API adapter.
+- `store.js` — configuration validation and draft/published state.
+- `admin.js` — administrator-only control center.
+- `app.js` — Telegram profile, navigation, and user-facing rendering.
 - `index.html` — page markup and screen layout.
 - `styles.css` — application styles and animations.
 - `app.js` — Tailwind theme configuration and frontend interactions.
@@ -17,26 +24,26 @@ TechnixPro is a dark, neon-styled frontend demo for a Telegram Mini App concept:
 - `config.js` / `api.js` — API configuration and mock/HTTP data adapters.
 - `rig-builder.js` — SVG rig state, queued assembly, and animation lifecycle.
 
-The page also loads Tailwind CSS, Font Awesome, Inter, and the Telegram Web App SDK from their respective CDNs.
-Add an `assets/` directory when the project needs local images, icons, or other static files.
+Tailwind CSS, Font Awesome, Inter, and the Telegram Web App SDK load from CDNs. No build step or package installation is required.
 
 ## Run locally
 
-No build step or package installation is required. From the project directory, start a local static server:
+Start a static server from the project directory:
 
 ```sh
 python3 -m http.server 8000
 ```
 
-Then open <http://localhost:8000>. The interface can also be opened directly as `index.html`, though a local server more closely matches web-app hosting.
+Open <http://localhost:8000>. To test as a Telegram Mini App, host over HTTPS and configure the URL with a Telegram bot.
 
-To test as a Telegram Mini App, host the page over HTTPS and configure its URL with a Telegram bot. Telegram user details are used when the Web App SDK is available; otherwise the page uses a guest profile.
+## Admin Control Center
 
-## Demo limitations
+Set administrator Telegram user IDs in `TECHNIX_CONFIG.ADMIN_IDS` in `config.js`. The list is intentionally empty by default; add IDs only in a private deployment/configuration. For local UI testing only, set `DEV_MODE: true` and open the app with `?admin=1`. Do not enable developer mode in a public deployment.
 
-This repository contains a frontend prototype, not a production crypto or wallet service. Mining, rewards, and profile values are simulated in the browser; there is no backend, real token, or secure transaction flow. The admin panel visibility setting in `app.js` is only a UI demo and must not be treated as authorization. Production access control and user state must be implemented and verified on a trusted backend.
+Only configured administrators get the **Panel administratora** entry under **Bonusy → Przegląd**. Admin edits are saved to a local draft. **Opublikuj** changes the published configuration; normal visitors use only that published version. **Podgląd użytkownika** shows the current draft to the admin and has a quick return to the panel. Rejecting a draft or restoring a previous publication is also available.
 
-## Jak podpiąć backend
+The configuration includes the active phase, feature flags, animation preferences, tasks, events, posts, notifications, status banner, and presets. Draft/published data and up to five earlier publications are stored in browser localStorage using versioned keys. Local data is not shared between devices or users; connect the API adapter to a backend for a shared production configuration.
 
-W `config.js` ustaw `USE_MOCK_API: false` i wpisz bazowy adres serwera w `API_BASE_URL` (np. `https://api.example.com`). Frontend wywoła endpointy opisane w [docs/BACKEND_API.md](docs/BACKEND_API.md), a `api.js` przekaże Telegram `initData` w nagłówku `X-Telegram-Init-Data`. Backend musi zweryfikować podpis `initData`; identyfikatorów z `initDataUnsafe` nie wolno traktować jako uwierzytelnienia. Bezpieczny tryb demonstracyjny działa z `USE_MOCK_API: true` i używa lokalnego cache przeglądarki.
-W `config.js` ustaw `USE_MOCK_API: false` oraz `API_BASE_URL` na adres backendu (np. `https://api.example.com`). Frontend wysyła żądania opisane w [`docs/BACKEND_API.md`](docs/BACKEND_API.md); backend musi zweryfikować Telegram `initData` otrzymane w nagłówku `Authorization: tma …`. W trybie domyślnym `USE_MOCK_API: true` dane demonstracyjne i stan gry są przechowywane w `localStorage`.
+## Security and demo limitations
+
+The admin ID check only controls frontend UI visibility; it is not authorization. Browser code and localStorage can be modified by users. Before production, verify Telegram `initData` and authorize every admin operation on a trusted backend. Mining, balances, rewards, wallet, and statistics are demo-only, with no real token, secure transaction flow, or shared persistence.
