@@ -11,6 +11,16 @@ TechnixPro is a dark, neon-styled Telegram Mini App frontend demo with a clicker
 - `store.js` — configuration validation and draft/published state.
 - `admin.js` — administrator-only control center.
 - `app.js` — Telegram profile, navigation, and user-facing rendering.
+- `index.html` — page markup and screen layout.
+- `styles.css` — application styles and animations.
+- `app.js` — Tailwind theme configuration and frontend interactions.
+- `app-config.js` — runtime config (API base, `MOCK_PAYMENTS`, emission cycle, animation switch).
+- `shop-config.js` — shop catalog priced in Telegram Stars (XTR).
+- `payments.js` — Telegram Stars payment layer (invoice → `openInvoice` → server verify, with mock mode).
+- `emission.js` — global 60-day emission countdown based on server time.
+- `rig-builder.js` — RIG Builder assembly animation.
+- `fx.js` — tap effects, count-up, ripples and the shared animation loop.
+- `docs/BACKEND_API.md` — backend API contract.
 
 Tailwind CSS, Font Awesome, Inter, and the Telegram Web App SDK load from CDNs. No build step or package installation is required.
 
