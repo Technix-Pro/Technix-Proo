@@ -1,172 +1,202 @@
-# Backend API (contract used by the frontend)
+# Backend API proposal
 
-All requests go to `CONFIG.API_BASE_URL` and carry the header `X-Telegram-Init-Data: <Telegram.WebApp.initData>`.
-**The backend must verify this string (HMAC-SHA256 with the bot token) and derive the user id from it; never trust ids sent in the body.**
-Errors: non-2xx status with `{ "error": "message" }`. The frontend shows an error state with a "Spróbuj ponownie" action.
+The frontend currently uses `api.js`, a Promise-based localStorage adapter. Replace its methods with `fetch` calls when a backend is available. Responses should use the same configuration shape as `TECHNIX_CONFIG.DEFAULT_CONFIG`.
 
-## GET /api/me
-```json
-{ "tp": 1250, "taps": 480, "energy": 870, "stars": 1280 }
-```
-The source of truth for game state after start-up (the local cache is only a fallback).
+## Configuration
 
-## GET /api/rig
-```json
-{ "owned": { "monitor": true, "keyboard": true, "fan": false } }
-```
-Part keys: `mouse`, `keyboard`, `monitor`, `case`, `ram`, `gpu`, `fan`.
+### `GET /config`
 
-## POST /api/rig
-Request `{ "part": "fan" }` → same body as `GET /api/rig`. For paid parts the backend must confirm the Telegram Stars (XTR) payment before marking a part as owned.
-
-## POST /api/sync
-Batched, debounced (and sent on `visibilitychange` / `beforeunload`).
-```json
-{ "clientRequestId": "lq3x9k2a8f", "clientTime": 1760000000000,
-  "state": { "stars": 1280, "rigParts": { "monitor": true } } }
-```
-Response `{ "ok": true, "serverTime": 1760000000500 }`. Use `clientRequestId` for idempotency.
-
-## GET /api/tasks
-`[ { "id": "t1", "title": "Aktywność w kanale", "reward": 25, "label": "Kanał", "done": false } ]`
-
-## GET /api/leaderboard
-`[ { "rank": 1, "userId": 123, "username": "name", "score": 99999 } ]`
-
-## GET /api/referrals
-`{ "count": 3, "earned": 300, "items": [ { "userId": 456, "username": "friend", "joinedAt": "2026-01-01T00:00:00Z" } ] }`
-Referral link: `https://t.me/<BOT_USERNAME>?start=ref_<telegramId>`.
-
-## GET /api/notifications
-`[ { "id": "n1", "title": "Tekst", "createdAt": "2026-01-01T00:00:00Z", "read": false } ]`
-
-## GET /api/wallet
-`{ "balance": 0, "history": [ { "id": "w1", "type": "reward", "amount": 25, "createdAt": "2026-01-01T00:00:00Z" } ] }`
-# Kontrakt API TechnixPro
-
-Frontend wysyła żądania do `API_BASE_URL`. Odpowiedzi JSON powinny używać liczb dla sald/liczników i zwracać puste kolekcje zamiast `null`. Każde żądanie z Telegrama zawiera `X-Telegram-Init-Data`; serwer musi sprawdzić jego podpis i aktualność przed przypisaniem danych do użytkownika.
-
-## Użytkownik — `GET /api/me`
-
-Odpowiedź:
-Frontend wysyła JSON i oczekuje odpowiedzi JSON. Każdy endpoint wymaga w produkcji uwierzytelnienia Telegram Mini App w nagłówku `Authorization: tma <initData>`. Backend musi zweryfikować podpis i świeżość `initData`; wartości z `initDataUnsafe` są wyłącznie danymi do prezentacji. Błędy HTTP (`4xx`/`5xx`) są pokazywane użytkownikowi z możliwością ponowienia.
-
-## Użytkownik i stan gry
-
-`GET /api/me`
+Returns the published configuration for the current user:
 
 ```json
 {
-  "id": 123456789,
-  "username": "technix_user",
-  "first_name": "Ala",
-  "photo_url": "https://t.me/i/userpic/320/example.jpg",
-  "username": "technix",
-  "first_name": "Jan",
-  "photo_url": "https://example.com/avatar.jpg",
-  "language_code": "pl",
-  "stars": 1280,
-  "energy": 1000,
-  "energyMax": 1000,
-  "tp": 240,
-  "mined": 0,
-  "emissionEndsAt": 1790000000000,
-  "rigParts": { "monitor": true, "fan": false }
+  "version": 3,
+  "activePhase": 2,
+  "features": {
+    "clicker": true,
+    "rigBuilder": true,
+    "wallet": false,
+    "referrals": true,
+    "leaderboard": true,
+    "dailyBonus": true,
+    "tasks": true,
+    "events": true,
+    "posts": true,
+    "notifications": true
+  },
+  "animations": {
+    "tokens": true,
+    "circuitPulse": true,
+    "chipPulse": true,
+    "partGlow": true,
+    "toastFx": true,
+    "reduceMotion": false
+  },
+  "events": [
+    {
+      "id": "community-sprint",
+      "title": "Community Sprint",
+      "desc": "Complete community tasks.",
+      "reward": 50,
+      "active": true,
+      "startAt": null,
+      "endAt": null
+    }
+  ],
+  "tasks": [
+    {
+      "id": "channel",
+      "title": "Channel activity",
+      "reward": 25,
+      "label": "Channel",
+      "active": true,
+      "order": 1,
+      "type": "social"
+    }
+  ],
+  "posts": [
+    {
+      "id": "launch",
+      "text": "Welcome to TechnixPro.",
+      "media": "",
+      "link": "",
+      "pinned": false,
+      "visible": true
+    }
+  ],
+  "notifications": [
+    {
+      "id": "welcome",
+      "title": "Welcome",
+      "text": "Welcome to the app.",
+      "audience": "all",
+      "scheduledAt": null,
+      "sent": true
+    }
+  ],
+  "statusBanner": {
+    "text": "Core Engine Online",
+    "level": "ok",
+    "visible": true
+  },
+  "presets": []
 }
 ```
 
-## RIG — `GET /api/rig`, `POST /api/rig`
+### `GET /admin/draft` and `PUT /admin/draft`
 
-GET zwraca `{ "parts": { "monitor": true, "fan": false } }`. POST przyjmuje `{ "parts": { "monitor": true, "fan": false } }` i zwraca zapisane `{ "parts": { ... } }`. Serwer jest źródłem prawdy dla zakupów i własności.
+Read or replace the authenticated administrator's complete draft configuration. `PUT` accepts the same JSON shape as `GET /config`; validate fields and non-negative rewards server-side.
 
-## Telegram Stars — `POST /api/payments/stars/invoice`, `POST /api/payments/stars/confirm`
+### `POST /admin/publish`
 
-Frontend tworzy fakturę żądaniem `{ "part": "monitor", "currency": "XTR", "stars": 180 }`. Serwer musi sam sprawdzić cenę części w katalogu i utworzyć fakturę Telegram Stars; nie może ufać cenie przesłanej przez klienta. Odpowiedź zawiera `{ "invoiceLink": "https://t.me/$...", "invoiceId": "..." }`. Aplikacja otwiera fakturę przez `Telegram.WebApp.openInvoice`.
-
-Po statusie `paid` klient wywołuje potwierdzenie `{ "part": "monitor", "invoiceId": "..." }`. Serwer potwierdza płatność na podstawie zweryfikowanego update'u `successful_payment` od Telegrama, a nie statusu przekazanego przez przeglądarkę, i zwraca `{ "owned": true, "parts": { "monitor": true } }`. Tryb mock tylko symuluje zakup lokalnie; nie pobiera Stars.
-
-## Synchronizacja gry — `POST /api/sync`
-
-Frontend wysyła partię stanu po zmianach, z opóźnieniem, przy ukryciu dokumentu oraz przy zamykaniu strony:
+Publishes the current draft atomically and retains earlier versions. Example request:
 
 ```json
-{
-  "stars": 1280,
-  "energy": 985,
-  "energyMax": 1000,
-  "tp": 265,
-  "rigParts": { "monitor": true },
-  "mined": 25,
-  "emissionEndsAt": 1790000000000,
-  "clientRequestId": "request-id",
-  "timestamp": "2026-10-06T21:00:00.000Z"
-}
+{ "expectedVersion": 3 }
 ```
 
-Serwer powinien deduplikować żądania po `clientRequestId`, walidować wartości i nie ufać klientowi w sprawie salda lub nagród.
+Example response:
 
-## Pozostałe odczyty
+```json
+{ "version": 4, "publishedAt": "2026-10-06T20:00:00Z" }
+```
 
-| Endpoint | Oczekiwany format JSON |
+### `POST /admin/rollback`
+
+Restores a prior published version, optionally selected by version:
+
+```json
+{ "version": 3 }
+```
+
+## Content management
+
+Each collection should support authenticated CRUD operations. Suggested routes:
+
+| Resource | Endpoints |
 | --- | --- |
-| `GET /api/tasks` | Tablica `{ "title": "Zadanie", "reward": 25, "label": "Kanał" }` |
-| `GET /api/leaderboard` | Tablica `{ "id": 123456789, "username": "technix_user", "stars": 1280 }` |
-| `GET /api/referrals` | `{ "count": 0, "rewards": 0 }` |
-| `GET /api/notifications` | Tablica `{ "title": "Powiadomienie", "text": "Treść" }` |
-| `GET /api/wallet` | `{ "balance": 0, "currency": "PLN" }` |
+| Tasks | `GET/POST /admin/tasks`, `PUT/DELETE /admin/tasks/{id}` |
+| Events | `GET/POST /admin/events`, `PUT/DELETE /admin/events/{id}` |
+| Posts | `GET/POST /admin/posts`, `PUT/DELETE /admin/posts/{id}` |
+| Notifications | `GET/POST /admin/notifications`, `PUT/DELETE /admin/notifications/{id}` |
+| Presets | `GET/POST /admin/presets`, `DELETE /admin/presets/{id}` |
+| Statistics | `GET /admin/stats` |
 
-`USE_MOCK_API` w `config.js` włącza/wyłącza adapter demonstracyjny oparty o `localStorage`. Tryb produkcyjny wymaga `USE_MOCK_API: false` oraz skonfigurowanego `API_BASE_URL`; żadnych sekretów ani kluczy prywatnych nie należy umieszczać w frontendzie.
-  "taps": 0,
-  "ownedParts": []
-}
-```
+An event uses `{ id, title, desc, reward, active, startAt, endAt }`. A task uses `{ id, title, reward, label, active, order, type }`. A post uses `{ id, text, media, link, pinned, visible }`. A notification uses `{ id, title, text, audience, scheduledAt, sent }`.
 
-`POST /api/sync` batches the current game state after user actions and when the app is backgrounded or closed. The client caches the same payload locally and includes a unique request ID and client timestamp; the server should process requests idempotently.
+## Authentication and publication behavior
 
+Send Telegram Web App `initData` to the backend over HTTPS and validate its signature and freshness on the server for every privileged request. Never trust a client-supplied Telegram user ID, a frontend feature flag, `DEV_MODE`, or localStorage as authorization. The backend must authorize the verified user ID against its admin list, validate inputs, and expose only the published configuration to ordinary users. Admin drafts and publish/rollback operations should be isolated, authenticated, and audited.
+# TechnixPro – backend API contract
+
+The frontend is plain HTML/CSS/JS. Set `API_BASE` in `app-config.js` (`null` = no backend; `''` = same origin). All requests send
+`X-Telegram-Init-Data: <Telegram.WebApp.initData>` and JSON bodies. **Never put the bot token in the frontend.**
+
+## Auth: verifying `initData`
+On every request the server must validate `initData` (HMAC-SHA256 with key `HMAC_SHA256("WebAppData", BOT_TOKEN)` over the sorted
+`key=value` lines without `hash`), compare with `hash` in constant time, and reject if `auth_date` is too old (e.g. > 24 h).
+The user id is taken only from the validated `initData`, never from the request body.
+
+## Telegram Stars (XTR) payments
+Digital goods sold inside Mini Apps must be paid with **Telegram Stars (currency `XTR`)**. Internal activity points (★ / TP) are not
+a shop currency.
+
+Flow:
+1. Client: `POST /api/shop/invoice` `{ "productId": "gpu", "clientRequestId": "<uuid>" }`.
+2. Server: looks up the product price in its own catalog (mirror of `shop-config.js`; never trust a client price) and calls Bot API
+   `createInvoiceLink` with `currency: "XTR"`, empty `provider_token`, exactly one item in `prices` (`[{ "label": "GPU", "amount": 200 }]`),
+   and `payload` = server-generated id binding user + product + `clientRequestId`. Responds `{ "invoiceUrl": "https://t.me/$..." }`.
+3. Client: `Telegram.WebApp.openInvoice(invoiceUrl, cb)`; `cb` gets `paid | cancelled | failed | pending`.
+4. Server: receives `pre_checkout_query` → validates payload/product/stock and calls `answerPreCheckoutQuery(ok=true)` within 10 s.
+5. Server: receives `successful_payment` (webhook update) → stores `telegram_payment_charge_id`, grants the product **once** (unique key on
+   charge id and on `clientRequestId`).
+6. Client on `paid`/`pending`: **does not grant anything itself**; calls `POST /api/shop/verify` (retries a few times while `pending`)
+   and renders the returned state.
+
+### Idempotency
+`clientRequestId` (UUID generated per purchase attempt) is stored with the invoice. Repeating `POST /api/shop/invoice` with the same id
+returns the same invoice; `successful_payment` is processed at most once per `telegram_payment_charge_id`. `maxOwned` is enforced server-side.
+
+### Refunds
+Refunds use `refundStarPayment(user_id, telegram_payment_charge_id)`. After a refund the purchase gets `status: "refunded"` and the
+goods are revoked; the next `GET /api/me` / `GET /api/shop/purchases` reflects it.
+
+### Endpoints
+`POST /api/shop/invoice` → `200 { "invoiceUrl": string }` (`409` if `maxOwned` reached, `404` unknown product).
+
+`POST /api/shop/verify` `{ "productId", "clientRequestId" }` → purchases state (below).
+
+`GET /api/shop/purchases` → purchases state:
 ```json
 {
-  "stars": 1280,
-  "energy": 985,
-  "energyMax": 1000,
-  "tp": 265,
-  "taps": 1,
-  "ownedParts": ["monitor"],
-  "clientRequestId": "uuid",
-  "updatedAt": "2026-10-06T21:30:00.000Z"
+  "owned": { "gpu": 1, "boost_energy": 1 },
+  "purchases": [
+    { "id": "p_123", "productId": "gpu", "priceXtr": 200, "status": "paid", "createdAt": "2026-10-06T12:00:00Z" }
+  ]
 }
 ```
+`status`: `paid | pending | refunded | failed`. `owned` counts only paid, non-refunded purchases.
 
-Response: `{ "ok": true, "receivedAt": "2026-10-06T21:30:00.000Z" }`.
+### Product catalog
+`shop-config.js`: `id`, `title`, `description`, `priceXtr` (integer), `type` (`rig_part | boost | cosmetic`), `icon`, `effect`, `maxOwned`, optional `phase`.
+The server keeps the authoritative copy (it may later serve it from `/api/config`).
 
-## RIG
-
-`GET /api/rig`
-
+## Profile
+`GET /api/me` →
 ```json
-{ "ownedParts": ["monitor", "keyboard"] }
+{ "user": { "id": 1, "username": "name" }, "owned": { "gpu": 1 }, "purchases": [ ], "stars": 1280, "tp": 240 }
 ```
+The frontend restores owned goods from `owned`. Without a backend, localStorage is used **only in `MOCK_PAYMENTS` mode**.
 
-`POST /api/rig`
-
+## Emission (global 60-day cycle)
+`GET /api/emission` →
 ```json
-{
-  "ownedParts": ["monitor", "keyboard", "fan"],
-  "updatedAt": "2026-10-06T21:30:00.000Z"
-}
+{ "startAt": "2026-10-06T00:00:00Z", "durationDays": 60, "supply": 100000000, "serverTime": "2026-10-20T10:00:00Z", "minedGlobal": 23333338 }
 ```
+`minedGlobal` is optional; if absent the client computes `supply * min(1, elapsed / duration)`. The client derives a clock offset from
+`serverTime` (compensating half the round-trip), so changing the phone clock does not affect the countdown; it re-syncs when the app becomes visible again.
+Without a backend it uses `EMISSION_START_AT` / `EMISSION_DURATION_DAYS` / `EMISSION_SUPPLY` from `app-config.js` and `Date.now()`.
 
-Return the saved object. Supported part keys: `monitor`, `keyboard`, `mouse`, `case`, `ram`, `gpu`, `fan`.
-
-## Zakładki
-
-- `GET /api/tasks` → array of `{ "title": "Aktywność w kanale", "reward": 25, "label": "Kanał" }`.
-- `GET /api/leaderboard` → array of `{ "username": "technix", "first_name": "Jan", "stars": 1280 }`.
-- `GET /api/referrals` → `{ "count": 2, "stars": 200 }`.
-- `GET /api/notifications` → array of `{ "title": "Aktualizacja", "message": "Treść powiadomienia" }`.
-- `GET /api/wallet` → `{ "balance": "0,00 PLN" }`.
-
-Empty task, leaderboard and notification arrays are supported. The frontend displays localized empty states and a retry button after request failures.
-
-## Tryb mock
-
-`config.js` controls `USE_MOCK_API`, `API_BASE_URL`, and `BOT_USERNAME`. Mock data is used only when `USE_MOCK_API` is `true`; production requests use the configured base URL and Telegram authorization header.
+## Mock mode
+`MOCK_PAYMENTS: true` (default only on localhost / `file://`) simulates the whole payment flow in the browser and is clearly marked
+in the shop UI. It must be `false` in production (the config enables it automatically only for dev hosts).

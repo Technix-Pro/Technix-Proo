@@ -1,5 +1,5 @@
 // ========== CONFIG ==========
-const TELEGRAM_ADMIN_ID = '7777540542';
+const TELEGRAM_ADMIN_IDS = (window.TECHNIX_CONFIG && window.TECHNIX_CONFIG.ADMIN_IDS) || [];
 
 const RANKS = [
   { name: '🥉 Brązowy Rekrut', min: 0, max: 999, icon: '🥉', color: 'border-amber-700 bg-amber-900/30' },
@@ -176,7 +176,7 @@ function renderChannelFeed() {
 }
 
 function publishAdminPost() {
-  const isAdmin = String(currentUserId) === String(TELEGRAM_ADMIN_ID);
+  const isAdmin = TELEGRAM_ADMIN_IDS.some(id => String(id) === String(currentUserId));
   if (!isAdmin) return showToast('❌ Tylko administrator może publikować posty');
 
   const text = document.getElementById('admin-post-input').value.trim();
@@ -258,7 +258,7 @@ function initApp() {
   document.getElementById('show-id').textContent = currentUser?.id || currentUserId;
   document.getElementById('referral-link').value = `${window.location.origin}${window.location.pathname}?ref=${currentUserId}`;
 
-  if (String(currentUserId) === String(TELEGRAM_ADMIN_ID)) {
+  if (TELEGRAM_ADMIN_IDS.some(id => String(id) === String(currentUserId))) {
     document.getElementById('admin-panel').classList.remove('hidden');
   }
 
