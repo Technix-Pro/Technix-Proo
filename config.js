@@ -5,7 +5,7 @@ window.TECHNIX_CONFIG = {
   SUPABASE_ANON_KEY: 'sb_publishable_WrCP0j-ngvGRYYS8bAAACQ_7W0jwa3b',
   BOT_USERNAME: 'TechnixProBot',
   // Telegram IDs allowed to see the admin panel (UI only; enforce on the backend with RLS / initData verification).
-  ADMIN_IDS: [],
+  ADMIN_IDS: [7777540542],
   // Local testing only: allows ?admin=1 on localhost. Keep false in production.
   DEV_MODE: false
 };
