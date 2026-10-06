@@ -20,6 +20,7 @@ test('new user starts at zero', () => {
   assert.strictEqual(u.wallet_balance, 0);
   assert.strictEqual(u.level, 1);
   assert.strictEqual(u.id, 123456);
+  assert.deepStrictEqual(u.rig_parts, ['desk']);
 });
 
 test('referral code round-trips', () => {

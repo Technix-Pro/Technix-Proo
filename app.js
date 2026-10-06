@@ -1,14 +1,14 @@
 (function () {
   'use strict';
-  var CFG = window.TP_CONFIG, SEC = window.TECHNIX_CONFIG || {}, Core = window.TPCore, Data = window.TPData;
+  var CFG = window.TP_CONFIG, SEC = window.TECHNIX_CONFIG || {}, Core = window.TPCore, Data = window.TPData, TPRig = window.TPRig;
   var tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
   if (tg) { try { tg.ready(); tg.expand(); } catch (e) { /* ignore */ } }
 
   var I18N = {
-    pl: { channel: 'Kanał', chat: 'Chat', bonus: 'Bonusy', profile: 'Profil' },
-    en: { channel: 'Channel', chat: 'Chat', bonus: 'Bonuses', profile: 'Profile' }
+    pl: { channel: 'Kanał', chat: 'Chat', bonus: 'Bonusy', rig: 'Warsztat', profile: 'Profil' },
+    en: { channel: 'Channel', chat: 'Chat', bonus: 'Bonuses', rig: 'Workshop', profile: 'Profile' }
   };
-  var TABS = [['channel', 'fa-bullhorn'], ['chat', 'fa-comments'], ['bonus', 'fa-gift'], ['profile', 'fa-user']];
+  var TABS = [['channel', 'fa-bullhorn'], ['chat', 'fa-comments'], ['bonus', 'fa-gift'], ['rig', 'fa-computer'], ['profile', 'fa-user']];
   var BONUS_SUBS = [['overview', 'Przegląd'], ['events', 'Live'], ['tasks', 'Zadania'], ['referral', 'Polecenia'], ['badges', 'Odznaki']];
   var PROFILE_SUBS = [['info', 'Profil'], ['wallet', 'Portfel'], ['settings', 'Ustawienia']];
   var SETTINGS_SUBS = [['account', 'Konto'], ['notifications', 'Powiadomienia'], ['privacy', 'Prywatność'], ['language', 'Język']];
@@ -18,7 +18,7 @@
   var claimed = Data.claimed(me.id);
   var ui = { tab: 'channel', bonus: 'overview', profile: 'info', settings: 'account', preview: false, openComments: {}, chatDraft: '' };
   var content = document.getElementById('app-content');
-  var chatTimer = null, lastSend = 0;
+  var chatTimer = null, lastSend = 0, pendingRigPart = null;
 
   /* ---------- helpers ---------- */
   function h(tag, attrs) {
@@ -126,8 +126,13 @@
   function render() {
     clearInterval(chatTimer); chatTimer = null;
     renderShell();
-    var view = { channel: viewChannel, chat: viewChat, bonus: viewBonus, profile: viewProfile }[ui.tab]();
+    var view = { channel: viewChannel, chat: viewChat, bonus: viewBonus, rig: viewRig, profile: viewProfile }[ui.tab]();
     content.replaceChildren(h('section', { class: 'screen space-y-4' }, view));
+    if (ui.tab === 'rig') {
+      var rig = content.querySelector('[data-rig-builder]');
+      if (rig) window.TPRig.mount(rig.querySelector('svg'), Data.rigParts(me.id), pendingRigPart, rig._onRigStep);
+      pendingRigPart = null;
+    }
     tick();
   }
 
@@ -373,6 +378,105 @@
       h('div', { class: 'grid grid-cols-3 gap-2' }, list.map(function (a) {
         return h('div', { class: 'badge-item' + (a.unlocked ? '' : ' locked') }, icon(a.icon, 'text-xl text-amber-300 block mb-1'), a.title);
       }))];
+  }
+
+  /* ---------- RIG BUILDER ---------- */
+  function svgNode(tag, attrs, children) {
+      var el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+      Object.keys(attrs || {}).forEach(function (key) { el.setAttribute(key, attrs[key]); });
+      (children || []).forEach(function (child) { el.appendChild(child); });
+      return el;
+  }
+
+  function rigPart(key, owned, children) {
+      return svgNode('g', {
+        'data-part': key,
+        'aria-label': CFG.RIG_PARTS.filter(function (part) { return part.key === key; })[0].title,
+        'class': 'rig-part ' + (owned.indexOf(key) !== -1 ? 'rig-owned rig-mounted' : 'rig-locked')
+      }, children);
+  }
+
+  function buildRigSvg(owned) {
+      var svg = svgNode('svg', { viewBox: '0 0 360 270', role: 'img', 'aria-label': 'Schemat stanowiska komputerowego', class: 'rig-canvas' });
+      svg.appendChild(svgNode('rect', { x: 0, y: 0, width: 360, height: 270, rx: 18, class: 'rig-background' }));
+      svg.appendChild(rigPart('desk', owned, [
+        svgNode('rect', { x: 38, y: 193, width: 284, height: 13, rx: 5, class: 'rig-wood' }),
+        svgNode('path', { d: 'M57 206v41M303 206v41', class: 'rig-desk-leg' })
+      ]));
+      svg.appendChild(rigPart('case', owned, [
+        svgNode('rect', { x: 226, y: 104, width: 72, height: 89, rx: 8, class: 'rig-case' }),
+        svgNode('rect', { x: 234, y: 113, width: 56, height: 71, rx: 5, class: 'rig-case-inner' }),
+        svgNode('circle', { cx: 262, cy: 145, r: 17, class: 'rig-fan' }),
+        svgNode('circle', { cx: 262, cy: 145, r: 8, class: 'rig-fan-center' }),
+        svgNode('circle', { cx: 285, cy: 119, r: 2, class: 'rig-led' })
+      ]));
+      svg.appendChild(rigPart('ram', owned, [
+        svgNode('rect', { x: 246, y: 119, width: 6, height: 23, rx: 2, class: 'rig-ram' }),
+        svgNode('rect', { x: 255, y: 119, width: 6, height: 23, rx: 2, class: 'rig-ram' }),
+        svgNode('path', { d: 'M247 138h4m5 0h4', class: 'rig-pin' })
+      ]));
+      svg.appendChild(rigPart('gpu', owned, [
+        svgNode('rect', { x: 239, y: 155, width: 45, height: 9, rx: 3, class: 'rig-gpu' }),
+        svgNode('circle', { cx: 250, cy: 159, r: 3, class: 'rig-gpu-fan' }),
+        svgNode('circle', { cx: 273, cy: 159, r: 3, class: 'rig-gpu-fan' })
+      ]));
+      svg.appendChild(rigPart('monitor', owned, [
+        svgNode('rect', { x: 94, y: 45, width: 132, height: 88, rx: 8, class: 'rig-monitor' }),
+        svgNode('rect', { x: 101, y: 52, width: 118, height: 74, rx: 4, class: 'rig-screen' }),
+        svgNode('path', { d: 'M160 133v20m-24 6h48l-5-6h-38z', class: 'rig-monitor-stand' }),
+        svgNode('path', { d: 'M111 101l23-22 18 15 19-20 34 32', class: 'rig-screen-line' })
+      ]));
+      svg.appendChild(rigPart('keyboard', owned, [
+        svgNode('rect', { x: 106, y: 168, width: 100, height: 19, rx: 5, class: 'rig-keyboard' }),
+        svgNode('path', { d: 'M116 174h80m-76 5h72', class: 'rig-key-lines' })
+      ]));
+      svg.appendChild(rigPart('mouse', owned, [
+        svgNode('path', { d: 'M217 168c-8 0-13 6-13 14v3c0 8 5 13 13 13s13-5 13-13v-3c0-8-5-14-13-14z', class: 'rig-mouse' }),
+        svgNode('path', { d: 'M217 169v10', class: 'rig-mouse-line' })
+      ]));
+      return svg;
+  }
+
+  function viewRig() {
+      var catalog = Data.rigPartsCatalog(), owned = Data.rigParts(me.id), status = TPRig.progress(owned);
+      var allMounted = status.count === status.total;
+      var stepLabel = h('p', { class: 'rig-step text-xs muted', 'aria-live': 'polite' },
+        allMounted ? 'System uruchomiony' : owned.length + '/7 części zamontowane');
+      var canvas = h('div', { class: 'rig-canvas-wrap' }, buildRigSvg(owned));
+      var assembly = h('section', { class: 'panel rig-panel space-y-3' + (allMounted ? ' rig-running' : ''), 'data-rig-builder': '' },
+        h('div', { class: 'flex items-center justify-between gap-2' },
+          h('div', {}, h('h2', { class: 'font-bold text-sm' }, icon('fa-computer', 'text-cyan-300'), ' Stanowisko RIG'), stepLabel),
+          h('button', { type: 'button', class: 'btn btn-ghost rig-replay', onclick: function () {
+            stepLabel.textContent = 'Przygotowanie montażu…';
+            TPRig.replay(canvas.querySelector('svg'), catalog.filter(function (part) { return owned.indexOf(part.key) !== -1; }).map(function (part) { return part.key; }), function (key, index, total) {
+              stepLabel.textContent = key ? 'Montowanie: ' + catalog.filter(function (part) { return part.key === key; })[0].title : (allMounted ? 'System uruchomiony' : 'Montaż zakończony');
+            });
+          } }, icon('fa-rotate-right'), ' Powtórz')),
+        h('div', { class: 'bar', role: 'progressbar', 'aria-label': 'Postęp składania', 'aria-valuenow': String(status.percent), 'aria-valuemin': '0', 'aria-valuemax': '100' }, h('div', { style: 'width:' + status.percent + '%' })),
+        canvas);
+      assembly._onRigStep = function (key, index, total) {
+        stepLabel.textContent = 'Zamontowano: ' + catalog.filter(function (part) { return part.key === key; })[0].title;
+        if (index === total && total === status.total) stepLabel.textContent = 'System uruchomiony';
+      };
+      return [assembly,
+        h('section', { class: 'panel space-y-2' },
+          h('div', { class: 'flex items-center justify-between' }, h('h3', { class: 'font-bold text-sm' }, 'Części i sklep'), h('span', { class: 'text-xs text-amber-300 font-bold' }, fmt(me.stars) + ' ★')),
+          h('p', { class: 'text-xs muted' }, 'Kup część za gwiazdki, aby dodać ją do stanowiska i obejrzeć animację montażu.'),
+          catalog.map(function (part) {
+            var isOwned = owned.indexOf(part.key) !== -1;
+            var cannotAfford = Number(me.stars) < part.price;
+            return h('div', { class: 'rig-shop-row', 'data-part': part.key },
+              h('div', { class: 'min-w-0' }, h('div', { class: 'text-sm font-semibold' }, part.title), h('div', { class: 'text-[11px] muted' }, isOwned ? 'Zamontowano' : part.price + ' ★')),
+              h('button', { type: 'button', class: 'btn ' + (isOwned ? 'btn-ghost' : ''), disabled: isOwned || cannotAfford, 'aria-label': isOwned ? part.title + ' — posiadana' : 'Kup ' + part.title, onclick: function () {
+                var result = Data.buyRigPart(me, part.key);
+                if (!result.ok) { toast(result.reason === 'insufficient_stars' ? 'Za mało gwiazdek.' : 'Nie udało się kupić części.'); return; }
+                pendingRigPart = part.key;
+                save();
+                toast('Kupiono: ' + part.title);
+                render();
+              } }, isOwned ? 'Posiadana' : cannotAfford ? 'Za mało ★' : 'Kup'));
+            }),
+          h('p', { class: 'text-[11px] muted text-center' }, 'Części kupione w warsztacie zapisują się na Twoim koncie. Postęp: ' + status.count + '/7.'))];
   }
 
   /* ---------- PROFILE ---------- */

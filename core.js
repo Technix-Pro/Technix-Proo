@@ -47,6 +47,7 @@
       xp_total: 0,
       xp_to_next_level: progress(0).xpToNext,
       stars: 0,
+      rig_parts: ['desk'],
       tasks_completed: 0,
       wallet_balance: 0,
       referral_code: referralCode(id),

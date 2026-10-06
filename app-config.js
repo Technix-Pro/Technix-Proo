@@ -32,6 +32,15 @@
     { count: 20, rewardXp: 250 },
     { count: 50, rewardXp: 1000 }
   ]),
+  RIG_PARTS: Object.freeze([
+    { key: 'desk', title: 'Biurko', price: 0 },
+    { key: 'case', title: 'Obudowa', price: 25 },
+    { key: 'ram', title: 'Pamięć RAM', price: 20 },
+    { key: 'gpu', title: 'Karta graficzna', price: 40 },
+    { key: 'monitor', title: 'Monitor', price: 30 },
+    { key: 'keyboard', title: 'Klawiatura', price: 15 },
+    { key: 'mouse', title: 'Mysz', price: 10 }
+  ].map(function (part) { return Object.freeze(part); })),
   EVENTS: Object.freeze([
     { id: 'cyber-week', title: 'Cyber Week — Community Sprint', desc: 'Zdobądź XP w ciągu tygodnia i odbierz nagrodę.', reward: '+50 ★', live: true },
     { id: 'ama', title: 'AMA z zespołem TechnixPro', desc: 'Transmisja na żywo z pytaniami od społeczności.', reward: '+100 XP', live: false }
