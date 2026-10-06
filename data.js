@@ -60,15 +60,39 @@
       var u = read(key, null);
       var now = new Date().toISOString();
       if (!u) u = window.TPCore.newUser(tgUser, now);
+      var savedRigParts = read('rig:' + tgUser.id, null);
+      var rigKeys = CFG.RIG_PARTS.map(function (part) { return part.key; });
+      var rigParts = Array.isArray(savedRigParts) ? savedRigParts : u.rig_parts;
+      u.rig_parts = (Array.isArray(rigParts) ? rigParts : ['desk']).filter(function (part, index, list) {
+        return rigKeys.indexOf(part) !== -1 && list.indexOf(part) === index;
+      });
+      if (u.rig_parts.indexOf('desk') === -1) u.rig_parts.unshift('desk');
       if (tgUser.photo_url && !u.avatar_custom) u.avatar_url = tgUser.photo_url;
       if (tgUser.username) u.username = tgUser.username;
       u.last_active = now;
       write(key, u);
+      write('rig:' + tgUser.id, u.rig_parts);
       return u;
     },
     saveUser: function (u) {
+      u.rig_parts = Data.rigParts(u.id);
       write('user:' + u.id, u);
       remote('POST', 'users', [u]).catch(function () {});
+    },
+    rigPartsCatalog: function () { return CFG.RIG_PARTS; },
+    rigParts: function (id) { return read('rig:' + id, ['desk']); },
+    buyRigPart: function (user, partKey) {
+      var part = CFG.RIG_PARTS.filter(function (item) { return item.key === partKey; })[0];
+      if (!part) return { ok: false, reason: 'unknown_part' };
+      var owned = Data.rigParts(user.id);
+      if (owned.indexOf(partKey) !== -1) return { ok: false, reason: 'owned' };
+      if (Number(user.stars) < part.price) return { ok: false, reason: 'insufficient_stars' };
+      user.stars -= part.price;
+      owned.push(partKey);
+      user.rig_parts = owned;
+      write('rig:' + user.id, owned);
+      Data.saveUser(user);
+      return { ok: true, part: part };
     },
     claimed: function (id) { return read('claimed:' + id, []); },
     saveClaimed: function (id, list) { write('claimed:' + id, list); },
