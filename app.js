@@ -311,16 +311,20 @@
     }
 
     // Panel Admina - Przełączanie podzakładek
-    window.switchAdminTab = function(tabKey) {
-      document.querySelectorAll('.admin-sub-view').forEach(v => v.classList.add('hidden'));
-      document.getElementById(`admin-sub-${tabKey}`).classList.remove('hidden');
+    window.switchAdminTab = function(tabKey, button = document.querySelector(`[data-admin-tab="${tabKey}"]`)) {
+      const activeView = document.getElementById(`admin-sub-${tabKey}`);
+      if (!activeView) return;
 
+      document.querySelectorAll('.admin-sub-view').forEach(view => view.classList.add('hidden'));
+      activeView.classList.remove('hidden');
       document.querySelectorAll('.admin-tab-btn').forEach(btn => {
         btn.classList.remove('text-violet-400', 'border-violet-500', 'border-b-2');
         btn.classList.add('text-slate-400', 'border-transparent');
       });
-      event.target.classList.remove('text-slate-400', 'border-transparent');
-      event.target.classList.add('text-violet-400', 'border-violet-500', 'border-b-2');
+      if (button) {
+        button.classList.remove('text-slate-400', 'border-transparent');
+        button.classList.add('text-violet-400', 'border-violet-500', 'border-b-2');
+      }
     }
 
     function publishChannelPost() {
@@ -496,6 +500,10 @@
     }
 
     function bindGlobalActions() {
+      document.querySelectorAll('[data-admin-tab]').forEach(button => {
+        button.addEventListener('click', () => window.switchAdminTab(button.dataset.adminTab, button));
+      });
+
       document.querySelectorAll('[data-screen]').forEach(button => {
         button.addEventListener('click', () => {
           const key = button.dataset.screen;
