@@ -14,6 +14,8 @@
   <script src="payments.js"></script>
   <script src="emission.js"></script>
   <script src="fx.js"></script>
+  <script src="config.js"></script>
+  <script src="api.js"></script>
   <script src="rig-builder.js"></script>
   <script src="app.js"></script>
   <link rel="stylesheet" href="styles.css" />
@@ -198,7 +200,8 @@
           <div class="panel p-4 space-y-3">
             <div class="flex justify-between items-center">
               <div>
-                <span class="text-xs muted font-medium" id="telegram-username">@User</span>
+                <span class="text-xs muted font-medium" id="telegram-username">@guest</span>
+                <span class="text-xs muted font-medium" id="telegram-username">Gość</span>
                 <div class="flex items-baseline gap-1 mt-0.5">
                   <span id="stars-total" class="text-2xl font-black text-white">0</span>
                   <span class="text-xs font-bold text-violet-400">★ pkt aktywności</span>
@@ -258,17 +261,19 @@
             <h3 class="font-bold text-sm text-slate-200">Zapraszaj znajomych</h3>
             <p class="text-xs muted">Zyskaj +100 ★ za każdego nowego użytkownika dołączającego z Twojego linku polecającego.</p>
             <div class="flex items-center gap-2">
-              <input id="ref-link-input" type="text" readonly value="https://t.me/TechnixProBot?start=ref_user" class="w-full bg-[#080b14] border border-slate-700/80 rounded-xl p-2.5 text-xs font-medium text-slate-200" />
+              <input id="ref-link-input" type="text" readonly value="https://t.me/TechnixProBot?start=ref_0" class="w-full bg-[#080b14] border border-slate-700/80 rounded-xl p-2.5 text-xs font-medium text-slate-200" />
+              <input id="ref-link-input" type="text" readonly value="" aria-label="Twój link polecający" class="w-full bg-[#080b14] border border-slate-700/80 rounded-xl p-2.5 text-xs font-medium text-slate-200" />
               <button id="copy-ref-link" class="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs px-4 py-2.5 rounded-xl transition active:scale-95 shrink-0">Kopiuj</button>
             </div>
             <div class="pt-2 border-t border-slate-800 space-y-2">
               <div class="flex justify-between items-center text-xs">
                 <span class="text-slate-300">Poleceni gracze:</span>
-                <span class="font-bold text-violet-400">0 osób</span>
+                <span id="referral-count" class="font-bold text-violet-400">0 osób</span>
               </div>
               <div class="flex justify-between items-center text-xs">
                 <span class="text-slate-300">Zdobyte gwiazdki z poleceń:</span>
-                <span class="font-bold text-emerald-400">+0 ★</span>
+                <span id="referral-rewards" class="font-bold text-emerald-400">+0 ★</span>
+                <span id="referral-stars" class="font-bold text-emerald-400">+0 ★</span>
               </div>
             </div>
           </div>
@@ -301,13 +306,18 @@
         <div id="reward-leaderboard" class="reward-view hidden space-y-3">
           <div class="panel p-4">
             <h3 class="font-bold text-sm text-slate-200">Ranking Społeczności</h3>
-            <p class="text-[10px] muted mb-3">Ranking odzwierciedla bieżące gwiazdki w aktualnej sesji.</p>
-            <div class="space-y-2">
+            <p class="text-[10px] muted mb-3">Ranking społeczności TechnixPro.</p>
+            <div id="leaderboard-list" class="space-y-2">
               <div class="flex items-center justify-between bg-violet-900/30 p-2.5 rounded-xl border border-violet-500/30 text-xs font-semibold">
-                <span id="rank-user-label">Ty (@User)</span>
+                <span id="rank-user-label">Ty (@guest)</span>
+            <p class="text-[10px] muted mb-3">Ranking odzwierciedla bieżące gwiazdki w aktualnej sesji.</p>
+            <div id="leaderboard-list" class="space-y-2">
+              <div class="flex items-center justify-between bg-violet-900/30 p-2.5 rounded-xl border border-violet-500/30 text-xs font-semibold">
+                <span id="rank-user-label">Ty (Gość)</span>
                 <span id="rank-stars-display" class="font-bold text-violet-300">0 ★</span>
               </div>
             </div>
+            <p id="leaderboard-empty" class="hidden text-[10px] muted mt-2">Brak danych rankingu.</p>
           </div>
         </div>
 
@@ -435,7 +445,7 @@
           </div>
         </div>
 
-        <div class="panel p-4 space-y-3">
+        <div id="rig-builder" class="panel p-4 space-y-3">
           <div class="flex items-center justify-between">
             <div>
               <p class="text-[9px] uppercase tracking-[0.25em] text-violet-300 font-bold">Zasoby</p>
@@ -532,12 +542,213 @@
                 <circle class="rig-flash" cx="193" cy="161" r="14" fill="#a5f3fc"/>
               </g>
             </svg>
+          <div class="rig-station" aria-label="Boczny widok stanowiska RIG">
+            <svg class="rig-scene" viewBox="0 0 640 360" role="img" aria-labelledby="rig-scene-title rig-scene-desc">
+              <title id="rig-scene-title">Stanowisko RIG widziane z boku</title>
+              <desc id="rig-scene-desc">Puste biurko. Kolejne elementy pojawiają się po zakupie w sklepie poniżej.</desc>
+              <defs>
+                <linearGradient id="rig-screen-gradient" x2="1" y2="1">
+                  <stop stop-color="#071421" />
+                  <stop offset="1" stop-color="#31205f" />
+                </linearGradient>
+                <linearGradient id="rig-metal-gradient" x2="0" y2="1">
+                  <stop stop-color="#334155" />
+                  <stop offset="1" stop-color="#111827" />
+                </linearGradient>
+              </defs>
+              <g class="rig-grid" aria-hidden="true">
+                <path d="M0 270H640M0 300H640M0 330H640M80 250V360M160 250V360M240 250V360M320 250V360M400 250V360M480 250V360M560 250V360" />
+              </g>
+              <g id="rig-desk" aria-hidden="true">
+                <path class="desk-glow" d="M44 211H594" />
+                <path class="desk-top" d="M44 207H596V222H44Z" />
+                <path class="desk-edge" d="M44 207H596" />
+                <path class="desk-leg" d="M82 222H96V338H82ZM544 222H558V338H544Z" />
+                <path class="desk-foot" d="M64 338H114V346H64ZM528 338H578V346H528Z" />
+                <path class="desk-support" d="M96 322H544" />
+              </g>
+              <g class="rig-ghosts" aria-hidden="true">
+                <rect x="177" y="72" width="150" height="111" rx="8" />
+                <path d="M236 188H268L278 207H226ZM300 226H438L430 239H308ZM466 222C476 213 492 215 497 226L493 238H467Z" />
+                <rect x="401" y="246" width="126" height="83" rx="9" />
+                <circle cx="492" cy="287" r="25" />
+              </g>
+              <g id="rig-monitor" class="rig-part" data-part="monitor" aria-label="Monitor" aria-hidden="true">
+                <title>Monitor</title>
+                <rect class="monitor-frame" x="183" y="72" width="150" height="111" rx="8" />
+                <rect class="monitor-screen" x="190" y="79" width="136" height="96" rx="4" />
+                <g class="monitor-boot">
+                  <path d="M202 151H312M202 158H278M202 165H300" />
+                  <circle cx="306" cy="99" r="9" />
+                </g>
+                <path class="monitor-stand" d="M242 184H274L284 207H232Z" />
+                <path class="monitor-base" d="M222 207H294V213H222Z" />
+                <circle class="rig-flash" cx="184" cy="76" r="13" />
+              </g>
+              <g id="rig-keyboard" class="rig-part" data-part="keyboard" aria-label="Klawiatura" aria-hidden="true">
+                <title>Klawiatura</title>
+                <path class="keyboard-body" d="M300 222H438L430 240H308Z" />
+                <path class="keyboard-keys" d="M311 227H424M309 232H422M315 237H418M322 225V230M338 225V230M354 225V230M370 225V230M386 225V230M402 225V230M418 225V230" />
+                <path class="rig-flash" d="M298 220L306 215L313 220L306 225Z" />
+              </g>
+              <g id="rig-mouse" class="rig-part" data-part="mouse" aria-label="Mysz" aria-hidden="true">
+                <title>Mysz</title>
+                <path class="mouse-body" d="M462 222C468 214 484 214 491 222L496 237H459Z" />
+                <path class="mouse-seam" d="M477 217V228" />
+                <circle class="mouse-led" cx="477" cy="231" r="2.5" />
+                <circle class="rig-flash" cx="464" cy="221" r="9" />
+              </g>
+              <g id="rig-case" class="rig-part" data-part="case" aria-label="Obudowa komputera" aria-hidden="true">
+                <title>Obudowa komputera</title>
+                <rect class="case-shell" x="399" y="244" width="132" height="88" rx="9" />
+                <path class="case-side" d="M410 254H476V322H410Z" />
+                <path class="case-front" d="M486 254H520V322H486Z" />
+                <circle class="case-power" cx="503" cy="263" r="3" />
+                <path class="case-vent" d="M494 276H513M494 282H513M494 288H513" />
+                <circle class="rig-flash" cx="401" cy="246" r="12" />
+              </g>
+              <g id="rig-fan" class="rig-part" data-part="fan" aria-label="Wentylator chłodzenia" aria-hidden="true">
+                <title>Wentylator chłodzenia</title>
+                <circle class="fan-ring" cx="454" cy="287" r="26" />
+                <g class="fan-blades">
+                  <path d="M454 285C451 270 457 266 462 269C466 273 461 280 456 287Z" />
+                  <path d="M456 287C471 284 474 290 471 295C467 299 460 294 454 289Z" />
+                  <path d="M453 289C456 304 450 308 445 305C441 301 446 294 451 287Z" />
+                  <path d="M451 286C436 289 433 283 436 278C440 274 447 279 453 284Z" />
+                  <circle cx="454" cy="287" r="4" />
+                </g>
+                <circle class="rig-flash" cx="429" cy="263" r="9" />
+              </g>
+              <g id="rig-ram" class="rig-part" data-part="ram" aria-label="Pamięć RAM" aria-hidden="true">
+                <title>Pamięć RAM</title>
+                <path class="ram-stick" d="M420 256H427V314H420Z" />
+                <path class="ram-stick" d="M432 256H439V314H432Z" />
+                <path class="ram-led" d="M422 262V280M434 262V280" />
+                <path class="ram-contact" d="M420 309H427M432 309H439" />
+                <circle class="rig-flash" cx="420" cy="256" r="7" />
+              </g>
+              <g id="rig-gpu" class="rig-part" data-part="gpu" aria-label="Karta graficzna" aria-hidden="true">
+                <title>Karta graficzna</title>
+                <path class="gpu-body" d="M410 302H484V320H410Z" />
+                <circle class="gpu-fan" cx="432" cy="311" r="7" />
+                <circle class="gpu-fan" cx="460" cy="311" r="7" />
+                <path class="gpu-ports" d="M413 320V324M419 320V324M425 320V324" />
+                <path class="rig-flash" d="M405 299L412 293L419 299L412 305Z" />
+              </g>
+            </svg>
           </div>
+          <div class="flex items-center justify-between text-[10px]">
+            <span id="rig-status" class="muted" aria-live="polite">0 z 7 części zamontowanych</span>
+            <span id="rig-online" class="hidden rig-online" role="status">RIG ONLINE</span>
+            <span id="rig-progress" class="text-cyan-300 font-bold">Zamontowano 0/7</span>
+          </div>
+          <button id="rig-replay" type="button" class="w-full rounded-xl border border-cyan-500/30 bg-cyan-500/10 py-2 text-xs font-semibold text-cyan-200 transition hover:bg-cyan-500/20">Odtwórz montaż</button>
+          <div class="rig-scene-frame">
+            <svg id="rig-scene" class="rig-scene is-paused" viewBox="0 0 360 260" role="img" aria-label="Boczny widok stanowiska komputerowego TechnixPro">
+              <title>Budowa stanowiska komputerowego</title>
+              <desc>Elementy zestawu pojawiają się po zakupie w sklepie.</desc>
+              <defs>
+                <linearGradient id="rig-metal" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="#26354d" />
+                  <stop offset="1" stop-color="#111827" />
+                </linearGradient>
+                <linearGradient id="rig-screen" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stop-color="#22d3ee" />
+                  <stop offset=".55" stop-color="#6366f1" />
+                  <stop offset="1" stop-color="#ec4899" />
+                </linearGradient>
+                <linearGradient id="rig-case" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stop-color="#202b42" />
+                  <stop offset="1" stop-color="#0b1220" />
+                </linearGradient>
+              </defs>
+              <g id="rig-desk" aria-label="Biurko">
+                <path class="desk-glow" d="M24 137H337" />
+                <path class="desk-top" d="M24 136H337V148H24Z" />
+                <path class="desk-edge" d="M24 146H337" />
+                <path class="desk-leg" d="M53 148H66L74 232H61Z" />
+                <path class="desk-leg" d="M296 148H309L317 232H304Z" />
+                <path class="desk-foot" d="M51 232H81M294 232H324" />
+                <path class="desk-grid" d="M32 140H329M36 144H325" />
+              </g>
+              <g id="rig-ghosts" aria-hidden="true">
+                <rect class="rig-ghost" x="211" y="55" width="82" height="63" rx="6" />
+                <path class="rig-ghost" d="M250 118V132M238 133H263" />
+                <path class="rig-ghost" d="M151 127H221L225 139H151Z" />
+                <path class="rig-ghost" d="M236 125Q248 126 247 137L241 140H230L225 135V130Z" />
+                <rect class="rig-ghost" x="88" y="154" width="92" height="76" rx="8" />
+                <rect class="rig-ghost" x="102" y="164" width="64" height="53" rx="5" />
+                <path class="rig-ghost" d="M110 167V184M118 167V184" />
+                <path class="rig-ghost" d="M104 201H163V210H104Z" />
+              </g>
+              <g id="rig-monitor" class="rig-part" data-part="monitor" role="img" aria-label="Monitor">
+                <rect class="monitor-shell" x="207" y="48" width="91" height="73" rx="8" />
+                <rect class="monitor-screen" x="213" y="54" width="79" height="60" rx="4" />
+                <path class="monitor-scanline" d="M216 62H288M216 68H288M216 74H288" />
+                <path class="monitor-ui" d="M220 94L232 82L241 88L255 73L269 81L282 65M220 103H245M220 108H236" />
+                <path class="monitor-stand" d="M247 121H258L262 134H243Z" />
+                <path class="monitor-base" d="M233 135H272L278 140H227Z" />
+                <circle class="monitor-led" cx="286" cy="117" r="1.5" />
+              </g>
+              <g id="rig-keyboard" class="rig-part" data-part="keyboard" role="img" aria-label="Klawiatura">
+                <path class="keyboard-body" d="M146 127H218L223 140H144Z" />
+                <path class="keyboard-keys" d="M151 131H216M149 135H218M155 138H212M158 130V133M168 130V133M178 130V133M188 130V133M198 130V133M208 130V133" />
+                <path class="keyboard-light" d="M157 141H211" />
+              </g>
+              <g id="rig-mouse" class="rig-part" data-part="mouse" role="img" aria-label="Mysz">
+                <path class="mouse-body" d="M234 123Q248 123 249 135L246 141H232L228 136Q228 126 234 123Z" />
+                <path class="mouse-seam" d="M239 124V131M239 126H243" />
+                <circle class="mouse-led" cx="239" cy="137" r="1.2" />
+              </g>
+              <g id="rig-case" class="rig-part" data-part="case" role="img" aria-label="Obudowa komputera">
+                <rect class="case-shell" x="88" y="153" width="92" height="78" rx="8" />
+                <rect class="case-window" x="97" y="161" width="71" height="60" rx="5" />
+                <path class="case-vent" d="M174 166V217M177 166V217" />
+                <circle class="case-power" cx="174" cy="159" r="2" />
+                <path class="case-foot" d="M96 232H110M158 232H173" />
+              </g>
+              <g id="rig-ram" class="rig-part" data-part="ram" role="img" aria-label="Pamięć RAM">
+                <path class="ram-stick" d="M108 165H119V193H108Z" />
+                <path class="ram-contact" d="M110 193V197M114 193V197M118 193V197" />
+                <circle class="ram-led" cx="113.5" cy="169" r="1.7" />
+              </g>
+              <g id="rig-gpu" class="rig-part" data-part="gpu" role="img" aria-label="Karta graficzna">
+                <path class="gpu-body" d="M104 201H163V213H104Z" />
+                <g class="gpu-fan-rotor" transform="translate(121 207)">
+                  <path class="gpu-fan-blades" d="M0-1Q-1-7 2-5L2-1ZM1 1Q7 0 5 3L1 3ZM-1 1Q0 7-3 5L-3 1Z" />
+                  <circle class="gpu-fan-hub" r="2" />
+                </g>
+                <g class="gpu-fan-rotor" transform="translate(145 207)">
+                  <path class="gpu-fan-blades" d="M0-1Q-1-7 2-5L2-1ZM1 1Q7 0 5 3L1 3ZM-1 1Q0 7-3 5L-3 1Z" />
+                  <circle class="gpu-fan-hub" r="2" />
+                </g>
+                <path class="gpu-glow" d="M108 215H159" />
+              </g>
+              <g id="rig-fan" class="rig-part" data-part="fan" role="img" aria-label="Wentylator chłodzenia">
+                <circle class="fan-ring" cx="145" cy="183" r="13" />
+                <g class="fan-blades">
+                  <path d="M145 173Q153 174 148 182Q146 184 144 181ZM155 183Q154 191 146 186Q144 184 147 182ZM145 193Q137 192 142 184Q144 182 146 185ZM135 183Q136 175 144 180Q146 182 143 184Z" />
+                </g>
+                <circle class="fan-hub" cx="145" cy="183" r="3" />
+                <circle class="fan-led" cx="157" cy="172" r="1.4" />
+              </g>
+              <g class="rig-online-indicator" aria-hidden="true">
+                <circle cx="313" cy="48" r="3" />
+                <text x="321" y="51">ONLINE</text>
+              </g>
+            </svg>
+          </div>
+          <div class="flex items-center justify-between gap-3">
+            <p id="rig-status" class="text-[10px] muted" role="status" aria-live="polite">Puste biurko · kup część, aby rozpocząć montaż</p>
+            <span id="rig-progress" class="shrink-0 text-[10px] font-bold text-cyan-300">Zamontowano 0/7</span>
+          </div>
+          <button id="rig-replay" type="button" class="w-full rounded-xl border border-cyan-500/20 bg-cyan-500/10 py-2 text-xs font-semibold text-cyan-200 transition hover:bg-cyan-500/15">Odtwórz montaż</button>
 
           <div class="shop-notice">
             <span><i class="fa-solid fa-star text-amber-400"></i> Sklep płaci się <strong>Telegram Stars (XTR)</strong>. Punkty aktywności ★ nie służą do zakupów.</span>
             <span id="shop-mock-badge" class="shop-mock-badge hidden">MOCK – płatności symulowane</span>
           </div>
+          <p id="rig-payment-note" class="text-[9px] muted text-center"></p>
           <div class="rig-shop" id="rig-shop"></div>
 
           <div class="space-y-2 pt-2">
@@ -552,7 +763,7 @@
 
         <div class="panel p-5 text-center space-y-3">
           <p class="text-xs muted">Saldo demonstracyjne sieci TON</p>
-          <div class="text-3xl font-extrabold text-white tracking-tight">0,00 PLN</div>
+          <div id="wallet-balance" class="text-3xl font-extrabold text-white tracking-tight">0,00 PLN</div>
           <div class="flex justify-center gap-2 pt-2">
             <button class="wallet-toast-btn bg-violet-600 text-xs font-semibold px-4 py-2 rounded-xl">Wpłać</button>
             <button class="wallet-toast-btn bg-slate-800 border border-slate-700 text-xs font-semibold px-4 py-2 rounded-xl">Wypłać</button>
@@ -634,9 +845,14 @@
       </section>
 
       <section id="screen-notifications" class="screen hidden space-y-4">
+        <div id="notifications-list" class="space-y-3">
+          <div class="panel p-4 text-xs space-y-2">
+            <div class="font-bold text-white">Powiadomienie Systemowe</div>
+            <p class="muted">Witaj w TechnixPro! Połączyliśmy Twoje konto z interfejsem Telegram Mini App.</p>
+          </div>
         <div class="panel p-4 text-xs space-y-2">
-          <div class="font-bold text-white">Powiadomienie Systemowe</div>
-          <p class="muted">Witaj w TechnixPro! Połączyliśmy Twoje konto z interfejsem Telegram Mini App.</p>
+          <div id="notification-title" class="font-bold text-white">Powiadomienie Systemowe</div>
+          <p id="notification-message" class="muted">Witaj w TechnixPro! Połączyliśmy Twoje konto z interfejsem Telegram Mini App.</p>
         </div>
       </section>
 
