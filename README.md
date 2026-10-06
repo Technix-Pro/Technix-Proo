@@ -7,8 +7,16 @@ TechnixPro is a dark, neon-styled frontend demo for a Telegram Mini App concept:
 - `index.html` — page markup and screen layout.
 - `styles.css` — application styles and animations.
 - `app.js` — Tailwind theme configuration and frontend interactions.
+- `api.js` — data layer (`CONFIG`, `currentUser`, mock API, game-state sync).
+- `rig-builder.js` — animated side-view RIG Builder scene (inline SVG + Web Animations API).
 
 The page also loads Tailwind CSS, Font Awesome, Inter, and the Telegram Web App SDK from their respective CDNs. The additional JavaScript files currently in the repository are not loaded by `index.html`.
+## Jak podpiąć backend
+
+1. W `api.js` (lub przez `window.CONFIG` przed załadowaniem `api.js`) ustaw `USE_MOCK_API: false`.
+2. Ustaw `API_BASE_URL` na adres backendu (np. `https://api.example.com`) i `BOT_USERNAME` na nazwę bota.
+3. Zaimplementuj endpointy z `docs/BACKEND_API.md`; backend musi weryfikować nagłówek `X-Telegram-Init-Data`.
+
 Add an `assets/` directory when the project needs local images, icons, or other static files.
 
 ## Run locally

@@ -70,7 +70,8 @@
         monitor: false,
         case: false,
         ram: false,
-        gpu: false
+        gpu: false,
+        fan: false
       },
       rigCatalog: [
         { key: 'mouse', name: 'Myszka', icon: 'fa-computer-mouse', cost: 40 },
@@ -78,7 +79,8 @@
         { key: 'monitor', name: 'Monitor', icon: 'fa-display', cost: 180 },
         { key: 'case', name: 'Obudowa', icon: 'fa-cube', cost: 100 },
         { key: 'ram', name: 'RAM', icon: 'fa-memory', cost: 80 },
-        { key: 'gpu', name: 'GPU', icon: 'fa-microchip', cost: 270 }
+        { key: 'gpu', name: 'GPU', icon: 'fa-microchip', cost: 270 },
+        { key: 'fan', name: 'Chłodzenie (wiatrak)', icon: 'fa-fan', cost: 90 }
       ]
     };
 
@@ -439,6 +441,10 @@
       const usernameText = user.username ? `@${user.username}` : '@guest';
 
       if (username) username.textContent = usernameText;
+      const rankLabel = document.getElementById('rank-user-label');
+      if (rankLabel) rankLabel.textContent = `Ty (${usernameText})`;
+      const refInput = document.getElementById('ref-link-input');
+      if (refInput && window.TechnixAPI) refInput.value = window.TechnixAPI.referralLink();
       if (profileName) profileName.textContent = name;
       if (profileId) profileId.textContent = user.id ? `TG ID: ${user.id}` : 'TG ID: brak danych';
       if (headerAvatar) headerAvatar.textContent = name.slice(0, 2).toUpperCase();
@@ -474,11 +480,13 @@
     function completePurchase(key) {
       const item = state.rigCatalog.find(i => i.key === key);
       state.rigParts[key] = true;
-      const partElement = document.querySelector(`.station-part[data-part="${key}"]`);
-      if (partElement) {
-        partElement.classList.add('active');
-      }
       renderRigShop();
+      renderRigScene({ animateNew: true });
+      if (window.RigBuilder) window.RigBuilder.scrollIntoView();
+      if (window.TechnixAPI) {
+        window.TechnixAPI.buyRigPart(key).catch(() => {});
+        window.TechnixAPI.queueSync({ stars: state.stars, rigParts: { ...state.rigParts } });
+      }
       showToast(`${item ? item.name : 'Część'} została pomyślnie kupiona!`);
     }
 
@@ -489,13 +497,13 @@
         const owned = state.rigParts[item.key];
         return `
           <div class="shop-item">
-            <div class="shop-item-icon"><i class="fa-solid ${item.icon}"></i></div>
+            <div class="shop-item-icon">${window.RigBuilder ? window.RigBuilder.thumb(item.key) : ''}</div>
             <div>
               <div class="text-[10px] font-semibold text-white">${item.name}</div>
               <div class="text-[9px] text-amber-400 font-bold">${item.cost} ★ Telegram Stars</div>
             </div>
             <button data-rig="${item.key}" data-cost="${item.cost}" class="${owned ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/20' : 'bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-extrabold'} px-2 py-2 rounded-lg transition active:scale-95">
-              ${owned ? 'Kupione' : 'Kup (Stars)'}
+              ${owned ? 'Zamontowano' : 'Kup (Stars)'}
             </button>
           </div>
         `;
@@ -512,6 +520,36 @@
           buyRigPartWithStars(key, cost);
         });
       });
+    }
+
+    function renderRigScene(opts) {
+      if (!window.RigBuilder) return;
+      window.RigBuilder.renderRig(state.rigParts, opts);
+    }
+
+    function initRigBuilder() {
+      const root = document.getElementById('rig-station');
+      if (!root || !window.RigBuilder) return;
+      const total = state.rigCatalog.length;
+      window.RigBuilder.init(root, {
+        onChange: (n) => {
+          const text = document.getElementById('rig-progress-text');
+          const fill = document.getElementById('rig-progress-fill');
+          if (text) text.textContent = `Zamontowano ${n}/${total}`;
+          if (fill) fill.style.transform = `scaleX(${total ? n / total : 0})`;
+        }
+      });
+      const replay = document.getElementById('rig-replay');
+      if (replay) replay.addEventListener('click', () => window.RigBuilder.replay());
+      renderRigScene({ animateNew: false });
+      if (window.TechnixAPI) {
+        window.TechnixAPI.getRig().then(rig => {
+          const owned = rig && rig.owned ? rig.owned : {};
+          Object.keys(owned).forEach(key => { if (key in state.rigParts && owned[key]) state.rigParts[key] = true; });
+          renderRigShop();
+          renderRigScene({ animateNew: false });
+        }).catch(() => showToast('Nie udało się pobrać RIG-a. Spróbuj ponownie później.'));
+      }
     }
 
     function initCryptoGame() {
@@ -679,6 +717,7 @@
       renderPostsFeed();
       renderChannelFeed();
       renderRigShop();
+      initRigBuilder();
       initTelegramProfile();
       renderHomeSubtabs();
       initChatViewport();
