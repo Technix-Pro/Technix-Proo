@@ -1,1166 +1,482 @@
-    if (window.tailwind) {
-      window.tailwind.config = {
-        darkMode: 'class',
-        theme: {
-          extend: {
-            colors: {
-              brand: {
-                bg: '#080b14',
-                panel: '#111827',
-                border: '#1f293d',
-                accent: '#8b5cf6',
-                cyan: '#22d3ee',
-                pink: '#ec4899'
-              }
-            },
-            fontFamily: {
-              sans: ['Inter', 'sans-serif']
-            }
-          }
-        }
-      }
-    }
+(function () {
+  'use strict';
+  var CFG = window.TP_CONFIG, SEC = window.TECHNIX_CONFIG || {}, Core = window.TPCore, Data = window.TPData;
+  var tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+  if (tg) { try { tg.ready(); tg.expand(); } catch (e) { /* ignore */ } }
 
-    const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
-    if (tg) {
-      tg.ready();
-      tg.expand();
-    }
+  var I18N = {
+    pl: { channel: 'Kanał', chat: 'Chat', bonus: 'Bonusy', profile: 'Profil' },
+    en: { channel: 'Channel', chat: 'Chat', bonus: 'Bonuses', profile: 'Profile' }
+  };
+  var TABS = [['channel', 'fa-bullhorn'], ['chat', 'fa-comments'], ['bonus', 'fa-gift'], ['profile', 'fa-user']];
+  var BONUS_SUBS = [['overview', 'Przegląd'], ['events', 'Live'], ['tasks', 'Zadania'], ['referral', 'Polecenia'], ['badges', 'Odznaki']];
+  var PROFILE_SUBS = [['info', 'Profil'], ['wallet', 'Portfel'], ['settings', 'Ustawienia']];
+  var SETTINGS_SUBS = [['account', 'Konto'], ['notifications', 'Powiadomienia'], ['privacy', 'Prywatność'], ['language', 'Język']];
 
-    const defaultUser = {
-      first_name: 'Guest',
-      last_name: '',
-      username: 'guest',
-      id: 0,
-      photo_url: ''
+  var identity = resolveIdentity();
+  var me = Data.loadUser(identity.user);
+  var claimed = Data.claimed(me.id);
+  var ui = { tab: 'channel', bonus: 'overview', profile: 'info', settings: 'account', preview: false, openComments: {}, chatDraft: '' };
+  var content = document.getElementById('app-content');
+  var chatTimer = null, lastSend = 0;
+
+  /* ---------- helpers ---------- */
+  function h(tag, attrs) {
+    var el = document.createElement(tag);
+    Object.keys(attrs || {}).forEach(function (k) {
+      var v = attrs[k];
+      if (v == null || v === false) return;
+      if (k === 'class') el.className = v;
+      else if (k === 'text') el.textContent = v;
+      else if (k.indexOf('on') === 0) el.addEventListener(k.slice(2), v);
+      else if (k === 'value') el.value = v;
+      else el.setAttribute(k, v === true ? '' : v);
+    });
+    for (var i = 2; i < arguments.length; i++) append(el, arguments[i]);
+    return el;
+  }
+  function append(el, c) {
+    if (c == null || c === false) return;
+    if (Array.isArray(c)) c.forEach(function (x) { append(el, x); });
+    else el.appendChild(typeof c === 'object' ? c : document.createTextNode(String(c)));
+  }
+  function icon(name, extra) { return h('i', { class: 'fa-solid ' + name + (extra ? ' ' + extra : ''), 'aria-hidden': 'true' }); }
+  function fmt(n) { return new Intl.NumberFormat('pl-PL', { maximumFractionDigits: 9 }).format(n); }
+  function fmtDate(iso) { var d = new Date(iso); return isNaN(d) ? '—' : d.toLocaleString(me.settings.language === 'en' ? 'en-GB' : 'pl-PL', { dateStyle: 'short', timeStyle: 'short' }); }
+  function fmtDuration(ms) {
+    var s = Math.max(0, Math.ceil(ms / 1000)), hh = Math.floor(s / 3600), mm = Math.floor((s % 3600) / 60), ss = s % 60;
+    return [hh, mm, ss].map(function (x) { return String(x).padStart(2, '0'); }).join(':');
+  }
+  function toast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(toast.t); toast.t = setTimeout(function () { t.classList.remove('show'); }, 2400);
+  }
+  function save() { Data.saveUser(me); Data.saveClaimed(me.id, claimed); }
+  function tr(key) { return (I18N[me.settings.language] || I18N.pl)[key]; }
+
+  function resolveIdentity() {
+    var u = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
+    if (!u && tg && tg.initData) u = Core.parseInitData(tg.initData);
+    if (u && Number(u.id)) return { user: u, telegram: true };
+    var id = null;
+    try { id = Number(localStorage.getItem('technixpro-guest-id')); } catch (e) { /* ignore */ }
+    if (!id) {
+      id = 100000000 + (window.crypto.getRandomValues(new Uint32Array(1))[0] % 899999999);
+      try { localStorage.setItem('technixpro-guest-id', String(id)); } catch (e) { /* ignore */ }
+    }
+    return { user: { id: id, username: 'guest' + String(id).slice(-4), first_name: 'Guest' }, telegram: false };
+  }
+
+  function isLocal() { return /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) || location.protocol === 'file:'; }
+  function isAdmin() {
+    var ids = (SEC.ADMIN_IDS || []).map(Number);
+    return ids.indexOf(Number(me.id)) !== -1 || (!!SEC.DEV_MODE && isLocal() && /[?&]admin=1/.test(location.search));
+  }
+
+  function rankCtx() {
+    var leaders = Data.leaders();
+    var rank = Core.rankOf(me, leaders);
+    return { rank: rank, leaders: leaders };
+  }
+
+  function avatar(user, size) {
+    var el = h('span', { class: 'avatar', style: size ? 'width:' + size + 'px;height:' + size + 'px' : null });
+    var url = user.avatar_url && (/^data:image\/(jpeg|png|webp);base64,/.test(user.avatar_url) || Core.safeUrl(user.avatar_url));
+    if (url) el.appendChild(h('img', { src: user.avatar_url, alt: '', referrerpolicy: 'no-referrer' }));
+    else el.textContent = (user.username || '?').charAt(0).toUpperCase();
+    return el;
+  }
+
+  function levelBadge(user) {
+    var l = Core.levelFor(user.xp_total);
+    return h('span', { class: 'inline-flex items-center gap-1.5' }, icon(l.icon, 'text-amber-300'), 'Lv ' + l.level + ' · ' + l.name);
+  }
+
+  function grantXp(amount) {
+    var before = me.level;
+    Core.addXp(me, amount);
+    var gained = Core.claimReferralMilestones(me);
+    gained.forEach(function (m) { toast('Nagroda za ' + m.count + ' poleconych: +' + m.rewardXp + ' XP'); });
+    if (me.level > before) toast('Nowy poziom: ' + Core.levelFor(me.xp_total).name + '!');
+  }
+
+  /* ---------- shell ---------- */
+  function renderShell() {
+    var l = Core.levelFor(me.xp_total);
+    var hb = document.getElementById('header-avatar');
+    hb.replaceChildren(avatar(me, 40));
+    hb.onclick = function () { setTab('profile'); };
+    document.getElementById('header-title').textContent = me.username;
+    document.getElementById('header-sub').textContent = 'ID: ' + me.id + ' · ' + fmt(me.xp_total) + ' XP';
+    document.getElementById('header-level').replaceChildren(icon(l.icon), ' Lv ' + l.level);
+    document.getElementById('bottom-nav').replaceChildren.apply(document.getElementById('bottom-nav'), TABS.map(function (t) {
+      return h('button', { class: 'nav-btn' + (ui.tab === t[0] ? ' active' : ''), type: 'button', onclick: function () { setTab(t[0]); } }, icon(t[1]), tr(t[0]));
+    }));
+  }
+
+  function setTab(t) { ui.tab = t; render(); window.scrollTo(0, 0); }
+
+  function subtabs(list, current, onPick) {
+    return h('div', { class: 'subtabs', role: 'tablist' }, list.map(function (s) {
+      return h('button', { type: 'button', role: 'tab', class: 'subtab' + (current === s[0] ? ' active' : ''), onclick: function () { onPick(s[0]); } }, s[1]);
+    }));
+  }
+
+  function render() {
+    clearInterval(chatTimer); chatTimer = null;
+    renderShell();
+    var view = { channel: viewChannel, chat: viewChat, bonus: viewBonus, profile: viewProfile }[ui.tab]();
+    content.replaceChildren(h('section', { class: 'screen space-y-4' }, view));
+    tick();
+  }
+
+  /* ---------- countdown ticker ---------- */
+  function countdown(untilMs, onZero) {
+    var el = h('span', { class: 'font-mono font-bold', 'data-until': String(untilMs) });
+    el._onZero = onZero;
+    el.textContent = fmtDuration(untilMs - Date.now());
+    return el;
+  }
+  function tick() {
+    document.querySelectorAll('[data-until]').forEach(function (el) {
+      var left = Number(el.getAttribute('data-until')) - Date.now();
+      el.textContent = fmtDuration(left);
+      if (left <= 0 && !el._fired) { el._fired = true; if (el._onZero) el._onZero(); }
+    });
+  }
+  setInterval(tick, 1000);
+
+  /* ---------- CHANNEL + ADMIN ---------- */
+  function visiblePosts() {
+    var admin = isAdmin() && !ui.preview;
+    return Data.getPosts().filter(function (p) { return p.published || admin; })
+      .sort(function (a, b) { return Date.parse(b.created_at) - Date.parse(a.created_at); });
+  }
+
+  function viewChannel() {
+    var out = [];
+    if (isAdmin()) out.push(adminPanel());
+    var posts = visiblePosts();
+    if (!posts.length) out.push(h('div', { class: 'panel text-sm muted text-center' }, 'Brak postów. ' + (isAdmin() ? 'Dodaj pierwszy powyżej.' : 'Wróć wkrótce!')));
+    posts.forEach(function (p) { out.push(postCard(p)); });
+    return out;
+  }
+
+  function adminPanel() {
+    var wrap = h('div', { class: 'panel space-y-3 border-amber-500/40' });
+    wrap.appendChild(h('div', { class: 'flex items-center justify-between' },
+      h('h2', { class: 'font-bold text-amber-300 text-sm' }, icon('fa-shield-halved'), ' Panel administratora'),
+      h('button', { type: 'button', class: 'btn btn-ghost', onclick: function () { ui.preview = !ui.preview; render(); } }, ui.preview ? 'Wróć do panelu' : 'Podgląd użytkownika')));
+    if (ui.preview) { wrap.appendChild(h('p', { class: 'text-xs muted' }, 'Tryb podglądu: widzisz tylko opublikowane posty tak jak użytkownicy.')); return wrap; }
+    var nextClaim = Date.now() + Core.msUntil(me.last_xp_claim, CFG.XP_TIMER_HOURS);
+    wrap.appendChild(h('div', { class: 'text-xs flex justify-between' }, h('span', { class: 'muted' }, 'Timer XP (' + CFG.XP_TIMER_HOURS + 'h)'),
+      Core.msUntil(me.last_xp_claim, CFG.XP_TIMER_HOURS) > 0 ? countdown(nextClaim) : h('span', { class: 'text-emerald-400 font-bold' }, 'Gotowy do odbioru')));
+    var text = h('textarea', { class: 'field', rows: '3', maxlength: String(CFG.POST_MAX_LENGTH), placeholder: 'Treść posta…' });
+    var imgs = h('textarea', { class: 'field', rows: '2', placeholder: 'Obrazy — URL, po jednym w linii' });
+    var vids = h('textarea', { class: 'field', rows: '2', placeholder: 'Wideo — URL (.mp4/.webm), po jednym w linii' });
+    var links = h('textarea', { class: 'field', rows: '2', placeholder: 'Linki — po jednym w linii' });
+    function collect(published) {
+      var content_ = Core.cleanText(text.value, CFG.POST_MAX_LENGTH);
+      var lines = function (el) { return el.value.split('\n').map(Core.safeUrl).filter(Boolean).slice(0, 5); };
+      var post = { id: Data.newId(), admin_id: me.id, content: content_, images: lines(imgs), videos: lines(vids), links: lines(links), likes: [], comments: [], likes_count: 0, comments_count: 0, created_at: new Date().toISOString(), published: published };
+      if (!post.content && !post.images.length && !post.videos.length && !post.links.length) { toast('Post jest pusty.'); return; }
+      var all = Data.getPosts(); all.push(post); Data.savePosts(all);
+      toast(published ? 'Opublikowano.' : 'Zapisano szkic.'); render();
+    }
+    wrap.appendChild(h('div', { class: 'space-y-2' }, text, imgs, vids, links));
+    wrap.appendChild(h('div', { class: 'flex gap-2' },
+      h('button', { type: 'button', class: 'btn btn-ghost flex-1', onclick: function () { collect(false); } }, 'Zapisz szkic'),
+      h('button', { type: 'button', class: 'btn flex-1', onclick: function () { collect(true); } }, 'Opublikuj')));
+    return wrap;
+  }
+
+  function postCard(p) {
+    var admin = isAdmin() && !ui.preview;
+    var card = h('article', { class: 'panel space-y-3' });
+    card.appendChild(h('div', { class: 'flex items-center justify-between text-xs' },
+      h('span', { class: 'font-bold text-cyan-300' }, 'TechnixPro'),
+      h('span', { class: 'muted' }, (p.published ? '' : '[SZKIC] ') + fmtDate(p.created_at))));
+    if (p.content) card.appendChild(h('p', { class: 'text-sm whitespace-pre-wrap break-words', text: p.content }));
+    (p.images || []).forEach(function (u) { if (Core.safeUrl(u)) card.appendChild(h('img', { class: 'post-media', src: u, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' })); });
+    (p.videos || []).forEach(function (u) { if (Core.safeUrl(u)) card.appendChild(h('video', { class: 'post-media', src: u, controls: true, preload: 'metadata' })); });
+    (p.links || []).forEach(function (u) { if (Core.safeUrl(u)) card.appendChild(h('a', { class: 'block text-xs text-cyan-300 underline break-all', href: u, target: '_blank', rel: 'noopener noreferrer' }, icon('fa-link'), ' ' + u)); });
+    var liked = (p.likes || []).indexOf(me.id) !== -1;
+    var row = h('div', { class: 'flex items-center gap-2 text-xs' },
+      h('button', { type: 'button', class: 'btn btn-ghost', 'aria-pressed': String(liked), onclick: function () { mutatePost(p.id, function (x) { var i = x.likes.indexOf(me.id); if (i === -1) x.likes.push(me.id); else x.likes.splice(i, 1); }); } },
+        h('i', { class: (liked ? 'fa-solid text-pink-400' : 'fa-regular') + ' fa-heart' }), ' ' + (p.likes || []).length),
+      h('button', { type: 'button', class: 'btn btn-ghost', onclick: function () { ui.openComments[p.id] = !ui.openComments[p.id]; render(); } }, icon('fa-comment'), ' ' + (p.comments || []).length));
+    if (admin) {
+      row.appendChild(h('span', { class: 'flex-1' }));
+      row.appendChild(h('button', { type: 'button', class: 'btn btn-ghost', onclick: function () { mutatePost(p.id, function (x) { x.published = !x.published; }); } }, p.published ? 'Ukryj' : 'Publikuj'));
+      row.appendChild(h('button', { type: 'button', class: 'btn btn-danger', 'aria-label': 'Usuń post', onclick: function () { if (confirm('Usunąć post?')) { Data.savePosts(Data.getPosts().filter(function (x) { return x.id !== p.id; })); render(); } } }, icon('fa-trash')));
+    }
+    card.appendChild(row);
+    if (ui.openComments[p.id]) card.appendChild(commentsBlock(p, admin));
+    return card;
+  }
+
+  function mutatePost(id, fn) {
+    var all = Data.getPosts();
+    all.forEach(function (x) { if (x.id === id) { x.likes = x.likes || []; x.comments = x.comments || []; fn(x); x.likes_count = x.likes.length; x.comments_count = x.comments.length; } });
+    Data.savePosts(all); render();
+  }
+
+  function commentsBlock(p, admin) {
+    var box = h('div', { class: 'space-y-2 border-t border-slate-800 pt-2' });
+    (p.comments || []).forEach(function (c) {
+      box.appendChild(h('div', { class: 'text-xs flex gap-2 items-start' },
+        h('div', { class: 'flex-1' }, h('b', { class: 'text-slate-200' }, c.username + ': '), h('span', { class: 'break-words', text: c.content })),
+        admin ? h('button', { type: 'button', class: 'text-rose-400', 'aria-label': 'Usuń komentarz', onclick: function () { mutatePost(p.id, function (x) { x.comments = x.comments.filter(function (y) { return y.id !== c.id; }); }); } }, icon('fa-xmark')) : null));
+    });
+    var input = h('input', { class: 'field', maxlength: '300', placeholder: 'Dodaj komentarz…' });
+    function send() {
+      var t = Core.cleanText(input.value, 300);
+      if (!t) return;
+      mutatePost(p.id, function (x) { x.comments.push({ id: Data.newId(), user_id: me.id, username: me.username, content: t, created_at: new Date().toISOString() }); });
+    }
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') send(); });
+    box.appendChild(h('div', { class: 'flex gap-2' }, input, h('button', { type: 'button', class: 'btn', onclick: send }, 'Wyślij')));
+    return box;
+  }
+
+  /* ---------- CHAT ---------- */
+  function viewChat() {
+    var list = h('div', { class: 'chat-list', role: 'log', 'aria-live': 'polite' });
+    var online = h('span', { class: 'text-xs muted' });
+    var input = h('input', { class: 'field', maxlength: String(CFG.CHAT_MAX_LENGTH), placeholder: 'Napisz wiadomość…', value: ui.chatDraft });
+    input.addEventListener('input', function () { ui.chatDraft = input.value; });
+    function paint(msgs) {
+      var atBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 60;
+      list.replaceChildren.apply(list, msgs.map(function (m) {
+        var mine = m.user_id === me.id;
+        return h('div', { class: 'flex gap-2 items-end' + (mine ? ' flex-row-reverse' : '') },
+          avatar({ username: m.username, avatar_url: m.avatar_url }),
+          h('div', { class: 'bubble' + (mine ? ' mine' : '') },
+            h('div', { class: 'text-[10px] muted mb-0.5' }, m.username + ' · ' + new Date(m.created_at).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })),
+            h('div', { text: m.content })));
+      }));
+      online.replaceChildren(h('span', { class: 'dot-online' }), ' ' + Data.onlineUsers(me) + ' online');
+      if (atBottom) list.scrollTop = list.scrollHeight;
+    }
+    function refresh() { Data.getMessages().then(function (m) { if (ui.tab === 'chat' && list.isConnected) paint(m); }); }
+    function send() {
+      var t = Core.cleanText(input.value, CFG.CHAT_MAX_LENGTH);
+      if (!t) return;
+      if (Date.now() - lastSend < 1500) { toast('Zwolnij trochę.'); return; }
+      lastSend = Date.now();
+      input.value = ''; ui.chatDraft = '';
+      Data.sendMessage(me, t).then(refresh);
+      me.last_active = new Date().toISOString(); save();
+    }
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') send(); });
+    setTimeout(function () { refresh(); list.scrollTop = list.scrollHeight; }, 0);
+    chatTimer = setInterval(refresh, CFG.CHAT_POLL_MS);
+    return h('div', { class: 'panel space-y-3' },
+      h('div', { class: 'flex items-center justify-between' }, h('h2', { class: 'font-bold text-sm' }, icon('fa-comments'), ' Chat społeczności'), online),
+      list,
+      h('div', { class: 'flex gap-2' }, input, h('button', { type: 'button', class: 'btn', 'aria-label': 'Wyślij', onclick: send }, icon('fa-paper-plane'))));
+  }
+
+  /* ---------- BONUSES ---------- */
+  function viewBonus() {
+    var sub = { overview: bonusOverview, events: bonusEvents, tasks: bonusTasks, referral: bonusReferral, badges: bonusBadges }[ui.bonus]();
+    return [subtabs(BONUS_SUBS, ui.bonus, function (s) { ui.bonus = s; render(); }), sub];
+  }
+
+  function stat(label, value) { return h('div', { class: 'panel text-center !p-3' }, h('div', { class: 'text-lg font-black text-white' }, String(value)), h('div', { class: 'text-[10px] muted' }, label)); }
+
+  function claimRow(title, desc, msLeft, onClaim) {
+    return h('div', { class: 'panel flex items-center gap-3' },
+      h('div', { class: 'flex-1' }, h('div', { class: 'text-sm font-bold' }, title), h('div', { class: 'text-xs muted' }, desc)),
+      msLeft > 0 ? countdown(Date.now() + msLeft, function () { if (ui.tab === 'bonus') render(); }) : h('button', { type: 'button', class: 'btn', onclick: onClaim }, 'Odbierz'));
+  }
+
+  function bonusOverview() {
+    var p = Core.progress(me.xp_total), ctx = rankCtx();
+    return [
+      h('div', { class: 'panel space-y-3' },
+        h('div', { class: 'flex items-center justify-between' }, h('span', { class: 'font-bold text-sm' }, levelBadge(me)), h('span', { class: 'text-xs muted' }, '#' + ctx.rank + ' w rankingu')),
+        h('div', { class: 'bar', role: 'progressbar', 'aria-valuenow': String(p.percent), 'aria-valuemin': '0', 'aria-valuemax': '100' }, h('div', { style: 'width:' + p.percent + '%' })),
+        h('div', { class: 'text-xs muted' }, p.next ? fmt(me.xp_total) + ' / ' + fmt(p.next.xp) + ' XP — do ' + p.next.name + ': ' + fmt(p.xpToNext) + ' XP' : 'Maksymalny poziom osiągnięty!')),
+      h('div', { class: 'grid grid-cols-3 gap-2' }, stat('XP', fmt(me.xp_total)), stat('Gwiazdki ★', fmt(me.stars)), stat('Zadania', me.tasks_completed)),
+      claimRow('Bonus XP co ' + CFG.XP_TIMER_HOURS + 'h', '+' + CFG.XP_TIMER_REWARD + ' XP', Core.msUntil(me.last_xp_claim, CFG.XP_TIMER_HOURS), function () {
+        var r = Core.claimTimer(me); if (r.ok) { grantXp(0); save(); toast('+' + r.xp + ' XP'); render(); }
+      }),
+      claimRow('Codzienny bonus', '+' + CFG.DAILY_REWARD_XP + ' XP', Core.msUntil(me.last_daily, 24), function () {
+        var r = Core.claimDaily(me); if (r.ok) { grantXp(0); save(); toast('+' + r.xp + ' XP'); render(); }
+      }),
+      h('div', { class: 'panel space-y-2' }, h('h3', { class: 'font-bold text-sm' }, 'Poziomy'),
+        CFG.LEVELS.map(function (l) {
+          return h('div', { class: 'flex items-center justify-between text-xs ' + (me.level >= l.level ? 'text-white' : 'muted') },
+            h('span', {}, icon(l.icon, 'w-5 text-amber-300'), ' ' + l.level + '. ' + l.name), h('span', {}, fmt(l.xp) + ' XP'));
+        }))
+    ];
+  }
+
+  function bonusEvents() {
+    return CFG.EVENTS.map(function (e) {
+      return h('div', { class: 'panel space-y-2' },
+        h('div', { class: 'flex items-center justify-between' }, h('h3', { class: 'font-bold text-sm' }, e.title),
+          h('span', { class: 'text-[10px] font-bold px-2 py-0.5 rounded-full ' + (e.live ? 'bg-rose-600/30 text-rose-300' : 'bg-slate-700 text-slate-300') }, e.live ? 'LIVE' : 'WKRÓTCE')),
+        h('p', { class: 'text-xs muted' }, e.desc), h('div', { class: 'text-xs text-amber-300 font-bold' }, 'Nagroda: ' + e.reward));
+    });
+  }
+
+  function bonusTasks() {
+    var ctx = rankCtx();
+    return [h('p', { class: 'text-xs muted' }, 'Nagrody za zadania to gwiazdki ★. Ukończone zadania: ' + me.tasks_completed)].concat(CFG.TASKS.map(function (t) {
+      var st = Core.taskStatus(me, t, claimed, ctx);
+      return h('div', { class: 'panel space-y-2' },
+        h('div', { class: 'flex items-center justify-between' }, h('span', { class: 'text-sm font-bold' }, t.title), h('span', { class: 'text-xs text-amber-300 font-bold' }, '+' + t.rewardStars + ' ★')),
+        h('div', { class: 'bar' }, h('div', { style: 'width:' + Math.round(st.value / st.goal * 100) + '%' })),
+        h('div', { class: 'flex items-center justify-between' }, h('span', { class: 'text-xs muted' }, st.value + ' / ' + st.goal),
+          h('button', { type: 'button', class: 'btn', disabled: !st.completable, onclick: function () {
+            var r = Core.claimTask(me, t, claimed, ctx);
+            if (r.ok) { grantXp(0); save(); toast('+' + t.rewardStars + ' ★'); render(); }
+          } }, st.done ? 'Odebrano' : 'Odbierz')));
+    }));
+  }
+
+  function bonusReferral() {
+    var link = Core.referralLink(me.id, SEC.BOT_USERNAME);
+    var earned = CFG.REFERRAL_MILESTONES.filter(function (m) { return me.referral_claimed.indexOf(m.count) !== -1; }).reduce(function (s, m) { return s + m.rewardXp; }, 0);
+    var nodes = [
+      h('div', { class: 'panel space-y-2' }, h('h3', { class: 'font-bold text-sm' }, 'Twój link polecający'),
+        h('input', { class: 'field', readonly: true, value: link, 'aria-label': 'Link polecający' }),
+        h('div', { class: 'flex gap-2' },
+          h('button', { type: 'button', class: 'btn flex-1', onclick: function () {
+            (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject()).then(function () { toast('Skopiowano link.'); }, function () { toast('Skopiuj link ręcznie.'); });
+          } }, icon('fa-copy'), ' Kopiuj'),
+          h('button', { type: 'button', class: 'btn btn-ghost flex-1', onclick: function () {
+            var share = 'https://t.me/share/url?url=' + encodeURIComponent(link) + '&text=' + encodeURIComponent('Dołącz do TechnixPro!');
+            if (tg && tg.openTelegramLink) tg.openTelegramLink(share); else window.open(share, '_blank', 'noopener');
+          } }, icon('fa-share'), ' Udostępnij')),
+        h('div', { class: 'text-xs muted' }, 'Kod: ' + me.referral_code)),
+      h('div', { class: 'grid grid-cols-2 gap-2' }, stat('Zaproszeni', me.referral_count), stat('Zarobione XP', earned)),
+      h('div', { class: 'panel space-y-2' }, h('h3', { class: 'font-bold text-sm' }, 'Nagrody'),
+        CFG.REFERRAL_MILESTONES.map(function (m) {
+          var done = me.referral_claimed.indexOf(m.count) !== -1;
+          return h('div', { class: 'flex justify-between text-xs ' + (done ? 'text-emerald-400' : '') },
+            h('span', {}, icon(done ? 'fa-circle-check' : 'fa-circle', 'mr-1'), 'Zaproś ' + m.count + ' osób (' + Math.min(me.referral_count, m.count) + '/' + m.count + ')'), h('b', {}, '+' + fmt(m.rewardXp) + ' XP'));
+        }))
+    ];
+    if (!identity.telegram) {
+      nodes.push(h('button', { type: 'button', class: 'btn btn-ghost w-full', onclick: function () { me.referral_count += 1; grantXp(0); save(); render(); } }, 'Symuluj polecenie (tryb demo)'));
+    }
+    return nodes;
+  }
+
+  function bonusBadges() {
+    var list = Core.achievements(me, rankCtx());
+    return [h('p', { class: 'text-xs muted' }, list.filter(function (a) { return a.unlocked; }).length + ' / ' + list.length + ' odznak'),
+      h('div', { class: 'grid grid-cols-3 gap-2' }, list.map(function (a) {
+        return h('div', { class: 'badge-item' + (a.unlocked ? '' : ' locked') }, icon(a.icon, 'text-xl text-amber-300 block mb-1'), a.title);
+      }))];
+  }
+
+  /* ---------- PROFILE ---------- */
+  function viewProfile() {
+    var sub = { info: profileInfo, wallet: profileWallet, settings: profileSettings }[ui.profile]();
+    return [subtabs(PROFILE_SUBS, ui.profile, function (s) { ui.profile = s; render(); }), sub];
+  }
+
+  function row(label, value) { return h('div', { class: 'flex justify-between text-xs py-1.5 border-b border-slate-800/70' }, h('span', { class: 'muted' }, label), h('span', { class: 'font-semibold text-right break-all' }, value)); }
+
+  function profileInfo() {
+    var file = h('input', { type: 'file', accept: 'image/png,image/jpeg,image/webp', class: 'hidden', 'aria-label': 'Wybierz avatar', onchange: function () { uploadAvatar(file.files[0]); } });
+    return [h('div', { class: 'panel flex flex-col items-center gap-3' },
+      avatar(me, 84), file,
+      h('button', { type: 'button', class: 'btn btn-ghost', onclick: function () { file.click(); } }, icon('fa-camera'), ' Zmień avatar'),
+      h('div', { class: 'text-lg font-black' }, me.username), h('div', { class: 'text-sm text-violet-300 font-bold' }, levelBadge(me))),
+      h('div', { class: 'panel' },
+        row('Telegram ID', String(me.id) + (identity.telegram ? '' : ' (tryb lokalny)')), row('Username', '@' + me.username),
+        row('Dołączono', fmtDate(me.created_at)), row('Łączne XP', fmt(me.xp_total)), row('Gwiazdki', fmt(me.stars) + ' ★'))];
+  }
+
+  function uploadAvatar(f) {
+    if (!f) return;
+    if (!/^image\/(png|jpeg|webp)$/.test(f.type)) { toast('Dozwolone: PNG, JPEG, WebP.'); return; }
+    if (f.size > CFG.AVATAR_MAX_BYTES) { toast('Plik za duży (max 2 MB).'); return; }
+    var url = URL.createObjectURL(f), img = new Image();
+    img.onload = function () {
+      var s = 128, c = document.createElement('canvas'); c.width = c.height = s;
+      var m = Math.min(img.width, img.height);
+      c.getContext('2d').drawImage(img, (img.width - m) / 2, (img.height - m) / 2, m, m, 0, 0, s, s);
+      URL.revokeObjectURL(url);
+      me.avatar_url = c.toDataURL('image/jpeg', 0.85); me.avatar_custom = true; save(); toast('Avatar zaktualizowany.'); render();
     };
-    let communityConfig = null;
-    let communityPreview = false;
+    img.onerror = function () { URL.revokeObjectURL(url); toast('Nie udało się wczytać obrazu.'); };
+    img.src = url;
+  }
 
-    const state = {
-      stars: 1280,
-      level: 1,
-      energy: 1000,
-      energyMax: 1000,
-      tp: 240,
-      taskHistory: [
-        { label: 'Pierwsze logowanie', value: 25, time: 'dziś' }
-      ],
-      posts: [
-        { author: 'System', text: 'TechnixPro Core Engine online. Wersja 2.7 Edge aktywna.', media: '', time: '2 min temu' },
-        { author: 'System', text: 'Nowa seria zadań społecznościowych została dodana do sekcji gwiazd.', media: '', time: '12 min temu' }
-      ],
-8      channelPosts: [
-        { author: 'TechnixPro', text: 'Nowa wersja systemu nagród trafiła do mini app. Włącz tryb aktywności i zbieraj gwiazdki.', media: '', time: '8 min temu' },
-        { author: 'Core Team', text: 'Mining Engine osiągnął 64% wydajności. Kolejny etap odblokowuje automatyczne pakiety TP.', media: '', time: '23 min temu' }
-      ],
-      tasks: [
-        { title: 'Aktywność w kanale', reward: 25, label: 'Kanał' },
-        { title: 'Wspólnota: post do grupy', reward: 40, label: 'Grupa' },
-        { title: 'Mining boost', reward: 60, label: 'TP' },
-        { title: 'Referral invite', reward: 100, label: 'Referral' }
-      ],
-      liveEvent: {
-        title: 'Cyber Week — Community Sprint',
-        desc: 'Wykonuj zadania społecznościowe, zbieraj gwiazdki i odblokuj limitowaną odznakę.',
-        reward: 50
-      },
-      owned: {},
-      purchases: []
-      rigParts: {
-        mouse: false,
-        keyboard: false,
-        monitor: false,
-        case: false,
-        ram: false,
-        gpu: false,
-        fan: false
-      },
-      rigCatalog: [
-        { key: 'mouse', name: 'Mysz', cost: 40 },
-        { key: 'keyboard', name: 'Klawiatura', cost: 60 },
-        { key: 'monitor', name: 'Monitor', cost: 180 },
-        { key: 'case', name: 'Obudowa', cost: 100 },
-        { key: 'ram', name: 'RAM', cost: 80 },
-        { key: 'gpu', name: 'GPU', cost: 270 },
-        { key: 'fan', name: 'Chłodzenie', cost: 90 }
-        { key: 'mouse', name: 'Mysz', icon: 'fa-computer-mouse', cost: 40 },
-        { key: 'keyboard', name: 'Klawiatura', icon: 'fa-keyboard', cost: 60 },
-        { key: 'monitor', name: 'Monitor', icon: 'fa-display', cost: 180 },
-        { key: 'case', name: 'Obudowa', icon: 'fa-cube', cost: 100 },
-        { key: 'ram', name: 'RAM', icon: 'fa-memory', cost: 80 },
-        { key: 'gpu', name: 'GPU', icon: 'fa-microchip', cost: 270 },
-        { key: 'fan', name: 'Chłodzenie', icon: 'fa-fan', cost: 120 }
-      ]
-      channelPosts: [],
-      tasks: [],
-      liveEvent: null,
-      owned: {},
-      purchases: []
-    };
-
-    function formatK(value) {
-      return new Intl.NumberFormat('pl-PL', { maximumFractionDigits: 0 }).format(value);
-    }
-
-    function parseTelegramUser() {
-      const raw = tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user : defaultUser;
-      return {
-        ...defaultUser,
-        ...raw
-      };
-    }
-
-    function computeLevel(stars) {
-      if (stars < 1500) return 1;
-      if (stars < 5000) return 2;
-      if (stars < 12000) return 3;
-      if (stars < 25000) return 4;
-      return 5;
-    }
-
-    function buildLevelLabel(level) {
-      return `LEVEL ${level}`;
-    }
-
-    function getNextLevelTarget(level) {
-      const targets = [1500, 5000, 12000, 25000, Number.MAX_SAFE_INTEGER];
-      return targets[level - 1] || 25000;
-    }
-
-    function updateStarsDisplay() {
-      const starsTotal = document.getElementById('stars-total');
-      const progress = document.getElementById('stars-progress-bar');
-      const progressText = document.getElementById('stars-progress-text');
-      const profileStars = document.getElementById('profile-stars');
-      const rankLabel = document.getElementById('rank-stars-display');
-      const levelBadge = document.getElementById('user-level-badge');
-      const profileLevel = document.getElementById('profile-level');
-      const adminStatStars = document.getElementById('admin-total-stars-stat');
-
-      state.level = computeLevel(state.stars);
-      const nextTarget = getNextLevelTarget(state.level);
-      const currentLevelBase = state.level === 1 ? 0 : [0, 1500, 5000, 12000, 25000][state.level - 1];
-      const progressValue = Math.min((state.stars - currentLevelBase) / (nextTarget - currentLevelBase || 1), 1);
-
-      if (starsTotal) starsTotal.textContent = formatK(state.stars);
-      if (progressText) progressText.textContent = `${formatK(state.stars)} / ${formatK(nextTarget)} ★`;
-      if (progress) progress.style.width = `${(progressValue * 100).toFixed(0)}%`;
-      if (profileStars) profileStars.textContent = `${formatK(state.stars)} ★`;
-      if (rankLabel) rankLabel.textContent = `${formatK(state.stars)} ★`;
-      if (levelBadge) levelBadge.textContent = buildLevelLabel(state.level);
-      if (profileLevel) profileLevel.textContent = `Level ${state.level}`;
-      if (adminStatStars) adminStatStars.textContent = `${formatK(state.stars)} ★`;
-    }
-
-    function renderTaskList() {
-      const taskList = document.getElementById('task-list');
-      if (!taskList) return;
-      taskList.replaceChildren();
-      state.tasks.filter(task => task.active !== false).sort((a, b) => Number(a.order || 0) - Number(b.order || 0)).forEach(task => {
-        const button = document.createElement('button');
-        button.className = 'task-action w-full text-left panel px-3 py-3 rounded-xl flex items-center justify-between gap-3';
-        button.dataset.task = String(task.label || 'zadanie').toLowerCase();
-        button.dataset.reward = String(task.reward);
-        button.dataset.label = task.title;
-        const details = document.createElement('div');
-        const title = document.createElement('div');
-        title.className = 'text-xs font-semibold text-white';
-        title.textContent = task.title;
-        const reward = document.createElement('div');
-        reward.className = 'text-[10px] muted';
-        reward.textContent = `+${task.reward} ★`;
-        details.append(title, reward);
-        const action = document.createElement('span');
-        action.className = 'text-[10px] text-violet-300 font-bold';
-        action.textContent = 'Złap';
-        button.append(details, action);
-        button.addEventListener('click', () => addStars(Number(task.reward), task.title));
-        taskList.append(button);
-      });
-    }
-
-    function renderRewardLog() {
-      const rewardLog = document.getElementById('reward-log');
-      if (!rewardLog) return;
-      rewardLog.replaceChildren();
-      state.taskHistory.slice(0, 5).forEach(item => {
-        const row = document.createElement('div');
-        row.className = 'flex items-center justify-between text-xs rounded-xl bg-slate-900/60 border border-slate-800 px-3 py-2';
-        const label = document.createElement('span');
-        label.className = 'text-slate-300';
-        label.textContent = item.label;
-        const reward = document.createElement('span');
-        reward.className = 'font-bold text-emerald-400';
-        reward.textContent = `+${item.value} ★`;
-        row.append(label, reward);
-        rewardLog.append(row);
-      });
-    }
-
-    function addStars(amount, label) {
-      state.stars += amount;
-      state.taskHistory.unshift({ label, value: amount, time: 'teraz' });
-      updateStarsDisplay();
-      renderRewardLog();
-      showToast(`Dodano ${amount} ★ do profilu (${label})`);
-    }
-
-    function showToast(msg) {
-      const toast = document.getElementById('toast');
-      if (!toast) return;
-      toast.textContent = msg;
-      toast.classList.add('show');
-      if (window.FX) window.FX.toastIn(toast);
-      clearTimeout(window.toastTimer);
-      window.toastTimer = setTimeout(() => toast.classList.remove('show'), 1700);
-    }
-
-    function show(screenName, title = 'TechnixPro') {
-      const screens = document.querySelectorAll('.screen');
-      screens.forEach(screen => screen.classList.add('hidden'));
-      const active = document.getElementById(`screen-${screenName}`);
-      if (active) active.classList.remove('hidden');
-
-      const titleNode = document.getElementById('header-title');
-      if (titleNode) titleNode.textContent = title;
-
-      const homeSubtabs = document.getElementById('home-subtabs');
-      const giftSubtabs = document.getElementById('gift-subtabs');
-
-      if (homeSubtabs) homeSubtabs.classList.toggle('hidden', screenName !== 'home');
-      if (giftSubtabs) giftSubtabs.classList.toggle('hidden', screenName !== 'gift');
-
-      document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.screen === screenName));
-    }
-
-    function renderHomeSubtabs() {
-      document.querySelectorAll('[data-home-tab]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const key = btn.dataset.homeTab;
-          document.getElementById('home-channel').classList.toggle('hidden', key !== 'channel');
-          document.getElementById('home-group').classList.toggle('hidden', key !== 'group');
-          document.getElementById('home-info').classList.toggle('hidden', key !== 'info');
-
-          document.querySelectorAll('[data-home-tab]').forEach(tab => {
-            const active = tab === btn;
-            tab.classList.toggle('text-[#b9a4ff]', active);
-            tab.classList.toggle('muted', !active);
-            tab.classList.toggle('border-violet-500', active);
-            tab.classList.toggle('border-transparent', !active);
-          });
-        });
-      });
-    }
-
-    function initChatViewport() {
-      const input = document.getElementById('post-input');
-      const chat = document.getElementById('home-group');
-      if (!input || !chat) return;
-
-      let baselineHeight = window.innerHeight;
-      let blurTimer;
-
-      function updateViewport() {
-        const isFocused = document.activeElement === input;
-        if (!isFocused) {
-          baselineHeight = Math.max(baselineHeight, window.innerHeight);
-          document.body.classList.remove('chat-keyboard-open');
-          document.documentElement.style.setProperty('--chat-keyboard-inset', '0px');
-          return;
-        }
-
-        const viewport = window.visualViewport;
-        const visibleHeight = viewport ? viewport.height + viewport.offsetTop : window.innerHeight;
-        const layoutWasResized = baselineHeight - window.innerHeight > 120;
-        const keyboardOpen = layoutWasResized || baselineHeight - visibleHeight > 120;
-        const wasOpen = document.body.classList.contains('chat-keyboard-open');
-        const keyboardInset = layoutWasResized ? 0 : Math.max(0, baselineHeight - visibleHeight);
-
-        document.body.classList.toggle('chat-keyboard-open', keyboardOpen);
-        document.documentElement.style.setProperty('--chat-keyboard-inset', `${keyboardInset}px`);
-        if (keyboardOpen && !wasOpen) {
-          requestAnimationFrame(() => {
-            const feed = document.getElementById('posts-feed');
-            if (feed) feed.scrollTop = feed.scrollHeight;
-          });
-        }
+  function profileWallet() {
+    var amount = h('input', { class: 'field', type: 'number', min: '0', step: 'any', inputmode: 'decimal', placeholder: 'Kwota (TON)' });
+    var tx = Data.transactions(me.id);
+    function op(type) {
+      var v = Core.validateAmount(amount.value, type === 'withdraw' ? me.wallet_balance : null);
+      if (!v.ok) { toast(v.error); return; }
+      if (type === 'withdraw') {
+        if (!me.ton_keeper_connected) { toast('Najpierw połącz TON Keeper.'); return; }
+        me.wallet_balance = Math.round((me.wallet_balance - v.value) * 1e9) / 1e9;
       }
-
-      input.addEventListener('focus', () => {
-        clearTimeout(blurTimer);
-        baselineHeight = Math.max(baselineHeight, window.innerHeight);
-        updateViewport();
-      });
-      input.addEventListener('blur', () => {
-        blurTimer = setTimeout(updateViewport, 100);
-      });
-      input.addEventListener('input', () => {
-        input.style.height = 'auto';
-        input.style.height = `${Math.min(input.scrollHeight, 112)}px`;
-      });
-      input.addEventListener('keydown', event => {
-        if (event.key === 'Enter' && !event.shiftKey) {
-          event.preventDefault();
-          createNewPost();
-        }
-      });
-      window.addEventListener('resize', updateViewport);
-      if (window.visualViewport) {
-        window.visualViewport.addEventListener('resize', updateViewport);
-        window.visualViewport.addEventListener('scroll', updateViewport);
-      }
+      Data.addTransaction(me.id, { type: type, amount: v.value, status: 'pending' });
+      save(); toast('Zlecenie zapisane (oczekuje na potwierdzenie).'); render();
     }
+    return [
+      h('div', { class: 'panel text-center space-y-1' }, h('div', { class: 'text-xs muted' }, 'Saldo'), h('div', { class: 'text-3xl font-black text-white' }, fmt(me.wallet_balance) + ' TON')),
+      h('div', { class: 'panel space-y-2' },
+        h('div', { class: 'flex items-center justify-between' }, h('span', { class: 'text-sm font-bold' }, icon('fa-wallet'), ' TON Keeper'), h('span', { class: 'text-xs ' + (me.ton_keeper_connected ? 'text-emerald-400' : 'muted') }, me.ton_keeper_connected ? 'Połączono' : 'Niepołączono')),
+        h('button', { type: 'button', class: 'btn w-full', disabled: !CFG.FEATURES.tonKeeper, onclick: function () {
+          if (me.ton_keeper_connected) { me.ton_keeper_connected = false; save(); render(); return; }
+          if (tg && tg.openLink) tg.openLink('https://app.tonkeeper.com/'); else window.open('https://app.tonkeeper.com/', '_blank', 'noopener');
+          me.ton_keeper_connected = true; save(); toast('Połączono (demo — brak weryfikacji TON Connect).'); render();
+        } }, me.ton_keeper_connected ? 'Rozłącz' : 'Połącz TON Keeper')),
+      h('div', { class: 'panel space-y-2' }, amount, h('div', { class: 'flex gap-2' },
+        h('button', { type: 'button', class: 'btn flex-1', onclick: function () { op('deposit'); } }, 'Wpłać'),
+        h('button', { type: 'button', class: 'btn btn-ghost flex-1', onclick: function () { op('withdraw'); } }, 'Wypłać'))),
+      h('div', { class: 'panel space-y-1' }, h('h3', { class: 'font-bold text-sm mb-1' }, 'Historia transakcji'),
+        tx.length ? tx.map(function (t) { return row((t.type === 'deposit' ? 'Wpłata' : 'Wypłata') + ' · ' + fmtDate(t.created_at), fmt(t.amount) + ' TON (' + t.status + ')'); }) : h('div', { class: 'text-xs muted' }, 'Brak transakcji.'))
+    ];
+  }
 
-    function renderRewardTabs() {
-      document.querySelectorAll('[data-reward-tab]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const key = btn.dataset.rewardTab;
-          if (btn.style.display === 'none') return;
-          document.querySelectorAll('.reward-view').forEach(view => view.classList.add('hidden'));
-          const target = document.getElementById(`reward-${key}`);
-          if (target) target.classList.remove('hidden');
+  function toggle(label, get, set) {
+    var cb = h('input', { type: 'checkbox', class: 'w-4 h-4 accent-violet-500', onchange: function () { set(cb.checked); save(); toast('Zapisano.'); } });
+    cb.checked = !!get();
+    return h('label', { class: 'flex items-center justify-between text-sm py-2' }, label, cb);
+  }
 
-          document.querySelectorAll('[data-reward-tab]').forEach(tab => {
-            const active = tab === btn;
-            tab.classList.toggle('active-sub', active);
-            tab.classList.toggle('muted', !active);
-            tab.classList.toggle('border-violet-500', active);
-            tab.classList.toggle('border-transparent', !active);
-            tab.classList.toggle('text-white', active);
-          });
-        });
-      });
+  function profileSettings() {
+    var s = me.settings, body;
+    if (ui.settings === 'account') {
+      body = h('div', {}, row('Username', '@' + me.username), row('Telegram ID', String(me.id)), row('Kod polecający', me.referral_code),
+        h('button', { type: 'button', class: 'btn btn-danger w-full mt-3', onclick: function () {
+          if (!confirm('Zresetować lokalne dane (XP, zadania, portfel)?')) return;
+          Object.keys(localStorage).filter(function (k) { return k.indexOf(CFG.STORAGE_PREFIX + ':') === 0 && /:(user|claimed|tx):/.test(k); }).forEach(function (k) { localStorage.removeItem(k); });
+          location.reload();
+        } }, 'Resetuj dane lokalne'));
+    } else if (ui.settings === 'notifications') {
+      body = h('div', {}, toggle('Nowe posty', function () { return s.notifications.posts; }, function (v) { s.notifications.posts = v; }),
+        toggle('Wiadomości czatu', function () { return s.notifications.chat; }, function (v) { s.notifications.chat = v; }),
+        toggle('Nagrody i zadania', function () { return s.notifications.rewards; }, function (v) { s.notifications.rewards = v; }));
+    } else if (ui.settings === 'privacy') {
+      body = h('div', {}, toggle('Pokazuj status online', function () { return s.privacy.show_online; }, function (v) { s.privacy.show_online = v; }),
+        toggle('Pokazuj mnie w rankingu', function () { return s.privacy.show_in_ranking; }, function (v) { s.privacy.show_in_ranking = v; }));
+    } else {
+      var sel = h('select', { class: 'field', 'aria-label': 'Język', onchange: function () { s.language = sel.value; save(); render(); } },
+        h('option', { value: 'pl' }, 'Polski'), h('option', { value: 'en' }, 'English'));
+      sel.value = s.language;
+      body = h('div', {}, sel);
     }
+    return [subtabs(SETTINGS_SUBS, ui.settings, function (x) { ui.settings = x; render(); }), h('div', { class: 'panel' }, body)];
+  }
 
-    function renderPostsFeed() {
-      const postsFeed = document.getElementById('posts-feed');
-      if (!postsFeed) return;
-      const roles = {
-        user: 'Użytkownik',
-        moderator: 'Moderator',
-        admin: 'Administrator',
-        system: 'System'
-      };
-      postsFeed.innerHTML = state.posts.filter(post => post.visible !== false).slice().reverse().map(post => {
-        const author = post.author || 'Użytkownik';
-        const requestedRole = post.role;
-        const role = roles[requestedRole] ? requestedRole
-          : author === 'System' ? 'system'
-          : author.toLowerCase().includes('admin') ? 'admin'
-          : author.toLowerCase().includes('moderator') ? 'moderator'
-          : 'user';
-        return `
-        <article class="panel chat-message space-y-2" data-message-role="${role}">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <div class="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-cyan-400 flex items-center justify-center text-[10px] font-black text-slate-950">${author.slice(0, 1).toUpperCase()}</div>
-              <div>
-                <div class="text-[10px] font-semibold text-white">${author}</div>
-                <div class="text-[9px] muted">${post.time}</div>
-              </div>
-            </div>
-            <span class="text-[9px] text-cyan-300" data-role="${role}">${roles[role]}</span>
-          </div>
-          <p class="text-xs text-slate-200 leading-relaxed">${post.text}</p>
-          ${post.media ? `<img src="${post.media}" alt="media" class="w-full rounded-xl border border-slate-800 object-cover max-h-48" />` : ''}
-          <div class="flex items-center gap-3 text-[10px] text-slate-400">
-            <span><i class="fa-regular fa-heart"></i> 42</span>
-            <span><i class="fa-regular fa-comment"></i> 9</span>
-            <span><i class="fa-regular fa-share-from-square"></i> 3</span>
-          </div>
-          <div class="chat-message-actions" data-message-actions aria-label="Przyszłe akcje moderacyjne"></div>
-        </article>
-      `;
-      }).join('');
-      postsFeed.scrollTop = postsFeed.scrollHeight;
-    }
-
-    function renderChannelFeed() {
-      const feed = document.getElementById('channel-feed');
-      if (!feed) return;
-      feed.replaceChildren();
-      state.channelPosts.filter(post => post.visible !== false).forEach(post => feed.append(createPostCard(post, true)));
-    }
-
-    function safeWebUrl(value) {
-      try {
-        const url = new URL(value, window.location.href);
-        return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
-      } catch (error) {
-        return '';
-      }
-    }
-
-    function createPostCard(post, channel) {
-      const article = document.createElement(channel ? 'article' : 'div');
-      article.className = `panel ${channel ? 'p-3.5' : 'p-3 space-y-2'}`;
-      const heading = document.createElement('div');
-      heading.className = 'flex items-center justify-between gap-3 mb-2';
-      const identity = document.createElement('div');
-      identity.className = 'flex items-center gap-2';
-      const avatar = document.createElement('div');
-      avatar.className = 'w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-cyan-400 flex items-center justify-center text-[10px] font-bold text-slate-950';
-      avatar.textContent = (post.author || 'T').slice(0, 1).toUpperCase();
-      const identityText = document.createElement('div');
-      const author = document.createElement('div');
-      author.className = 'text-[10px] font-semibold text-white';
-      author.textContent = post.author || 'TechnixPro';
-      const time = document.createElement('div');
-      time.className = 'text-[9px] muted';
-      time.textContent = post.time || '';
-      identityText.append(author, time);
-      identity.append(avatar, identityText);
-      heading.append(identity);
-      if (channel) {
-        const badge = document.createElement('span');
-        badge.className = 'text-[10px] text-violet-300 bg-violet-500/10 border border-violet-500/20 rounded-full px-2 py-0.5';
-        badge.textContent = post.pinned ? 'Przypięty' : 'Official';
-        heading.append(badge);
-      }
-      const text = document.createElement('p');
-      text.className = 'text-xs text-slate-200 leading-relaxed';
-      text.textContent = post.text || '';
-      article.append(heading, text);
-      const mediaUrl = safeWebUrl(post.media || '');
-      if (mediaUrl) {
-        const image = document.createElement('img');
-        image.src = mediaUrl;
-        image.alt = 'Post';
-        image.className = 'mt-3 rounded-xl w-full object-cover max-h-44 border border-slate-800';
-        article.append(image);
-      }
-      const linkUrl = safeWebUrl(post.link || '');
-      if (channel && linkUrl) {
-        const link = document.createElement('a');
-        link.href = linkUrl;
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        link.className = 'block mt-2 text-xs text-cyan-400 underline';
-        link.textContent = post.link;
-        article.append(link);
-      }
-      return article;
-    }
-
-    function renderNotifications() {
-      const list = document.getElementById('notification-list');
-      if (!list) return;
-      list.replaceChildren();
-      const config = window.TechnixStore.getVisible(communityPreview);
-      const notifications = config.notifications.filter(item => item.sent
-        && (!item.scheduledAt || new Date(item.scheduledAt).getTime() <= Date.now())
-        && (item.audience === 'all' || item.audience === `phase-${config.activePhase}`));
-      if (!notifications.length) {
-        const empty = document.createElement('div');
-        empty.className = 'panel p-4 text-xs muted';
-        empty.textContent = 'Brak nowych powiadomień.';
-        list.append(empty);
-      }
-      notifications.forEach(item => {
-        const card = document.createElement('article');
-        card.className = 'panel p-4 text-xs space-y-2';
-        const title = document.createElement('div');
-        title.className = 'font-bold text-white';
-        title.textContent = item.title;
-        const text = document.createElement('p');
-        text.className = 'muted';
-        text.textContent = item.text;
-        card.append(title, text);
-        list.append(card);
-      });
-    }
-
-    function createNewPost() {
-      const input = document.getElementById('post-input');
-      const text = input.value.trim();
-      if (!text) { showToast('Napisz treść posta zanim opublikujesz.'); return; }
-      state.posts.unshift({
-        author: 'Ty',
-        text,
-        media: '',
-        time: 'teraz'
-      });
-      renderPostsFeed();
-      input.value = '';
-      input.style.height = '';
-      showToast('Post został dodany do grupy.');
-      addStars(12, 'Nowy post');
-    }
-
-    function initTelegramProfile() {
-      const user = parseTelegramUser();
-      const username = document.getElementById('telegram-username');
-      const profileName = document.getElementById('profile-name');
-      const profileId = document.getElementById('profile-id');
-      const avatarFallback = document.getElementById('profile-avatar-fallback');
-      const avatarImg = document.getElementById('profile-avatar-img');
-      const headerAvatar = document.getElementById('header-avatar');
-
-      const name = [user.first_name, user.last_name].filter(Boolean).join(' ') || 'Guest';
-      const usernameText = user.username ? `@${user.username}` : '@guest';
-
-      if (username) username.textContent = usernameText;
-      if (profileName) profileName.textContent = name;
-      if (profileId) profileId.textContent = user.id ? `TG ID: ${user.id}` : 'TG ID: brak danych';
-      if (headerAvatar) headerAvatar.textContent = name.slice(0, 2).toUpperCase();
-
-      window.AdminControlCenter.initialize(window.applyCommunityConfig, user.id);
-
-      if (user.photo_url && avatarImg && avatarFallback && headerAvatar) {
-        avatarImg.src = user.photo_url;
-        avatarImg.classList.remove('hidden');
-        avatarFallback.classList.add('hidden');
-        headerAvatar.textContent = '';
-        headerAvatar.style.backgroundImage = `url(${user.photo_url})`;
-        headerAvatar.style.backgroundSize = 'cover';
-        headerAvatar.style.backgroundPosition = 'center';
-      }
-    }
-
-    const shopUi = { loading: new Set(), errors: new Set() };
-    const PURCHASE_STATUS = { paid: 'Opłacone', pending: 'Oczekuje', refunded: 'Zwrot', failed: 'Błąd', cancelled: 'Anulowane' };
-
-    function getCatalog() {
-      return Array.isArray(window.SHOP_CATALOG) ? window.SHOP_CATALOG : [];
-    }
-
-    function ownedCount(id) {
-      return Number(state.owned[id]) || 0;
-    }
-
-    function getOwnedRigParts() {
-      const parts = {};
-      getCatalog().forEach(item => {
-        if (item.type === 'rig_part' && item.effect && item.effect.part && ownedCount(item.id) > 0) parts[item.effect.part] = true;
-      });
-      return parts;
-    }
-
-    function applyEffects() {
-      let energyBonus = 0;
-      let theme = '';
-      getCatalog().forEach(item => {
-        if (ownedCount(item.id) < 1 || !item.effect) return;
-        if (item.effect.type === 'energy_max') energyBonus += Number(item.effect.value) || 0;
-        if (item.effect.type === 'cosmetic' && item.effect.theme) theme = item.effect.theme;
-      });
-      state.energyMax = 1000 + energyBonus;
-      if (theme) document.body.dataset.coreTheme = theme; else delete document.body.dataset.coreTheme;
-    }
-
-    // Server response ({ owned, purchases }) is the only source of truth for owned goods.
-    function applyServerState(data, silent) {
-      if (!data) return;
-      const owned = {};
-      if (data.owned && typeof data.owned === 'object') {
-        Object.keys(data.owned).forEach(id => { owned[id] = Number(data.owned[id]) || 0; });
-      }
-      state.owned = owned;
-      state.purchases = Array.isArray(data.purchases) ? data.purchases : [];
-      applyEffects();
-    async function buyRigPartWithStars(itemKey, cost, button) {
-      button.disabled = true;
-      button.textContent = 'Łączenie z Telegramem…';
-      try {
-        const payment = await TechnixAPI.purchaseRigPart(itemKey, cost);
-        if (payment && payment.owned) {
-          completePurchase(itemKey, payment);
-        } else if (payment?.status === 'cancelled') {
-          showToast('Płatność została anulowana.');
-        } else if (payment?.status === 'failed') {
-          showToast('Płatność Telegram Stars nie powiodła się.');
-        } else {
-          showToast('Płatność oczekuje na potwierdzenie.');
-        }
-      } catch (error) {
-        showToast(error.message || 'Nie udało się rozpocząć płatności Telegram Stars.');
-      } finally {
-        if (button.isConnected && !state.rigParts[itemKey]) {
-          button.disabled = false;
-          button.textContent = `Kup za ${cost} ⭐`;
-        }
-      }
-    }
-
-    function ownedCount(id) {
-      return Number(state.owned[id]) || 0;
-    }
-
-    function getOwnedRigParts() {
-      const parts = {};
-      getCatalog().forEach(item => {
-        if (item.type === 'rig_part' && item.effect && item.effect.part && ownedCount(item.id) > 0) parts[item.effect.part] = true;
-      });
-      return parts;
-    }
-
-    function applyEffects() {
-      let energyBonus = 0;
-      let theme = '';
-      getCatalog().forEach(item => {
-        if (ownedCount(item.id) < 1 || !item.effect) return;
-        if (item.effect.type === 'energy_max') energyBonus += Number(item.effect.value) || 0;
-        if (item.effect.type === 'cosmetic' && item.effect.theme) theme = item.effect.theme;
-      });
-      state.energyMax = 1000 + energyBonus;
-      if (theme) document.body.dataset.coreTheme = theme; else delete document.body.dataset.coreTheme;
-    }
-
-    // Server response ({ owned, purchases }) is the only source of truth for owned goods.
-    function applyServerState(data, silent) {
-      if (!data) return;
-      const owned = {};
-      if (data.owned && typeof data.owned === 'object') {
-        Object.keys(data.owned).forEach(id => { owned[id] = Number(data.owned[id]) || 0; });
-      }
-      state.owned = owned;
-      state.purchases = Array.isArray(data.purchases) ? data.purchases : [];
-      applyEffects();
-      renderRigShop();
-      renderPurchaseHistory();
-      if (window.RigBuilder) window.RigBuilder.setOwned(getOwnedRigParts(), !!silent);
-      if (typeof window.syncCryptoUI === 'function') window.syncCryptoUI();
-    }
-
-    function makeEl(tag, className, text) {
-      const node = document.createElement(tag);
-      if (className) node.className = className;
-      if (text !== undefined) node.textContent = text;
-      return node;
-    }
-
-    function setShopButton(button, item, owned) {
-      button.textContent = '';
-      if (owned) {
-        button.className = 'shop-buy-btn bg-emerald-500/20 text-emerald-300 border border-emerald-500/20';
-        button.disabled = true;
-        button.appendChild(makeEl('span', '', 'Zakupione'));
-      } else if (shopUi.loading.has(item.id)) {
-        button.className = 'shop-buy-btn bg-slate-700 text-slate-200';
-        button.disabled = true;
-        button.appendChild(makeEl('i', 'fa-solid fa-spinner fa-spin'));
-        button.appendChild(makeEl('span', '', ' Płatność…'));
-      } else if (shopUi.errors.has(item.id)) {
-        button.className = 'shop-buy-btn bg-rose-500/20 text-rose-300 border border-rose-500/30';
-        button.disabled = false;
-        button.appendChild(makeEl('span', '', 'Błąd – spróbuj ponownie'));
-      } else {
-        button.className = 'shop-buy-btn bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-extrabold';
-        button.disabled = false;
-        button.appendChild(makeEl('span', '', `Kup za ${item.priceXtr} ⭐ Stars`));
-      }
-    }
-
-    function renderRigShop() {
-      const rigShop = document.getElementById('rig-shop');
-      if (!rigShop) return;
-      const mockBadge = document.getElementById('shop-mock-badge');
-      if (mockBadge) mockBadge.classList.toggle('hidden', !(window.Payments && window.Payments.isMock));
-      rigShop.textContent = '';
-      getCatalog().forEach(item => {
-        const owned = ownedCount(item.id) >= item.maxOwned;
-        const card = makeEl('div', 'shop-item');
-        card.dataset.product = item.id;
-
-        const icon = makeEl('div', 'shop-item-icon');
-        icon.appendChild(makeEl('i', `fa-solid ${item.icon}`));
-        card.appendChild(icon);
-
-        const info = makeEl('div');
-        info.appendChild(makeEl('div', 'text-[10px] font-semibold text-white', item.title));
-        info.appendChild(makeEl('div', 'text-[9px] muted', item.description));
-        const price = makeEl('div', 'text-[9px] text-amber-400 font-bold');
-        price.appendChild(makeEl('i', 'fa-solid fa-star'));
-        price.appendChild(makeEl('span', '', ` ${item.priceXtr} XTR`));
-        info.appendChild(price);
-        card.appendChild(info);
-
-        const button = makeEl('button');
-        button.type = 'button';
-        button.dataset.buy = item.id;
-        setShopButton(button, item, owned);
-        card.appendChild(button);
-        rigShop.appendChild(card);
-      });
-    }
-
-    function renderPurchaseHistory() {
-      const box = document.getElementById('purchase-history');
-      if (!box) return;
-      box.textContent = '';
-      if (!state.purchases.length) {
-        box.appendChild(makeEl('p', 'text-[10px] muted', 'Brak zakupów.'));
-        return;
-      }
-      state.purchases.forEach(entry => {
-        const product = getCatalog().find(item => item.id === entry.productId);
-        const date = new Date(entry.createdAt);
-        const row = makeEl('div', 'flex items-center justify-between gap-2 text-[10px] bg-slate-900/60 rounded-lg px-3 py-2');
-        const left = makeEl('div');
-        left.appendChild(makeEl('div', 'font-semibold text-white', product ? product.title : String(entry.productId)));
-        left.appendChild(makeEl('div', 'muted', isNaN(date) ? '' : date.toLocaleString('pl-PL')));
-        const right = makeEl('div', 'text-right');
-        right.appendChild(makeEl('div', 'text-amber-400 font-bold', `${Number(entry.priceXtr) || 0} XTR`));
-        right.appendChild(makeEl('div', entry.status === 'paid' ? 'text-emerald-400' : 'muted', PURCHASE_STATUS[entry.status] || String(entry.status)));
-        row.appendChild(left);
-        row.appendChild(right);
-        box.appendChild(row);
-      const paymentNote = document.getElementById('rig-payment-note');
-      if (paymentNote) paymentNote.textContent = window.CONFIG?.USE_MOCK_API
-        ? 'Tryb demonstracyjny — nie jest pobierana rzeczywista płatność.'
-        : 'Płatność przez Telegram Stars (XTR).';
-      const previewViews = {
-        monitor: '170 60 180 160',
-        keyboard: '292 214 154 36',
-        mouse: '450 210 54 36',
-        case: '394 239 142 100',
-        fan: '423 256 62 62',
-        ram: '414 250 32 68',
-        gpu: '404 294 84 36'
-      };
-      rigShop.replaceChildren();
-      state.rigCatalog.forEach(item => {
-        const owned = state.rigParts[item.key];
-        const card = document.createElement('div');
-        card.className = `shop-item${owned ? ' shop-item-owned' : ''}`;
-        card.innerHTML = '<div class="shop-item-preview" data-preview><svg viewBox=""><use></use></svg></div><div><div class="shop-item-title text-[10px] font-semibold text-white"></div><div class="shop-item-cost text-[9px] text-amber-400 font-bold"></div><div class="shop-installed hidden text-[9px] font-bold">Zamontowano</div></div><button type="button" data-rig class="px-2 py-2 rounded-lg transition active:scale-95"></button>';
-        const preview = card.querySelector('[data-preview]');
-        preview.dataset.preview = item.key;
-        preview.querySelector('svg').setAttribute('viewBox', previewViews[item.key]);
-        preview.querySelector('use').setAttribute('href', `#rig-${item.key}`);
-        card.querySelector('.shop-item-title').textContent = item.name;
-        card.querySelector('.shop-item-cost').textContent = `${item.cost} ★ Telegram Stars`;
-        card.querySelector('.shop-installed').classList.toggle('hidden', !owned);
-        const button = card.querySelector('[data-rig]');
-        button.dataset.rig = item.key;
-        button.dataset.cost = String(item.cost);
-        button.className += owned
-          ? ' bg-emerald-500/20 text-emerald-300 border border-emerald-500/20'
-          : ' bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-extrabold';
-        button.textContent = owned ? 'Zamontowano' : `Kup za ${item.cost} ⭐`;
-        button.setAttribute('aria-label', owned ? `${item.name}: zamontowano` : `Kup ${item.name} za ${item.cost} Telegram Stars`);
-        button.disabled = Boolean(owned);
-        rigShop.appendChild(card);
-      });
-    }
-
-    function renderPurchaseHistory() {
-      const box = document.getElementById('purchase-history');
-      if (!box) return;
-      box.textContent = '';
-      if (!state.purchases.length) {
-        box.appendChild(makeEl('p', 'text-[10px] muted', 'Brak zakupów.'));
-        return;
-      }
-      state.purchases.forEach(entry => {
-        const product = getCatalog().find(item => item.id === entry.productId);
-        const date = new Date(entry.createdAt);
-        const row = makeEl('div', 'flex items-center justify-between gap-2 text-[10px] bg-slate-900/60 rounded-lg px-3 py-2');
-        const left = makeEl('div');
-        left.appendChild(makeEl('div', 'font-semibold text-white', product ? product.title : String(entry.productId)));
-        left.appendChild(makeEl('div', 'muted', isNaN(date) ? '' : date.toLocaleString('pl-PL')));
-        const right = makeEl('div', 'text-right');
-        right.appendChild(makeEl('div', 'text-amber-400 font-bold', `${Number(entry.priceXtr) || 0} XTR`));
-        right.appendChild(makeEl('div', entry.status === 'paid' ? 'text-emerald-400' : 'muted', PURCHASE_STATUS[entry.status] || String(entry.status)));
-        row.appendChild(left);
-        row.appendChild(right);
-        box.appendChild(row);
-      });
-    }
-
-    async function buyProduct(id) {
-      const item = getCatalog().find(p => p.id === id);
-      const payments = window.Payments;
-      if (!item || !payments) return;
-      if (ownedCount(id) >= item.maxOwned) {
-        showToast(`${item.title} jest już zakupione.`);
-        return;
-      }
-      if (shopUi.loading.has(id)) return;
-      if (!payments.isMock && !payments.inTelegram()) {
-        showToast('Zakupy za Telegram Stars działają tylko w aplikacji Telegram.');
-        return;
-      }
-      shopUi.loading.add(id);
-      shopUi.errors.delete(id);
-      renderRigShop();
-      const result = await payments.purchase(id);
-      shopUi.loading.delete(id);
-      const mockTag = payments.isMock ? ' (MOCK)' : '';
-      if (result.status === 'paid') {
-        applyServerState(result.data);
-        if (window.FX) window.FX.haptic('notify', 'success');
-        showToast(`${item.title} zakupione za ${item.priceXtr} XTR!${mockTag}`);
-        return;
-      }
-      if (result.status === 'cancelled') {
-        showToast('Płatność anulowana.');
-      } else if (result.status === 'pending') {
-        if (result.data) applyServerState(result.data, true);
-        showToast('Płatność oczekuje na potwierdzenie serwera.');
-      } else if (result.status === 'unavailable') {
-        showToast('Zakupy za Telegram Stars działają tylko w aplikacji Telegram.');
-      } else if (result.status !== 'busy') {
-        shopUi.errors.add(id);
-        if (window.FX) window.FX.haptic('notify', 'error');
-        showToast(`Płatność nie powiodła się.${mockTag}`);
-      }
-      renderRigShop();
-    }
-
-    function initShop() {
-      const rigShop = document.getElementById('rig-shop');
-      if (rigShop) {
-        rigShop.addEventListener('click', event => {
-          const button = event.target.closest('[data-buy]');
-          if (button && !button.disabled) buyProduct(button.dataset.buy);
-        });
-      }
-      renderRigShop();
-      renderPurchaseHistory();
-      if (window.RigBuilder) window.RigBuilder.init();
-      // Restore owned goods from the server (GET /api/me); mock mode uses localStorage.
-      if (window.Payments) {
-        window.Payments.loadMe().then(data => applyServerState(data, true)).catch(() => {});
-      }
-    }
-
-    function renderEmission(snap) {
-      const set = (id, text) => { const node = document.getElementById(id); if (node) node.textContent = text; };
-      const pct = `${Math.min(snap.ratio * 100, 100).toFixed(2)}%`;
-      const fill = document.getElementById('tech-progress-fill');
-      const capsule = document.getElementById('tech-capsule-fill');
-      if (fill) fill.style.width = pct;
-      if (capsule) capsule.style.width = pct;
-      set('tech-mined-value', formatK(Math.floor(snap.mined)));
-      set('tech-progress-text', `${formatK(Math.floor(snap.mined))} / ${formatK(snap.supply)}`);
-      set('tech-supply-limit', formatK(snap.supply));
-      set('tech-remaining-time', snap.ended ? 'Cykl zakończony' : snap.remainingText);
-      set('tech-daily-rate', formatK(snap.perDay));
-      set('tech-status-word', snap.status);
-    }
-
-    async function buyProduct(id) {
-      const item = getCatalog().find(p => p.id === id);
-      const payments = window.Payments;
-      if (!item || !payments) return;
-      if (ownedCount(id) >= item.maxOwned) {
-        showToast(`${item.title} jest już zakupione.`);
-        return;
-      }
-      if (shopUi.loading.has(id)) return;
-      if (!payments.isMock && !payments.inTelegram()) {
-        showToast('Zakupy za Telegram Stars działają tylko w aplikacji Telegram.');
-        return;
-      }
-      shopUi.loading.add(id);
-      shopUi.errors.delete(id);
-      renderRigShop();
-      const result = await payments.purchase(id);
-      shopUi.loading.delete(id);
-      const mockTag = payments.isMock ? ' (MOCK)' : '';
-      if (result.status === 'paid') {
-        applyServerState(result.data);
-        if (window.FX) window.FX.haptic('notify', 'success');
-        showToast(`${item.title} zakupione za ${item.priceXtr} XTR!${mockTag}`);
-        return;
-      }
-      if (result.status === 'cancelled') {
-        showToast('Płatność anulowana.');
-      } else if (result.status === 'pending') {
-        if (result.data) applyServerState(result.data, true);
-        showToast('Płatność oczekuje na potwierdzenie serwera.');
-      } else if (result.status === 'unavailable') {
-        showToast('Zakupy za Telegram Stars działają tylko w aplikacji Telegram.');
-      } else if (result.status !== 'busy') {
-        shopUi.errors.add(id);
-        if (window.FX) window.FX.haptic('notify', 'error');
-        showToast(`Płatność nie powiodła się.${mockTag}`);
-      }
-      renderRigShop();
-    }
-
-    function initShop() {
-      const rigShop = document.getElementById('rig-shop');
-      if (rigShop) {
-        rigShop.addEventListener('click', event => {
-          const button = event.target.closest('[data-buy]');
-          if (button && !button.disabled) buyProduct(button.dataset.buy);
-        });
-      }
-      renderRigShop();
-      renderPurchaseHistory();
-      if (window.RigBuilder) window.RigBuilder.init();
-      // Restore owned goods from the server (GET /api/me); mock mode uses localStorage.
-      if (window.Payments) {
-        window.Payments.loadMe().then(data => applyServerState(data, true)).catch(() => {});
-      }
-    }
-
-    function renderEmission(snap) {
-      const set = (id, text) => { const node = document.getElementById(id); if (node) node.textContent = text; };
-      const pct = `${Math.min(snap.ratio * 100, 100).toFixed(2)}%`;
-      const fill = document.getElementById('tech-progress-fill');
-      const capsule = document.getElementById('tech-capsule-fill');
-      if (fill) fill.style.width = pct;
-      if (capsule) capsule.style.width = pct;
-      set('tech-mined-value', formatK(Math.floor(snap.mined)));
-      set('tech-progress-text', `${formatK(Math.floor(snap.mined))} / ${formatK(snap.supply)}`);
-      set('tech-supply-limit', formatK(snap.supply));
-      set('tech-remaining-time', snap.ended ? 'Cykl zakończony' : snap.remainingText);
-      set('tech-daily-rate', formatK(snap.perDay));
-      set('tech-status-word', snap.status);
-    }
-
-    function initCryptoGame() {
-      const techTokenCount = document.getElementById('tech-token-count');
-      const energyValue = document.getElementById('energyValue');
-      const energyMax = document.getElementById('energyMax');
-      const energyFill = document.getElementById('energyFill');
-      const energyBar = energyFill ? energyFill.parentElement : null;
-      const tpBalance = document.getElementById('tpBalance');
-      const coreClicker = document.getElementById('tech-core-clicker');
-      const fx = window.FX;
-
-      let mined = 0;
-      let energyExact = state.energy;
-      let regenRunning = false;
-
-      function syncCryptoUI() {
-        state.energy = Math.floor(energyExact);
-        const ratio = state.energyMax ? Math.min(1, energyExact / state.energyMax) : 0;
-        if (techTokenCount) fx ? fx.countTo(techTokenCount, mined, formatK) : (techTokenCount.textContent = formatK(mined));
-        if (energyValue) energyValue.textContent = state.energy;
-        if (energyMax) energyMax.textContent = state.energyMax;
-        if (tpBalance) fx ? fx.countTo(tpBalance, state.tp, formatK) : (tpBalance.textContent = formatK(state.tp));
-        if (energyFill) energyFill.style.transform = `scaleX(${ratio.toFixed(3)})`;
-        if (energyBar) energyBar.classList.toggle('energy-low', ratio < 0.2);
-        if (energyExact < state.energyMax) ensureRegen();
-      }
-      window.syncCryptoUI = syncCryptoUI;
-
-      function ensureRegen() {
-        if (regenRunning || !fx) return;
-        regenRunning = true;
-        fx.addTask(dt => {
-          if (energyExact >= state.energyMax) { regenRunning = false; syncCryptoUI(); return false; }
-          energyExact = Math.min(state.energyMax, energyExact + 5 * dt);
-      let totalSupply = 100000000;
-      let currentCycle = 60 * 60 * 24 * 60;
-      let lastEnergySync = Date.now();
-
-      let mined = 0;
-      let energyExact = state.energy;
-      let regenRunning = false;
-
-      function syncCryptoUI() {
-        state.energy = Math.floor(energyExact);
-        const ratio = state.energyMax ? Math.min(1, energyExact / state.energyMax) : 0;
-        if (techTokenCount) fx ? fx.countTo(techTokenCount, mined, formatK) : (techTokenCount.textContent = formatK(mined));
-        if (energyValue) energyValue.textContent = state.energy;
-        if (energyMax) energyMax.textContent = state.energyMax;
-        if (tpBalance) fx ? fx.countTo(tpBalance, state.tp, formatK) : (tpBalance.textContent = formatK(state.tp));
-        if (energyFill) energyFill.style.transform = `scaleX(${ratio.toFixed(3)})`;
-        if (energyBar) energyBar.classList.toggle('energy-low', ratio < 0.2);
-        if (energyExact < state.energyMax) ensureRegen();
-      }
-      window.syncCryptoUI = syncCryptoUI;
-
-      function ensureRegen() {
-        if (regenRunning || !fx) return;
-        regenRunning = true;
-        fx.addTask(dt => {
-          if (energyExact >= state.energyMax) { regenRunning = false; syncCryptoUI(); return false; }
-          energyExact = Math.min(state.energyMax, energyExact + 5 * dt);
-          syncCryptoUI();
-        });
-      }
-
-      function tap() {
-        if (energyExact < 15) {
-          showToast('Brakuje energii! Poczekaj na regenerację.');
-          if (energyBar && fx) fx.pop(energyBar);
-          return { ok: false };
-      syncCryptoUI();
-
-      setInterval(() => {
-        if (state.energy < state.energyMax) {
-          state.energy = Math.min(state.energyMax, state.energy + 5);
-        }
-        energyExact -= 15;
-        state.tp += 25;
-        mined += 25;
-        syncCryptoUI();
-        ensureRegen();
-        return { ok: true, label: '+25' };
-      }
-
-      if (coreClicker) {
-        if (fx) {
-          fx.bindTapCore(coreClicker, tap);
-        } else {
-          coreClicker.addEventListener('pointerdown', tap);
-        }
-      }
-
-      syncCryptoUI();
-      ensureRegen();
-      if (!fx) {
-        setInterval(() => { energyExact = Math.min(state.energyMax, energyExact + 5); syncCryptoUI(); }, 1000);
-      }
-
-      if (window.Emission) {
-        window.Emission.subscribe(renderEmission);
-        window.Emission.init();
-      }
-        if (Date.now() % 15000 < 1000) scheduleStateSync();
-        if (Date.now() - lastEnergySync >= 10000) {
-          lastEnergySync = Date.now();
-          scheduleStateSync();
-        }
-      }
-
-      syncCryptoUI();
-      ensureRegen();
-      if (!fx) {
-        setInterval(() => { energyExact = Math.min(state.energyMax, energyExact + 5); syncCryptoUI(); }, 1000);
-      }
-
-      if (window.Emission) {
-        window.Emission.subscribe(renderEmission);
-        window.Emission.init();
-      }
-    }
-
-    function bindGlobalActions() {
-      document.querySelectorAll('[data-screen]').forEach(button => {
-        button.addEventListener('click', () => {
-          const key = button.dataset.screen;
-          if (key === 'home') show('home', 'Sieć społeczna');
-          if (key === 'crypto' && (communityConfig.features.clicker || communityConfig.features.rigBuilder)) show('crypto', 'TechnixPro');
-          if (key === 'gift') show('gift', 'Bonusy');
-          if (key === 'wallet' && communityConfig.features.wallet) show('wallet', 'Portfel');
-          if (key === 'profile') show('profile', 'Profil');
-          if (key === 'menu') show('menu', 'Menu Główne');
-          if (key === 'search') show('search', 'Wyszukiwarka');
-          if (key === 'notifications' && communityConfig.features.notifications) show('notifications', 'Powiadomienia');
-        });
-      });
-      const eventButton = document.getElementById('live-event-action-btn');
-      if (eventButton) eventButton.addEventListener('click', () => {
-        if (state.liveEvent) addStars(Number(state.liveEvent.reward), state.liveEvent.title);
-      });
-
-      document.querySelectorAll('.claim-reward').forEach(button => {
-        button.addEventListener('click', () => {
-          const reward = Number(button.dataset.bonus || 0);
-          const label = button.dataset.label || 'Nagroda';
-          addStars(reward, label);
-        });
-      });
-
-      const copyRefBtn = document.getElementById('copy-ref-link');
-      if (copyRefBtn) {
-        copyRefBtn.addEventListener('click', () => {
-          const input = document.getElementById('ref-link-input');
-          if (input) {
-            input.select();
-            document.execCommand('copy');
-            showToast('Link polecający został skopiowany.');
-          }
-        });
-      }
-
-      const createPostBtn = document.getElementById('create-post-btn');
-      if (createPostBtn) createPostBtn.addEventListener('click', createNewPost);
-
-      document.querySelectorAll('.wallet-toast-btn, .profile-toast-btn').forEach(button => {
-        button.addEventListener('click', () => {
-          const msg = button.textContent.trim() || 'Akcja aktywowana';
-          showToast(`${msg}: moduł w fazie 3.`);
-        });
-      });
-    }
-
-    window.applyCommunityConfig = function (config, preview) {
-      communityConfig = config;
-      communityPreview = Boolean(preview);
-      state.tasks = config.tasks;
-      state.channelPosts = config.posts;
-      const now = Date.now();
-      state.liveEvent = config.events.find(event => event.active !== false
-        && (!event.startAt || new Date(event.startAt).getTime() <= now)
-        && (!event.endAt || new Date(event.endAt).getTime() >= now)) || null;
-      document.querySelectorAll('[data-feature]').forEach(element => {
-        element.style.display = config.features[element.dataset.feature] === false ? 'none' : '';
-      });
-      const cryptoEnabled = config.features.clicker || config.features.rigBuilder;
-      document.querySelector('[data-screen="crypto"]').style.display = cryptoEnabled ? '' : 'none';
-      document.getElementById('screen-crypto').style.display = cryptoEnabled ? '' : 'none';
-      document.querySelectorAll('[data-reward-tab="events"]').forEach(element => {
-        element.style.display = config.features.events && Boolean(state.liveEvent) ? '' : 'none';
-      });
-      document.getElementById('reward-events').style.display = config.features.events && Boolean(state.liveEvent) ? '' : 'none';
-      const title = document.getElementById('live-event-title');
-      const description = document.getElementById('live-event-desc');
-      const eventButton = document.getElementById('live-event-action-btn');
-      if (state.liveEvent) {
-        title.textContent = state.liveEvent.title;
-        description.textContent = state.liveEvent.desc;
-        eventButton.textContent = `Dodaj +${state.liveEvent.reward} ★`;
-      }
-      const statusBanner = document.getElementById('system-status-banner');
-      const statusText = document.getElementById('system-status-text');
-      statusBanner.style.display = config.statusBanner.visible ? '' : 'none';
-      statusBanner.dataset.statusLevel = config.statusBanner.level;
-      statusText.textContent = config.statusBanner.text;
-      document.querySelectorAll('.phase-label').forEach(label => { label.textContent = `Faza ${config.activePhase}`; });
-      Object.entries(config.animations).forEach(([key, enabled]) => {
-        if (key === 'reduceMotion') return;
-        const cssKey = key.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`);
-        document.body.classList.toggle(`no-${cssKey}`, !enabled);
-      });
-      document.body.classList.toggle('reduce-motion', Boolean(config.animations.reduceMotion));
-      renderTaskList();
-      renderChannelFeed();
-      initShop();
-      window.rigBuilder.bindScene();
-      window.rigBuilder.renderRig(state.rigParts);
-      renderRigShop();
-      window.RigBuilder?.renderRig(Object.keys(state.rigParts).filter(key => state.rigParts[key]));
-      initTelegramProfile();
-      window.rigBuilder.bindThumbnails();
-      renderHomeSubtabs();
-      initChatViewport();
-      renderRewardTabs();
-      bindGlobalActions();
-      initCryptoGame();
-      if (window.FX) window.FX.bindRipples();
-      show('home', 'Sieć społeczna');
-      renderNotifications();
-      const selectedView = document.querySelector('.reward-view:not(.hidden)');
-      if (selectedView && selectedView.style.display === 'none') {
-        document.querySelector('[data-reward-tab="overview"]').click();
-      }
-    };
-
-    function seedInitialState() {
-      window.TechnixStore.init().then(initial => {
-        window.applyCommunityConfig(initial.published, false);
-        updateStarsDisplay();
-        renderRewardLog();
-        renderPostsFeed();
-        initShop();
-        initTelegramProfile();
-        renderHomeSubtabs();
-        initChatViewport();
-        renderRewardTabs();
-        bindGlobalActions();
-        initCryptoGame();
-        if (window.FX) window.FX.bindRipples();
-        show('home', 'Sieć społeczna');
-      }).catch(error => showToast(`Nie udało się wczytać konfiguracji: ${error.message}`));
-    }
-
-    window.addEventListener('load', seedInitialState);
+  /* ---------- boot ---------- */
+  if (identity.telegram && tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param && !me.referred_by) {
+    var refId = Core.parseReferralCode(String(tg.initDataUnsafe.start_param).replace(/^ref_/, ''));
+    if (refId && refId !== me.id) { me.referred_by = refId; save(); }
+  }
+  grantXp(0); save();
+  Data.subscribeStorage(function (key) { if (key === 'posts' && ui.tab === 'channel') render(); });
+  render();
+})();
