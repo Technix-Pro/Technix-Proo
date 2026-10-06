@@ -7,10 +7,10 @@ TechnixPro is a dark, neon-styled frontend demo for a Telegram Mini App concept:
 - `index.html` — page markup and screen layout.
 - `styles.css` — application styles and animations.
 - `app.js` — Tailwind theme configuration and frontend interactions.
-- `rig-builder.js` — inline SVG RIG scene and installation animations.
-- `api.js` / `config.js` — mock and fetch-based backend adapter configuration.
+- `config.js` / `api.js` — API configuration and mock/HTTP data adapters.
+- `rig-builder.js` — SVG rig state, queued assembly, and animation lifecycle.
 
-The page also loads Tailwind CSS, Font Awesome, Inter, and the Telegram Web App SDK from their respective CDNs. The standalone admin-panel scripts in the repository are not loaded by `index.html`.
+The page also loads Tailwind CSS, Font Awesome, Inter, and the Telegram Web App SDK from their respective CDNs.
 Add an `assets/` directory when the project needs local images, icons, or other static files.
 
 ## Run locally
@@ -31,4 +31,5 @@ This repository contains a frontend prototype, not a production crypto or wallet
 
 ## Jak podpiąć backend
 
+W `config.js` ustaw `USE_MOCK_API: false` i wpisz bazowy adres serwera w `API_BASE_URL` (np. `https://api.example.com`). Frontend wywoła endpointy opisane w [docs/BACKEND_API.md](docs/BACKEND_API.md), a `api.js` przekaże Telegram `initData` w nagłówku `X-Telegram-Init-Data`. Backend musi zweryfikować podpis `initData`; identyfikatorów z `initDataUnsafe` nie wolno traktować jako uwierzytelnienia. Bezpieczny tryb demonstracyjny działa z `USE_MOCK_API: true` i używa lokalnego cache przeglądarki.
 W `config.js` ustaw `USE_MOCK_API: false` oraz `API_BASE_URL` na adres backendu (np. `https://api.example.com`). Frontend wysyła żądania opisane w [`docs/BACKEND_API.md`](docs/BACKEND_API.md); backend musi zweryfikować Telegram `initData` otrzymane w nagłówku `Authorization: tma …`. W trybie domyślnym `USE_MOCK_API: true` dane demonstracyjne i stan gry są przechowywane w `localStorage`.

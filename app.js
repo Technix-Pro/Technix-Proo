@@ -1,19 +1,21 @@
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            brand: {
-              bg: '#080b14',
-              panel: '#111827',
-              border: '#1f293d',
-              accent: '#8b5cf6',
-              cyan: '#22d3ee',
-              pink: '#ec4899'
+    if (window.tailwind) {
+      window.tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                bg: '#080b14',
+                panel: '#111827',
+                border: '#1f293d',
+                accent: '#8b5cf6',
+                cyan: '#22d3ee',
+                pink: '#ec4899'
+              }
+            },
+            fontFamily: {
+              sans: ['Inter', 'sans-serif']
             }
-          },
-          fontFamily: {
-            sans: ['Inter', 'sans-serif']
           }
         }
       }
@@ -27,12 +29,15 @@
 
     const defaultUser = {
       first_name: 'Guest',
-      last_name: '',
       username: 'guest',
       id: 0,
       photo_url: '',
       language_code: 'pl'
     };
+    let currentUser = defaultUser;
+    let minedAmount = 0;
+    let emissionEndsAt = 0;
+    let syncTimer = null;
     let currentUser = { ...defaultUser };
     let syncTimer;
 
@@ -78,6 +83,13 @@
         fan: false
       },
       rigCatalog: [
+        { key: 'mouse', name: 'Mysz', cost: 40 },
+        { key: 'keyboard', name: 'Klawiatura', cost: 60 },
+        { key: 'monitor', name: 'Monitor', cost: 180 },
+        { key: 'case', name: 'Obudowa', cost: 100 },
+        { key: 'ram', name: 'RAM', cost: 80 },
+        { key: 'gpu', name: 'GPU', cost: 270 },
+        { key: 'fan', name: 'Chłodzenie', cost: 90 }
         { key: 'mouse', name: 'Mysz', icon: 'fa-computer-mouse', cost: 40 },
         { key: 'keyboard', name: 'Klawiatura', icon: 'fa-keyboard', cost: 60 },
         { key: 'monitor', name: 'Monitor', icon: 'fa-display', cost: 180 },
@@ -90,11 +102,19 @@
     window.getOwnedRigParts = () => Object.keys(state.rigParts).filter(key => state.rigParts[key]);
 
     function formatK(value) {
-      return new Intl.NumberFormat('pl-PL', { maximumFractionDigits: 0 }).format(value);
+      const number = Number(value);
+      return new Intl.NumberFormat('pl-PL', { maximumFractionDigits: 0 }).format(Number.isFinite(number) ? number : 0);
     }
 
     function parseTelegramUser() {
       const raw = tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user : defaultUser;
+      const telegramId = Number(raw.id);
+      currentUser = {
+        id: Number.isFinite(telegramId) ? telegramId : 0,
+        username: String(raw.username || 'guest'),
+        first_name: String(raw.first_name || 'Guest'),
+        photo_url: String(raw.photo_url || ''),
+        language_code: String(raw.language_code || 'pl')
       return {
         id: raw.id || 0,
         username: raw.username || '',
@@ -103,6 +123,8 @@
         language_code: raw.language_code || 'pl',
         last_name: raw.last_name || ''
       };
+      window.currentUser = currentUser;
+      return currentUser;
     }
 
     currentUser = parseTelegramUser();
@@ -188,6 +210,25 @@
       const taskList = document.getElementById('task-list');
       if (!taskList) return;
 
+      taskList.replaceChildren();
+      if (!state.tasks.length) {
+        taskList.textContent = 'Brak dostępnych zadań.';
+        return;
+      }
+      state.tasks.forEach(task => {
+        const reward = Number(task.reward);
+        const safeReward = Number.isFinite(reward) ? reward : 0;
+        const title = String(task.title || 'Zadanie');
+        const button = document.createElement('button');
+        button.className = 'task-action w-full text-left panel px-3 py-3 rounded-xl flex items-center justify-between gap-3';
+        button.dataset.task = String(task.label || 'zadanie').toLowerCase();
+        button.dataset.reward = String(safeReward);
+        button.dataset.label = title;
+        button.innerHTML = '<div><div class="task-title text-xs font-semibold text-white"></div><div class="task-reward text-[10px] muted"></div></div><span class="text-[10px] text-violet-300 font-bold">Złap</span>';
+        button.querySelector('.task-title').textContent = title;
+        button.querySelector('.task-reward').textContent = `+${safeReward} ★`;
+        taskList.appendChild(button);
+      });
       taskList.innerHTML = state.tasks.map(task => `
         <button data-task="${escapeHTML(String(task.label || 'zadanie').toLowerCase())}" data-reward="${Number(task.reward) || 0}" data-label="${escapeHTML(task.title)}" class="task-action w-full text-left panel px-3 py-3 rounded-xl flex items-center justify-between gap-3">
           <div>
@@ -212,6 +253,19 @@
       if (!rewardLog) return;
       const items = state.taskHistory.slice(0, 5);
 
+      rewardLog.replaceChildren();
+      items.forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'flex items-center justify-between text-xs rounded-xl bg-slate-900/60 border border-slate-800 px-3 py-2';
+        const label = document.createElement('span');
+        label.className = 'text-slate-300';
+        label.textContent = String(item.label || '');
+        const value = document.createElement('span');
+        value.className = 'font-bold text-emerald-400';
+        value.textContent = `+${Number(item.value) || 0} ★`;
+        row.append(label, value);
+        rewardLog.appendChild(row);
+      });
       rewardLog.innerHTML = items.map(item => `
         <div class="flex items-center justify-between text-xs rounded-xl bg-slate-900/60 border border-slate-800 px-3 py-2">
           <span class="text-slate-300">${escapeHTML(item.label)}</span>
@@ -221,12 +275,42 @@
     }
 
     function addStars(amount, label) {
+      amount = Number(amount);
+      if (!Number.isFinite(amount) || amount <= 0) return;
       state.stars += amount;
       state.taskHistory.unshift({ label, value: amount, time: 'teraz' });
       updateStarsDisplay();
       renderRewardLog();
       scheduleStateSync();
       showToast(`Dodano ${amount} ★ do profilu (${label})`);
+    }
+
+    function snapshotGameState() {
+      return {
+        stars: Number(state.stars) || 0,
+        energy: Number(state.energy) || 0,
+        energyMax: Number(state.energyMax) || 0,
+        tp: Number(state.tp) || 0,
+        rigParts: { ...state.rigParts },
+        mined: Number(minedAmount) || 0,
+        emissionEndsAt
+      };
+    }
+
+    function scheduleStateSync() {
+      if (!window.TechnixAPI) return;
+      const snapshot = snapshotGameState();
+      TechnixAPI.saveLocalState(snapshot);
+      clearTimeout(syncTimer);
+      syncTimer = setTimeout(() => TechnixAPI.syncState(snapshot).catch(() => {}), 2500);
+    }
+
+    function flushState() {
+      if (!window.TechnixAPI) return;
+      clearTimeout(syncTimer);
+      const snapshot = snapshotGameState();
+      TechnixAPI.saveLocalState(snapshot);
+      TechnixAPI.syncState(snapshot).catch(() => {});
     }
 
     function showToast(msg) {
@@ -254,6 +338,148 @@
       if (giftSubtabs) giftSubtabs.classList.toggle('hidden', screenName !== 'gift');
 
       document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.screen === screenName));
+      if (window.rigBuilder) window.rigBuilder.setVisible(screenName === 'crypto');
+      loadScreenData(screenName);
+    }
+
+    const SCREEN_LOADERS = {
+      home: () => TechnixAPI.getNotifications(),
+      crypto: () => TechnixAPI.getRig(),
+      gift: () => Promise.all([TechnixAPI.getTasks(), TechnixAPI.getLeaderboard(), TechnixAPI.getReferrals()]),
+      wallet: () => TechnixAPI.getWallet(),
+      profile: () => TechnixAPI.getMe(),
+      menu: () => TechnixAPI.getMe(),
+      search: () => TechnixAPI.getLeaderboard(),
+      notifications: () => TechnixAPI.getNotifications()
+    };
+
+    function getScreenStatus(screen) {
+      let status = screen.querySelector('.screen-data-status');
+      if (!status) {
+        status = document.createElement('div');
+        status.className = 'screen-data-status hidden';
+        status.setAttribute('aria-live', 'polite');
+        status.setAttribute('role', 'status');
+        screen.prepend(status);
+      }
+      return status;
+    }
+
+    function showScreenStatus(screen, type, message) {
+      const status = getScreenStatus(screen);
+      status.replaceChildren();
+      status.className = `screen-data-status ${type === 'loading' ? 'rig-loading' : type === 'error' ? 'rig-error panel p-3' : 'muted text-xs'}`;
+      if (type === 'loading') {
+        status.innerHTML = '<div class="space-y-2" aria-hidden="true"><div class="h-3 w-2/5 rounded bg-slate-700 animate-pulse"></div><div class="h-2 w-4/5 rounded bg-slate-800 animate-pulse"></div></div><span class="sr-only"></span>';
+        status.querySelector('.sr-only').textContent = message || 'Ładowanie danych…';
+      } else {
+        const text = document.createElement('span');
+        text.textContent = message;
+        status.appendChild(text);
+        if (type === 'error') {
+          const retry = document.createElement('button');
+          retry.type = 'button';
+          retry.className = 'ml-2 text-cyan-300 underline';
+          retry.textContent = 'Spróbuj ponownie';
+          retry.addEventListener('click', () => loadScreenData(screen.id.replace('screen-', '')));
+          status.appendChild(retry);
+        }
+      }
+    }
+
+    function loadScreenData(screenName) {
+      const loader = SCREEN_LOADERS[screenName];
+      const screen = document.getElementById(`screen-${screenName}`);
+      if (!loader || !screen || !window.TechnixAPI) return;
+      const token = Number(screen.dataset.loadToken || 0) + 1;
+      screen.dataset.loadToken = String(token);
+      showScreenStatus(screen, 'loading', 'Ładowanie danych…');
+      loader().then(data => {
+        if (Number(screen.dataset.loadToken) !== token) return;
+        applyScreenData(screenName, data);
+        const status = getScreenStatus(screen);
+        status.className = 'screen-data-status hidden';
+        const notifications = Array.isArray(data) ? data : data && data.notifications;
+        if ((screenName === 'gift' && !state.tasks.length) || (screenName === 'notifications' && Array.isArray(notifications) && !notifications.length)) {
+          showScreenStatus(screen, 'empty', 'Brak danych do wyświetlenia.');
+        }
+      }).catch(() => {
+        if (Number(screen.dataset.loadToken) === token) showScreenStatus(screen, 'error', 'Nie udało się pobrać danych.');
+      });
+    }
+
+    function applyScreenData(screenName, data) {
+      if (screenName === 'crypto') {
+        const parts = data && (data.parts || data.rigParts) || {};
+        state.rigParts = { ...state.rigParts, ...parts };
+        window.rigBuilder.renderRig(state.rigParts);
+      } else if (screenName === 'gift') {
+        const [tasks, leaderboard, referrals] = data;
+        const taskList = Array.isArray(tasks) ? tasks : (tasks && tasks.tasks);
+        state.tasks = Array.isArray(taskList) ? taskList.filter(task => task && typeof task === 'object') : [];
+        renderTaskList();
+        const rankName = document.getElementById('rank-user-label');
+        if (rankName) rankName.textContent = `Ty (@${currentUser.username})`;
+        const count = document.getElementById('referral-count');
+        const rewards = document.getElementById('referral-rewards');
+        const referralCount = Number(referrals?.count);
+        const referralRewards = Number(referrals?.rewards);
+        if (count) count.textContent = `${Number.isFinite(referralCount) ? Math.max(0, referralCount) : 0} osób`;
+        if (rewards) rewards.textContent = `+${Number.isFinite(referralRewards) ? Math.max(0, referralRewards) : 0} ★`;
+        const firstRank = Array.isArray(leaderboard) ? leaderboard[0] : null;
+        const rankingData = Array.isArray(leaderboard) ? leaderboard : leaderboard && leaderboard.items;
+        const ranking = Array.isArray(rankingData) ? rankingData.filter(entry => entry && typeof entry === 'object') : [];
+        const leaderboardList = document.getElementById('leaderboard-list');
+        const leaderboardEmpty = document.getElementById('leaderboard-empty');
+        if (leaderboardList) {
+          leaderboardList.replaceChildren();
+          ranking.slice(0, 10).forEach((entry, index) => {
+            const row = document.createElement('div');
+            row.className = 'flex items-center justify-between bg-slate-900/70 p-2.5 rounded-xl border border-slate-800 text-xs font-semibold';
+            const name = document.createElement('span');
+            const username = String(entry.username || 'użytkownik');
+            name.textContent = `${index + 1}. ${Number(entry.id) === currentUser.id ? `Ty (@${currentUser.username})` : `@${username}`}`;
+            const score = document.createElement('span');
+            score.className = 'font-bold text-violet-300';
+            score.textContent = `${formatK(Number(entry.stars) || 0)} ★`;
+            row.append(name, score);
+            leaderboardList.appendChild(row);
+          });
+        }
+        if (leaderboardEmpty) leaderboardEmpty.classList.toggle('hidden', ranking.length > 0);
+        if (firstRank && Number(firstRank.id) === currentUser.id && document.getElementById('rank-stars-display')) {
+          document.getElementById('rank-stars-display').textContent = `${formatK(Number(firstRank.stars) || 0)} ★`;
+        }
+      } else if (screenName === 'profile') {
+        if (data?.stars != null && Number.isFinite(Number(data.stars))) state.stars = Math.max(0, Number(data.stars));
+        if (data?.energyMax != null && Number.isFinite(Number(data.energyMax)) && Number(data.energyMax) > 0) state.energyMax = Number(data.energyMax);
+        if (data?.energy != null && Number.isFinite(Number(data.energy))) state.energy = Math.min(Math.max(Number(data.energy), 0), state.energyMax);
+        if (data?.tp != null && Number.isFinite(Number(data.tp))) state.tp = Math.max(0, Number(data.tp));
+        updateStarsDisplay();
+      } else if (screenName === 'wallet') {
+        const balance = document.getElementById('wallet-balance');
+        const amount = Number(data?.balance);
+        if (balance) balance.textContent = `${(Number.isFinite(amount) ? amount : 0).toFixed(2).replace('.', ',')} ${String(data?.currency || 'PLN')}`;
+      } else if (screenName === 'notifications' || screenName === 'home') {
+        const notifications = Array.isArray(data) ? data : data && data.notifications;
+        if (screenName === 'notifications' && Array.isArray(notifications)) {
+          const container = document.getElementById('notifications-list');
+          if (container) {
+            container.replaceChildren();
+            notifications.filter(item => item && typeof item === 'object').forEach(item => {
+              const entry = document.createElement('article');
+              entry.className = 'panel p-4 text-xs space-y-2';
+              const title = document.createElement('div');
+              title.className = 'font-bold text-white';
+              title.textContent = String(item.title || 'Powiadomienie');
+              const body = document.createElement('p');
+              body.className = 'muted';
+              body.textContent = String(item.text || '');
+              entry.append(title, body);
+              container.appendChild(entry);
+            });
+          }
+        }
       document.dispatchEvent(new CustomEvent('rig-screen-visibility', { detail: screenName === 'crypto' }));
       if (screenName === 'wallet') loadApiView('wallet');
       if (screenName === 'notifications') loadApiView('notifications');
@@ -477,6 +703,8 @@
         admin: 'Administrator',
         system: 'System'
       };
+      postsFeed.replaceChildren();
+      state.posts.slice().reverse().forEach(post => {
       postsFeed.innerHTML = state.posts.slice().reverse().map(post => {
         const author = String(post.author || 'Użytkownik');
         const requestedRole = post.role;
@@ -485,6 +713,29 @@
           : author.toLowerCase().includes('admin') ? 'admin'
           : author.toLowerCase().includes('moderator') ? 'moderator'
           : 'user';
+        const article = document.createElement('article');
+        article.className = 'panel chat-message space-y-2';
+        article.dataset.messageRole = role;
+        article.innerHTML = '<div class="flex items-center justify-between"><div class="flex items-center gap-2"><div class="post-avatar w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-cyan-400 flex items-center justify-center text-[10px] font-black text-slate-950"></div><div><div class="post-author text-[10px] font-semibold text-white"></div><div class="post-time text-[9px] muted"></div></div></div><span class="post-role text-[9px] text-cyan-300"></span></div><p class="post-text text-xs text-slate-200 leading-relaxed"></p><div class="post-media"></div><div class="flex items-center gap-3 text-[10px] text-slate-400"><span>♡ 42</span><span>◌ 9</span><span>↗ 3</span></div><div class="chat-message-actions" data-message-actions aria-label="Przyszłe akcje moderacyjne"></div>';
+        article.querySelector('.post-avatar').textContent = author.slice(0, 1).toUpperCase();
+        article.querySelector('.post-author').textContent = author;
+        article.querySelector('.post-time').textContent = String(post.time || '');
+        article.querySelector('.post-role').textContent = roles[role];
+        article.querySelector('.post-text').textContent = String(post.text || '');
+        if (post.media) {
+          try {
+            const mediaUrl = new URL(post.media, window.location.href);
+            if (['http:', 'https:'].includes(mediaUrl.protocol)) {
+              const image = document.createElement('img');
+              image.src = mediaUrl.href;
+              image.alt = 'Załącznik do posta';
+              image.className = 'w-full rounded-xl border border-slate-800 object-cover max-h-48';
+              article.querySelector('.post-media').appendChild(image);
+            }
+          } catch (_) {}
+        }
+        postsFeed.appendChild(article);
+      });
         return `
         <article class="panel chat-message space-y-2" data-message-role="${role}">
           <div class="flex items-center justify-between">
@@ -514,6 +765,44 @@
     function renderChannelFeed() {
       const feed = document.getElementById('channel-feed');
       if (!feed) return;
+      feed.replaceChildren();
+      state.channelPosts.forEach(post => {
+        const article = document.createElement('article');
+        article.className = 'panel p-3.5';
+        article.innerHTML = '<div class="flex items-center justify-between gap-3 mb-2"><div class="flex items-center gap-2"><div class="channel-avatar w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-cyan-400 flex items-center justify-center text-[10px] font-bold text-slate-950"></div><div><div class="channel-author text-[10px] font-semibold text-white"></div><div class="channel-time text-[9px] muted"></div></div></div><span class="text-[10px] text-violet-300 bg-violet-500/10 border border-violet-500/20 rounded-full px-2 py-0.5">Official</span></div><p class="channel-text text-xs text-slate-200 leading-relaxed"></p><div class="channel-media"></div><div class="channel-link"></div>';
+        const author = String(post.author || 'TechnixPro');
+        article.querySelector('.channel-avatar').textContent = author.slice(0, 1).toUpperCase();
+        article.querySelector('.channel-author').textContent = author;
+        article.querySelector('.channel-time').textContent = String(post.time || '');
+        article.querySelector('.channel-text').textContent = String(post.text || '');
+        if (post.media) {
+          try {
+            const mediaUrl = new URL(post.media, window.location.href);
+            if (['http:', 'https:'].includes(mediaUrl.protocol)) {
+              const image = document.createElement('img');
+              image.src = mediaUrl.href;
+              image.alt = 'Załącznik kanału';
+              image.className = 'mt-3 rounded-xl w-full object-cover max-h-44 border border-slate-800';
+              article.querySelector('.channel-media').appendChild(image);
+            }
+          } catch (_) {}
+        }
+        if (post.link) {
+          try {
+            const linkUrl = new URL(post.link, window.location.href);
+            if (['http:', 'https:'].includes(linkUrl.protocol)) {
+              const link = document.createElement('a');
+              link.href = linkUrl.href;
+              link.target = '_blank';
+              link.rel = 'noopener noreferrer';
+              link.className = 'block mt-2 text-xs text-cyan-400 underline';
+              link.textContent = String(post.link);
+              article.querySelector('.channel-link').appendChild(link);
+            }
+          } catch (_) {}
+        }
+        feed.appendChild(article);
+      });
       feed.innerHTML = state.channelPosts.map(post => `
         <article class="panel p-3.5">
           <div class="flex items-center justify-between gap-3 mb-2">
@@ -589,7 +878,7 @@
     }
 
     function initTelegramProfile() {
-      const user = parseTelegramUser();
+      const user = currentUser;
       const username = document.getElementById('telegram-username');
       const profileName = document.getElementById('profile-name');
       const profileId = document.getElementById('profile-id');
@@ -598,6 +887,8 @@
       const headerAvatar = document.getElementById('header-avatar');
       const adminPanelContainer = document.getElementById('admin-panel-container');
 
+      const name = user.first_name || 'Guest';
+      const usernameText = user.username ? `@${user.username}` : '@guest';
       const name = [user.first_name, user.last_name].filter(Boolean).join(' ') || 'Guest';
       const usernameText = user.username ? `@${user.username}` : (user.first_name || 'Gość');
 
@@ -608,6 +899,12 @@
       if (profileId) profileId.textContent = user.id ? `TG ID: ${user.id}` : 'TG ID: brak danych';
       if (headerAvatar) headerAvatar.textContent = name.slice(0, 2).toUpperCase();
       const referralLink = document.getElementById('ref-link-input');
+      if (referralLink) {
+        const bot = (window.CONFIG && window.CONFIG.TELEGRAM_BOT_USERNAME) || 'TechnixProBot';
+        referralLink.value = `https://t.me/${bot}?start=ref_${user.id}`;
+      }
+      const rankName = document.getElementById('rank-user-label');
+      if (rankName) rankName.textContent = `Ty (@${user.username})`;
       const botName = window.CONFIG?.BOT_USERNAME || 'TechnixProBot';
       if (referralLink) referralLink.value = `https://t.me/${encodeURIComponent(botName)}?start=ref_${encodeURIComponent(user.id || 0)}`;
 
@@ -618,6 +915,19 @@
         adminPanelContainer.classList.remove('hidden');
       }
 
+      if (user.photo_url && avatarImg && avatarFallback && headerAvatar) {
+        try {
+          const avatarUrl = new URL(user.photo_url);
+          if (avatarUrl.protocol === 'https:') {
+            avatarImg.src = avatarUrl.href;
+            avatarImg.classList.remove('hidden');
+            avatarFallback.classList.add('hidden');
+            headerAvatar.textContent = '';
+            headerAvatar.style.backgroundImage = `url("${avatarUrl.href}")`;
+            headerAvatar.style.backgroundSize = 'cover';
+            headerAvatar.style.backgroundPosition = 'center';
+          }
+        } catch (_) {}
       const photoURL = safeMediaURL(user.photo_url);
       if (photoURL && avatarImg && avatarFallback && headerAvatar) {
         avatarImg.src = photoURL;
@@ -630,18 +940,40 @@
       }
     }
 
-    function buyRigPartWithStars(itemKey, cost) {
-      if (state.stars < cost) {
-        showToast(`Masz za mało gwiazdek! Potrzebujesz ${cost} ★.`);
-        return;
+    async function buyRigPartWithStars(itemKey, cost, button) {
+      button.disabled = true;
+      button.textContent = 'Łączenie z Telegramem…';
+      try {
+        const payment = await TechnixAPI.purchaseRigPart(itemKey, cost);
+        if (payment && payment.owned) {
+          completePurchase(itemKey, payment);
+        } else if (payment?.status === 'cancelled') {
+          showToast('Płatność została anulowana.');
+        } else if (payment?.status === 'failed') {
+          showToast('Płatność Telegram Stars nie powiodła się.');
+        } else {
+          showToast('Płatność oczekuje na potwierdzenie.');
+        }
+      } catch (error) {
+        showToast(error.message || 'Nie udało się rozpocząć płatności Telegram Stars.');
+      } finally {
+        if (button.isConnected && !state.rigParts[itemKey]) {
+          button.disabled = false;
+          button.textContent = `Kup za ${cost} ⭐`;
+        }
       }
-      state.stars -= cost;
-      updateStarsDisplay();
-      completePurchase(itemKey);
     }
 
-    function completePurchase(key) {
+    function completePurchase(key, payment) {
       const item = state.rigCatalog.find(i => i.key === key);
+      if (!item || !payment?.owned) return;
+      state.rigParts = { ...state.rigParts, ...(payment.parts || {}), [key]: true };
+      window.rigBuilder.renderRig(state.rigParts, { animateNew: true });
+      scheduleStateSync();
+      const scene = document.querySelector('.rig-station');
+      if (scene && (scene.getBoundingClientRect().top < 0 || scene.getBoundingClientRect().bottom > window.innerHeight)) {
+        scene.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
       if (!item || !Object.prototype.hasOwnProperty.call(state.rigParts, key)) return;
       state.rigParts[key] = true;
       const ownedParts = Object.keys(state.rigParts).filter(part => state.rigParts[part]);
@@ -655,8 +987,43 @@
     function renderRigShop() {
       const rigShop = document.getElementById('rig-shop');
       if (!rigShop) return;
-      rigShop.innerHTML = state.rigCatalog.map(item => {
+      const paymentNote = document.getElementById('rig-payment-note');
+      if (paymentNote) paymentNote.textContent = window.CONFIG?.USE_MOCK_API
+        ? 'Tryb demonstracyjny — nie jest pobierana rzeczywista płatność.'
+        : 'Płatność przez Telegram Stars (XTR).';
+      const previewViews = {
+        monitor: '170 60 180 160',
+        keyboard: '292 214 154 36',
+        mouse: '450 210 54 36',
+        case: '394 239 142 100',
+        fan: '423 256 62 62',
+        ram: '414 250 32 68',
+        gpu: '404 294 84 36'
+      };
+      rigShop.replaceChildren();
+      state.rigCatalog.forEach(item => {
         const owned = state.rigParts[item.key];
+        const card = document.createElement('div');
+        card.className = `shop-item${owned ? ' shop-item-owned' : ''}`;
+        card.innerHTML = '<div class="shop-item-preview" data-preview><svg viewBox=""><use></use></svg></div><div><div class="shop-item-title text-[10px] font-semibold text-white"></div><div class="shop-item-cost text-[9px] text-amber-400 font-bold"></div><div class="shop-installed hidden text-[9px] font-bold">Zamontowano</div></div><button type="button" data-rig class="px-2 py-2 rounded-lg transition active:scale-95"></button>';
+        const preview = card.querySelector('[data-preview]');
+        preview.dataset.preview = item.key;
+        preview.querySelector('svg').setAttribute('viewBox', previewViews[item.key]);
+        preview.querySelector('use').setAttribute('href', `#rig-${item.key}`);
+        card.querySelector('.shop-item-title').textContent = item.name;
+        card.querySelector('.shop-item-cost').textContent = `${item.cost} ★ Telegram Stars`;
+        card.querySelector('.shop-installed').classList.toggle('hidden', !owned);
+        const button = card.querySelector('[data-rig]');
+        button.dataset.rig = item.key;
+        button.dataset.cost = String(item.cost);
+        button.className += owned
+          ? ' bg-emerald-500/20 text-emerald-300 border border-emerald-500/20'
+          : ' bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-extrabold';
+        button.textContent = owned ? 'Zamontowano' : `Kup za ${item.cost} ⭐`;
+        button.setAttribute('aria-label', owned ? `${item.name}: zamontowano` : `Kup ${item.name} za ${item.cost} Telegram Stars`);
+        button.disabled = Boolean(owned);
+        rigShop.appendChild(card);
+      });
         return `
           <div class="shop-item" data-part="${item.key}" title="${escapeHTML(item.name)}">
             <div class="shop-item-preview" aria-label="${escapeHTML(`Podgląd: ${item.name}`)}"></div>
@@ -681,11 +1048,12 @@
           const key = button.dataset.rig;
           const cost = Number(button.dataset.cost || 0);
           if (state.rigParts[key]) {
+            showToast(`${state.rigCatalog.find(item => item.key === key)?.name || 'Część'} jest już odblokowana.`);
             const item = state.rigCatalog.find(entry => entry.key === key);
             showToast(`${item?.name || 'Ta część'} jest już zamontowana.`);
             return;
           }
-          buyRigPartWithStars(key, cost);
+          buyRigPartWithStars(key, cost, button);
         });
       });
     }
@@ -703,30 +1071,29 @@
       const techTokenFill = document.getElementById('tech-capsule-fill');
       const coreClicker = document.getElementById('tech-core-clicker');
 
-      let mined = 0;
       let totalSupply = 100000000;
       let currentCycle = 60 * 60 * 24 * 60;
       let lastEnergySync = Date.now();
 
       function syncCryptoUI() {
-        const ratio = mined / totalSupply;
+        const ratio = minedAmount / totalSupply;
         if (techProgressFill) techProgressFill.style.width = `${Math.min(ratio * 100, 100)}%`;
         if (techTokenFill) techTokenFill.style.width = `${Math.min(ratio * 100, 100)}%`;
 
-        const remainingSeconds = Math.max(0, currentCycle);
+        const remainingSeconds = Math.max(0, Math.floor((emissionEndsAt - Date.now()) / 1000));
         const days = Math.floor(remainingSeconds / 86400);
         const hrs = Math.floor((remainingSeconds % 86400) / 3600);
         const mins = Math.floor((remainingSeconds % 3600) / 60);
         const secs = remainingSeconds % 60;
 
         if (techRemaining) techRemaining.textContent = `${days}d ${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-        if (techTokenCount) techTokenCount.textContent = formatK(Math.round(mined));
-        if (techMinedValue) techMinedValue.textContent = formatK(Math.round(mined));
-        if (techProgressText) techProgressText.textContent = `${formatK(mined)} / ${formatK(totalSupply)}`;
+        if (techTokenCount) techTokenCount.textContent = formatK(Math.round(minedAmount));
+        if (techMinedValue) techMinedValue.textContent = formatK(Math.round(minedAmount));
+        if (techProgressText) techProgressText.textContent = `${formatK(minedAmount)} / ${formatK(totalSupply)}`;
         if (energyValue) energyValue.textContent = state.energy;
         if (energyMax) energyMax.textContent = state.energyMax;
         if (tpBalance) tpBalance.textContent = formatK(state.tp);
-        if (energyFill) energyFill.style.width = `${(state.energy / state.energyMax) * 100}%`;
+        if (energyFill) energyFill.style.width = `${Math.min(Math.max((state.energy / state.energyMax) * 100, 0), 100)}%`;
       }
 
       if (coreClicker) {
@@ -737,6 +1104,7 @@
           }
           state.energy = Math.max(0, state.energy - 15);
           state.tp += 25;
+          minedAmount = Math.min(totalSupply, minedAmount + 25);
           state.taps += 1;
           mined = Math.min(totalSupply, mined + 25);
           syncCryptoUI();
@@ -747,11 +1115,11 @@
       syncCryptoUI();
 
       setInterval(() => {
-        currentCycle = Math.max(0, currentCycle - 1);
         if (state.energy < state.energyMax) {
           state.energy = Math.min(state.energyMax, state.energy + 5);
         }
         syncCryptoUI();
+        if (Date.now() % 15000 < 1000) scheduleStateSync();
         if (Date.now() - lastEnergySync >= 10000) {
           lastEnergySync = Date.now();
           scheduleStateSync();
@@ -853,9 +1221,34 @@
           showToast(`${msg}: moduł w fazie 3.`);
         });
       });
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) flushState();
+      });
+      window.addEventListener('beforeunload', flushState);
     }
 
     async function seedInitialState() {
+      currentUser = parseTelegramUser();
+      try {
+        const me = await TechnixAPI.getMe();
+        if (me?.stars != null && Number.isFinite(Number(me.stars))) state.stars = Math.max(0, Number(me.stars));
+        if (me?.energyMax != null && Number.isFinite(Number(me.energyMax)) && Number(me.energyMax) > 0) state.energyMax = Number(me.energyMax);
+        if (me?.energy != null && Number.isFinite(Number(me.energy))) state.energy = Math.min(Math.max(Number(me.energy), 0), state.energyMax);
+        if (me?.tp != null && Number.isFinite(Number(me.tp))) state.tp = Math.max(0, Number(me.tp));
+        state.rigParts = { ...state.rigParts, ...(me?.rigParts || {}) };
+        minedAmount = Number.isFinite(Number(me?.mined)) ? Math.min(Math.max(0, Number(me.mined)), 100000000) : 0;
+        emissionEndsAt = Number.isFinite(Number(me?.emissionEndsAt)) ? Number(me.emissionEndsAt) : 0;
+      } catch (_) {
+        showToast('Nie udało się pobrać profilu. Używam danych lokalnych.');
+      }
+      let storedEmissionEnd = 0;
+      try {
+        storedEmissionEnd = Number(localStorage.getItem('technixpro-emission-ends-at')) || 0;
+      } catch (_) {}
+      emissionEndsAt = emissionEndsAt || storedEmissionEnd || Date.now() + 60 * 24 * 60 * 60 * 1000;
+      try {
+        localStorage.setItem('technixpro-emission-ends-at', String(emissionEndsAt));
+      } catch (_) {}
       if (window.TechnixAPI) {
         const [meResult, rigResult] = await Promise.allSettled([
           window.TechnixAPI.getMe(),
@@ -879,9 +1272,12 @@
       renderRewardLog();
       renderPostsFeed();
       renderChannelFeed();
+      window.rigBuilder.bindScene();
+      window.rigBuilder.renderRig(state.rigParts);
       renderRigShop();
       window.RigBuilder?.renderRig(Object.keys(state.rigParts).filter(key => state.rigParts[key]));
       initTelegramProfile();
+      window.rigBuilder.bindThumbnails();
       renderHomeSubtabs();
       initChatViewport();
       renderRewardTabs();
