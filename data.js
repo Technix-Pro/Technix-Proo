@@ -83,7 +83,7 @@
       var prices = (read('admin', {}).config || {}).rig_prices || {};
       return CFG.RIG_PARTS.map(function (part) {
         var v = Number(prices[part.key]);
-        return part.key !== 'desk' && isFinite(v) && v >= 0 ? { key: part.key, title: part.title, price: Math.round(v) } : part;
+        return part.key !== 'desk' && isFinite(v) && v >= 0 ? { key: part.key, title: part.title, price: Math.round(v), stars: part.stars } : part;
       });
     },
     rigParts: function (id) { return read('rig:' + id, ['desk']); },
@@ -94,6 +94,17 @@
       if (owned.indexOf(partKey) !== -1) return { ok: false, reason: 'owned' };
       if (Number(user.stars) < part.price) return { ok: false, reason: 'insufficient_stars' };
       user.stars -= part.price;
+      owned.push(partKey);
+      user.rig_parts = owned;
+      write('rig:' + user.id, owned);
+      Data.saveUser(user);
+      return { ok: true, part: part };
+    },
+    grantRigPart: function (user, partKey) {
+      var part = Data.rigPartsCatalog().filter(function (item) { return item.key === partKey; })[0];
+      if (!part) return { ok: false, reason: 'unknown_part' };
+      var owned = Data.rigParts(user.id);
+      if (owned.indexOf(partKey) !== -1) return { ok: false, reason: 'owned' };
       owned.push(partKey);
       user.rig_parts = owned;
       write('rig:' + user.id, owned);
