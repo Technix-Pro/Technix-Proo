@@ -32,11 +32,15 @@ Static Telegram Mini App (no build step). Runs offline with mock data in `localS
 - Admin data is kept in `localStorage` (`admin`, `admin:audit`, `admin:phases`, `admin:notifications`, `admin:trash`, `admin:history`) and mirrored best-effort to Supabase tables `admin_actions`, `phases`, `notifications`, `post_trash`. Without a backend, changes apply only on this device.
 - Bottom nav: Home, TechnixPro (bonuses), Warsztat, Wallet, Profil; Chat is a header button; the clicker counter is in the header (every 100 clicks +5 XP, every 1000 +50 XP and a loot box, 10 000 an achievement).
 
+## Social links
+
+Buttons (X, Facebook, Instagram, Telegram, Discord, YouTube, TikTok, Oficjalna strona) appear in Profil > Profil and at the bottom of Home. Links are empty by default (button shows „Link wkrótce”). Fill them in `SOCIAL_LINKS` in `app-config.js`, or as admin in Panel > Ustawienia > Społeczność / Social (saved in the admin state, overrides the defaults). Only http(s) URLs are accepted; `t.me` links open via `Telegram.WebApp.openTelegramLink`.
+
 ## Run
 
 ```sh
 python3 -m http.server 8000   # open http://localhost:8000
-node --test test/core.test.js
+node --test test/*.test.js
 ```
 
 ## Admin

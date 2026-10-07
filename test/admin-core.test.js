@@ -160,3 +160,29 @@ test('core claims honour admin overrides', () => {
   Core.claimReferralMilestones(u, [{ count: 10, rewardXp: 123 }]);
   assert.equal(u.xp_total, 7 + 7 + 3 + 123);
 });
+
+test('social links: defaults are empty and resolve to empty strings', () => {
+  const l = A.resolveSocialLinks(A.defaultState());
+  assert.deepEqual(Object.keys(l), A.SOCIAL_KEYS);
+  A.SOCIAL_KEYS.forEach((k) => assert.equal(l[k], ''));
+  assert.equal(A.resolveSocialLinks(undefined).x, '');
+});
+
+test('social links: admin config overrides, invalid urls are rejected', () => {
+  const st = { config: { social_links: { x: 'https://x.com/technix', telegram: 'https://t.me/technix', discord: 'javascript:alert(1)', youtube: 'ftp://x', tiktok: 5 } } };
+  const l = A.resolveSocialLinks(st);
+  assert.equal(l.x, 'https://x.com/technix');
+  assert.equal(l.telegram, 'https://t.me/technix');
+  assert.equal(l.discord, '');
+  assert.equal(l.youtube, '');
+  assert.equal(l.website, '');
+});
+
+test('social links: validateSocialLinks trims, normalizes and reports invalid', () => {
+  const r = A.validateSocialLinks({ x: '  https://x.com/a ', facebook: 'nope', website: '' });
+  assert.equal(r.ok, false);
+  assert.deepEqual(r.invalid, ['facebook']);
+  assert.equal(r.links.x, 'https://x.com/a');
+  assert.equal(r.links.facebook, '');
+  assert.equal(A.validateSocialLinks({ instagram: 'https://instagram.com/a' }).ok, true);
+});

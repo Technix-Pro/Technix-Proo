@@ -41,6 +41,7 @@
     { key: 'keyboard', title: 'Klawiatura', price: 15 },
     { key: 'mouse', title: 'Mysz', price: 10 }
   ].map(function (part) { return Object.freeze(part); })),
+  SOCIAL_LINKS: Object.freeze({ x: '', facebook: '', instagram: '', telegram: '', discord: '', youtube: '', tiktok: '', website: '' }),
   EVENTS: Object.freeze([
     { id: 'cyber-week', title: 'Cyber Week — Community Sprint', desc: 'Zdobądź XP w ciągu tygodnia i odbierz nagrodę.', reward: '+50 ★', live: true },
     { id: 'ama', title: 'AMA z zespołem TechnixPro', desc: 'Transmisja na żywo z pytaniami od społeczności.', reward: '+100 XP', live: false }
