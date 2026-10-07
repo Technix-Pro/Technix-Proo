@@ -43,6 +43,18 @@
     { key: 'mouse', title: 'Mysz', price: 10, stars: 60 }
   ].map(function (part) { return Object.freeze(part); })),
   SOCIAL_LINKS: Object.freeze({ x: '', facebook: '', instagram: '', telegram: '', discord: '', youtube: '', tiktok: '', website: '' }),
+  COMMUNITY_LINKS: Object.freeze({ discordBot: '', feedback: 'https://github.com/Technix-Pro/Technix-Proo/issues/new', roadmap: '' }),
+  COMMUNITY_MILESTONES: Object.freeze([
+    { id: 'xp_1k', metric: 'total_xp', target: 1000 }, { id: 'xp_10k', metric: 'total_xp', target: 10000 },
+    { id: 'xp_100k', metric: 'total_xp', target: 100000 }, { id: 'users_10', metric: 'users', target: 10 }, { id: 'users_100', metric: 'users', target: 100 }
+  ].map(function (m) { return Object.freeze(m); })),
+  PREMIUM_PASS: Object.freeze({ id: 'monthly', price_pln: 9.99, days: 30 }),
+  // Cosmetic packs only (no gameplay advantage). Admin-created packs are stored in `admin:cosmetics` and merged on top.
+  PREMIUM_COSMETICS: Object.freeze([
+    { id: 'border-neon', name: 'Neonowa ramka', type: 'border', config: Object.freeze({ color: '#22d3ee' }) },
+    { id: 'theme-violet', name: 'Motyw Fiolet', type: 'theme', config: Object.freeze({ accent: '#a78bfa' }) },
+    { id: 'bubble-glass', name: 'Szklany dymek', type: 'bubble', config: Object.freeze({ background: 'rgba(139,92,246,.25)' }) }
+  ]),
   EVENTS: Object.freeze([
     { id: 'cyber-week', title: 'Cyber Week — Community Sprint', desc: 'Zdobądź XP w ciągu tygodnia i odbierz nagrodę.', reward: '+50 ★', live: true },
     { id: 'ama', title: 'AMA z zespołem TechnixPro', desc: 'Transmisja na żywo z pytaniami od społeczności.', reward: '+100 XP', live: false }

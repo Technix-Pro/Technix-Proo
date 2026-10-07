@@ -17,7 +17,7 @@
     { id: 'profile', tab: 'profile', sub: 'info', icon: 'fa-user' }
   ];
   var TAB_FEATURE = { chat: 'chat', bonus: 'bonus', rig: 'rig' };
-  var BONUS_SUBS = [['overview', 'Przegląd'], ['events', 'Live'], ['tasks', 'Zadania'], ['referral', 'Polecenia'], ['badges', 'Odznaki']];
+  var BONUS_SUBS = [['overview', 'Przegląd'], ['events', 'Live'], ['tasks', 'Zadania'], ['referral', 'Polecenia'], ['badges', 'Odznaki'], ['community', 'Razem']];
   var PROFILE_SUBS = [['info', 'Profil'], ['wallet', 'Portfel'], ['settings', 'Ustawienia']];
   var SETTINGS_SUBS = [['account', 'Konto'], ['notifications', 'Powiadomienia'], ['privacy', 'Prywatność'], ['language', 'Język']];
 
@@ -27,7 +27,7 @@
   var ui = { tab: 'channel', adminOpen: false, bonus: 'overview', profile: 'info', settings: 'account', preview: false, openComments: {}, chatDraft: '' };
   var content = document.getElementById('app-content');
   var chatTimer = null, lastSend = 0, pendingRigPart = null, clickSaveTimer = null, lastClickAt = 0, lastNotifCount = 0;
-  var admin = null;
+  var admin = null, engage = null;
 
   /* ---------- helpers ---------- */
   function h(tag, attrs) {
@@ -115,7 +115,7 @@
     Core.addXp(me, amount);
     var gained = Core.claimReferralMilestones(me, cfg().milestones);
     gained.forEach(function (m) { toast('Nagroda za ' + m.count + ' poleconych: +' + m.rewardXp + ' XP'); });
-    if (me.level > before) toast('Nowy poziom: ' + Core.levelFor(me.xp_total).name + '!');
+    if (me.level > before) { toast('Nowy poziom: ' + Core.levelFor(me.xp_total).name + '!'); if (window.TPEffects) window.TPEffects.celebrate('levelup', document.getElementById('header-level')); }
   }
 
   /* ---------- shell ---------- */
@@ -155,6 +155,7 @@
     var now = Date.now();
     if (now - lastClickAt < 100) return;
     lastClickAt = now;
+    if (!engage.allowAction()) return;
     var prev = me.clicks || 0, c = cfg();
     me.clicks = prev + 1;
     var r = Admin.clickReward(prev, me.clicks, c.clicks);
@@ -191,7 +192,9 @@
     if (ui.profile === 'wallet' && !visible('wallet')) ui.profile = 'info';
     renderShell();
     var view = { channel: viewChannel, chat: viewChat, bonus: viewBonus, rig: viewRig, profile: viewProfile }[ui.tab]();
-    content.replaceChildren(h('section', { class: 'screen space-y-4' }, view));
+    var notes = engage && ui.tab !== 'bonus' ? engage.banners() : [];
+    content.replaceChildren(h('section', { class: 'screen space-y-4' }, notes, view));
+    if (engage) engage.afterRender();
     if (ui.tab === 'rig') {
       var rig = content.querySelector('[data-rig-builder]');
       if (rig) window.TPRig.mount(rig.querySelector('svg'), Data.rigParts(me.id), pendingRigPart, rig._onRigStep);
@@ -257,6 +260,7 @@
     var posts = visiblePosts();
     if (!posts.length) out.push(h('div', { class: 'panel text-sm muted text-center' }, 'Brak postów. ' + (isAdmin() ? 'Dodaj pierwszy powyżej.' : 'Wróć wkrótce!')));
     posts.forEach(function (p) { out.push(postCard(p)); });
+    engage.homeExtras().forEach(function (n) { if (n) out.push(n); });
     out.push(socialPanel());
     return out;
   }
@@ -313,6 +317,8 @@
     card.appendChild(h('div', { class: 'flex items-center justify-between text-xs' },
       h('span', { class: 'font-bold text-cyan-300' }, 'TechnixPro'),
       h('span', { class: 'muted' }, (p.published ? '' : p.scheduled_at && Admin.postVisible(p, false) ? '' : p.scheduled_at ? '[ZAPLANOWANY] ' : '[SZKIC] ') + fmtDate(p.created_at))));
+    var sponsored = engage.sponsorNote(p, card);
+    if (sponsored) card.appendChild(sponsored);
     if (p.content) card.appendChild(h('p', { class: 'text-sm whitespace-pre-wrap break-words', text: p.content }));
     (p.images || []).forEach(function (u) { if (Admin.safeImage(u)) card.appendChild(h('img', { class: 'post-media', src: u, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' })); });
     (p.videos || []).forEach(function (u) { if (Core.safeUrl(u)) card.appendChild(h('video', { class: 'post-media', src: u, controls: true, preload: 'metadata' })); });
@@ -399,7 +405,7 @@
 
   /* ---------- BONUSES ---------- */
   function viewBonus() {
-    var sub = { overview: bonusOverview, events: bonusEvents, tasks: bonusTasks, referral: bonusReferral, badges: bonusBadges }[ui.bonus]();
+    var sub = { overview: bonusOverview, events: bonusEvents, tasks: bonusTasks, referral: bonusReferral, badges: bonusBadges, community: function () { return engage.communityView(); } }[ui.bonus]();
     return [subtabs(BONUS_SUBS, ui.bonus, function (s) { ui.bonus = s; render(); }), sub];
   }
 
@@ -604,13 +610,13 @@
   function profileInfo() {
     var file = h('input', { type: 'file', accept: 'image/png,image/jpeg,image/webp', class: 'hidden', 'aria-label': 'Wybierz avatar', onchange: function () { uploadAvatar(file.files[0]); } });
     return [h('div', { class: 'panel flex flex-col items-center gap-3' },
-      avatar(me, 84), file,
+      h('span', { class: engage.equippedStyle() ? 'cosmetic-border rounded-full' : '', style: engage.equippedStyle() }, avatar(me, 84)), file,
       h('button', { type: 'button', class: 'btn btn-ghost', onclick: function () { file.click(); } }, icon('fa-camera'), ' Zmień avatar'),
-      h('div', { class: 'text-lg font-black' }, me.username), h('div', { class: 'text-sm text-violet-300 font-bold' }, levelBadge(me))),
+      h('div', { class: 'text-lg font-black' }, me.username, ' ', engage.premiumBadge()), h('div', { class: 'text-sm text-violet-300 font-bold' }, levelBadge(me))),
       h('div', { class: 'panel' },
         row('Telegram ID', String(me.id) + (identity.telegram ? '' : ' (tryb lokalny)')), row('Username', '@' + me.username),
         row('Dołączono', fmtDate(me.created_at)), row('Łączne XP', fmt(me.xp_total)), row('Gwiazdki', fmt(me.stars) + ' ★')),
-      socialPanel()];
+      engage.profileExtras(), socialPanel()];
   }
 
   function uploadAvatar(f) {
@@ -710,8 +716,21 @@
     me: function () { return me; }, isAdmin: isAdmin, lang: function () { return me.settings.language; },
     debug: function () { return cfg().debug; }, applyConfig: applyConfig, rerender: function () { render(); }
   });
+  engage = window.TPEngageUI.create({
+    h: h, icon: icon, toast: toast, fmt: fmt, fmtDate: fmtDate, announce: toast,
+    me: function () { return me; }, lang: function () { return me.settings.language; }, save: save, grantXp: grantXp,
+    rerender: function () { render(); },
+    openLink: function (url) {
+      try {
+        if (tg && /^https:\/\/t\.me\//i.test(url) && tg.openTelegramLink) tg.openTelegramLink(url);
+        else if (tg && tg.openLink) tg.openLink(url);
+        else window.open(url, '_blank', 'noopener,noreferrer');
+      } catch (e) { window.open(url, '_blank', 'noopener,noreferrer'); }
+    }
+  });
   function editing() { var a = document.activeElement; return !!a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && content.contains(a); }
   grantXp(0); save(); Data.touchActivity(me.id);
+  engage.boot();
   Data.subscribeStorage(function (key) {
     if (key === 'user:' + me.id) {
       var fresh = Data.loadUser(identity.user);

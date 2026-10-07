@@ -159,6 +159,8 @@
       return window.TPAdmin ? window.TPAdmin.normalizeState(raw) : (raw || {});
     },
     saveAdminState: function (state) { return write('admin', state); },
+    getStore: function (name, fallback) { return read('eng:' + name, fallback); },
+    saveStore: function (name, value) { return write('eng:' + name, value); },
     getList: function (name) { var v = read('admin:' + name, []); return Array.isArray(v) ? v : []; },
     saveList: function (name, list, limit) { return write('admin:' + name, limit ? list.slice(0, limit) : list); },
     mirror: function (table, row) { remote('POST', table, [row]).catch(function () {}); },
