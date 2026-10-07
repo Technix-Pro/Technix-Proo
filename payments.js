@@ -1,44 +1,86 @@
-// Telegram Stars payments: invoice link from a backend (Bot API createInvoiceLink/sendInvoice), paid via WebApp.openInvoice.
-(function (root) {
+// Telegram Stars & TON payments integration
+(function () {
   'use strict';
-  function cfg() { return root.TP_CONFIG || {}; }
-  function sec() { return root.TECHNIX_CONFIG || {}; }
-  function tgApp() { return root.Telegram && root.Telegram.WebApp; }
+  
+  var CFG = window.TECHNIX_CONFIG;
+  var tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+  
+  window.TPPayments = {
+    // Send Telegram Stars invoice
+    sendStarsInvoice: function (userId, amount, title, description, payload) {
+      if (!CFG.INVOICE_ENDPOINT) {
+        console.warn('Payments: endpoint not configured');
+        return Promise.reject({ error: 'endpoint_not_configured' });
+      }
+      
+      return fetch(CFG.INVOICE_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: userId,
+          amount: amount,
+          title: title,
+          description: description,
+          payload: payload,
+          currency: CFG.CURRENCY
+        })
+      })
+      .then(function (res) {
+        if (!res.ok) throw new Error('Payment request failed: ' + res.status);
+        return res.json();
+      })
+      .then(function (data) {
+        if (data.ok) {
+          console.log('Invoice sent successfully');
+          return { ok: true, invoice_id: data.result.message_id };
+        }
+        throw new Error(data.description || 'Unknown error');
+      })
+      .catch(function (err) {
+        console.error('Payment error:', err);
+        return { ok: false, error: err.message };
+      });
+    },
 
-  function sortedByPrice(parts) {
-    return parts.slice().sort(function (a, b) { return (a.stars - b.stars) || String(a.key).localeCompare(String(b.key)); });
-  }
-  function plnFor(stars) { return Math.round(stars / (cfg().STARS_PER_PLN || 10) * 100) / 100; }
-  function isAvailable() {
-    var app = tgApp();
-    return /^https:\/\//.test(sec().INVOICE_ENDPOINT || '') && !!app && typeof app.openInvoice === 'function' && !!app.initData;
-  }
+    // Handle successful payment (webhook callback)
+    onPaymentSuccess: function (payload, callback) {
+      if (!tg) return;
+      if (tg.onEvent) {
+        tg.onEvent('invoice_closed', function (data) {
+          if (data.status === 'paid') {
+            callback({ ok: true, payload: payload });
+          }
+        });
+      }
+    },
 
-  function requestInvoice(part, user, fetchFn) {
-    var f = fetchFn || root.fetch;
-    var app = tgApp();
-    return f(sec().INVOICE_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ part_key: part.key, stars: part.stars, user_id: user.id, init_data: app ? app.initData : '' })
-    }).then(function (r) {
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.json();
-    }).then(function (j) {
-      if (!j || typeof j.invoice_link !== 'string' || j.invoice_link.indexOf('https://') !== 0) throw new Error('invalid_invoice');
-      return j.invoice_link;
-    });
-  }
+    // TON Keeper integration
+    connectTONKeeper: function () {
+      if (typeof window.tonconnect !== 'undefined') {
+        return { ok: true, message: 'TON Keeper connected' };
+      }
+      if (tg && tg.openLink) {
+        tg.openLink('https://app.tonkeeper.com/');
+        return { ok: true, message: 'Opening TON Keeper...' };
+      }
+      return { ok: false, error: 'TON Keeper not available' };
+    },
 
-  // cb(status): 'paid' | 'cancelled' | 'failed' | 'pending'
-  function pay(part, user, cb, fetchFn) {
-    requestInvoice(part, user, fetchFn).then(function (link) {
-      try { tgApp().openInvoice(link, function (status) { cb(status === 'paid' ? 'paid' : status === 'cancelled' ? 'cancelled' : status === 'pending' ? 'pending' : 'failed'); }); }
-      catch (e) { cb('failed'); }
-    }, function () { cb('failed'); });
-  }
+    // Validate payment amount
+    validateAmount: function (amount, type) {
+      if (!amount || isNaN(amount) || amount <= 0) {
+        return { ok: false, error: 'Kwota musi być większa niż 0' };
+      }
+      if (type === 'withdraw' && amount > 10000) {
+        return { ok: false, error: 'Maksymalna wypłata to 10000 TON' };
+      }
+      return { ok: true, value: parseFloat(amount) };
+    },
 
-  var api = { sortedByPrice: sortedByPrice, plnFor: plnFor, isAvailable: isAvailable, requestInvoice: requestInvoice, pay: pay };
-  root.TPPay = api;
-  if (typeof module !== 'undefined' && module.exports) module.exports = api;
-})(typeof window !== 'undefined' ? window : globalThis);
+    // Format price for display
+    formatPrice: function (stars) {
+      var pln = stars / 10;
+      return pln.toFixed(2) + ' PLN (~' + stars + '⭐)';
+    }
+  };
+})();

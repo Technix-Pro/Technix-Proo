@@ -4,11 +4,12 @@ window.TECHNIX_CONFIG = {
   SUPABASE_URL: 'https://yvzackedovkrdnraznbl.supabase.co',
   SUPABASE_ANON_KEY: 'sb_publishable_WrCP0j-ngvGRYYS8bAAACQ_7W0jwa3b',
   BOT_USERNAME: 'TechnixProBot',
-  // HTTPS endpoint (e.g. Supabase Edge Function) returning { invoice_link } for a Telegram Stars invoice. Empty = Stars payments off.
-  INVOICE_ENDPOINT: '',
-  REPORT_BUG_URL: 'https://github.com/Technix-Pro/Technix-Proo/issues/new',
   // Telegram IDs allowed to see the admin panel (UI only; enforce on the backend with RLS / initData verification).
   ADMIN_IDS: [7777540542],
   // Local testing only: allows ?admin=1 on localhost. Keep false in production.
-  DEV_MODE: false
+  DEV_MODE: false,
+  // Telegram Stars & Payments
+  INVOICE_ENDPOINT: 'https://yvzackedovkrdnraznbl.supabase.co/functions/v1/smooth-service',
+  PAYMENTS_ENABLED: true,
+  CURRENCY: 'PLN'
 };
