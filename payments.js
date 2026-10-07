@@ -69,10 +69,10 @@
     // Validate payment amount
     validateAmount: function (amount, type) {
       if (!amount || isNaN(amount) || amount <= 0) {
-        return { ok: false, error: 'Kwota musi być większa niż 0' };
+        return { ok: false, error: 'Kwota musi byc wieksza niz 0' };
       }
       if (type === 'withdraw' && amount > 10000) {
-        return { ok: false, error: 'Maksymalna wypłata to 10000 TON' };
+        return { ok: false, error: 'Maksymalna wyplata to 10000 TON' };
       }
       return { ok: true, value: parseFloat(amount) };
     },
@@ -80,7 +80,7 @@
     // Format price for display
     formatPrice: function (stars) {
       var pln = stars / 10;
-      return pln.toFixed(2) + ' PLN (~' + stars + '⭐)';
+      return pln.toFixed(2) + ' PLN (~' + stars + ' stars)';
     }
   };
 })();
