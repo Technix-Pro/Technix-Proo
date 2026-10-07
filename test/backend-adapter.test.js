@@ -135,10 +135,12 @@ test('verifiedIdentity uses the server user id and sanitizes role', () => {
   assert.equal(v.role, 'user');
   assert.equal(BEx.verifiedIdentity({ token: 't', role: 'owner', user: { id: 1 } }).role, 'owner');
 });
-test('adminAllowed: server role when backend expected, ADMIN_IDS only offline', () => {
+test('adminAllowed: server role wins once signed in, ADMIN_IDS hint otherwise', () => {
   const sec = { ADMIN_IDS: [7] };
   const good = { token: 't', role: 'admin', expires_at: Date.now() / 1000 + 600 };
-  assert.equal(BEx.adminAllowed(sec, 7, null, true), false);
+  assert.equal(BEx.adminAllowed(sec, 7, null, true), true);
+  assert.equal(BEx.adminAllowed(sec, 8, null, true), false);
+  assert.equal(BEx.adminAllowed(sec, 7, Object.assign({}, good, { role: 'user' }), true), false);
   assert.equal(BEx.adminAllowed(sec, 1, good, true), true);
   assert.equal(BEx.adminAllowed(sec, 1, Object.assign({}, good, { role: 'user' }), true), false);
   assert.equal(BEx.adminAllowed(sec, 7, null, false), true);

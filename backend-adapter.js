@@ -41,9 +41,9 @@
     return { id: id, role: isAdminRole(res.role) ? res.role : 'user', user: res.user, token: res.token, expires_at: res.expires_at };
   }
 
-  // Admin UI is gated by the server role when a backend login is expected; ADMIN_IDS is only an offline/mock hint.
+  // A verified server session decides admin UI; without one (login pending/unreachable, or offline/mock) ADMIN_IDS is a UI-only hint (RLS still enforces writes).
   function adminAllowed(sec, id, session, expectServer, nowMs) {
-    if (expectServer) return sessionValid(session, nowMs) && isAdminRole(session.role);
+    if (expectServer && sessionValid(session, nowMs)) return isAdminRole(session.role);
     return !!sec && Array.isArray(sec.ADMIN_IDS) && sec.ADMIN_IDS.map(Number).indexOf(Number(id)) !== -1;
   }
 
