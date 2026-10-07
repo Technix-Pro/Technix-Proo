@@ -115,6 +115,7 @@
     Core.addXp(me, amount);
     var gained = Core.claimReferralMilestones(me, cfg().milestones);
     gained.forEach(function (m) { toast('Nagroda za ' + m.count + ' poleconych: +' + m.rewardXp + ' XP'); });
+    if (gained.length) Data.action('tp_claim_referrals');
     if (me.level > before) { toast('Nowy poziom: ' + Core.levelFor(me.xp_total).name + '!'); if (window.TPEffects) window.TPEffects.celebrate('milestone', document.getElementById('header-level')); }
   }
 
@@ -426,10 +427,10 @@
         h('div', { class: 'text-xs muted' }, p.next ? fmt(me.xp_total) + ' / ' + fmt(p.next.xp) + ' XP — do ' + p.next.name + ': ' + fmt(p.xpToNext) + ' XP' : 'Maksymalny poziom osiągnięty!')),
       h('div', { class: 'grid grid-cols-3 gap-2' }, stat('XP', fmt(me.xp_total)), stat('Gwiazdki ★', fmt(me.stars)), stat('Zadania', me.tasks_completed)),
       claimRow('Bonus XP co ' + cfg().xpTimerHours + 'h', '+' + Admin.scaleXp(cfg().xpTimerReward, cfg().xpMultiplier) + ' XP', Core.msUntil(me.last_xp_claim, cfg().xpTimerHours), function () {
-        var r = Core.claimTimer(me, null, { hours: cfg().xpTimerHours, reward: Admin.scaleXp(cfg().xpTimerReward, cfg().xpMultiplier) }); if (r.ok) { grantXp(0); save(); toast('+' + r.xp + ' XP'); render(); }
+        var r = Core.claimTimer(me, null, { hours: cfg().xpTimerHours, reward: Admin.scaleXp(cfg().xpTimerReward, cfg().xpMultiplier) }); if (r.ok) { grantXp(0); save(); Data.action('tp_claim_timer'); toast('+' + r.xp + ' XP'); render(); }
       }),
       claimRow('Codzienny bonus', '+' + Admin.scaleXp(cfg().dailyReward, cfg().xpMultiplier) + ' XP', Core.msUntil(me.last_daily, 24), function () {
-        var r = Core.claimDaily(me, null, { reward: Admin.scaleXp(cfg().dailyReward, cfg().xpMultiplier) }); if (r.ok) { grantXp(0); save(); toast('+' + r.xp + ' XP'); render(); }
+        var r = Core.claimDaily(me, null, { reward: Admin.scaleXp(cfg().dailyReward, cfg().xpMultiplier) }); if (r.ok) { grantXp(0); save(); Data.action('tp_claim_daily'); toast('+' + r.xp + ' XP'); render(); }
       }),
       h('div', { class: 'panel space-y-2' }, h('h3', { class: 'font-bold text-sm' }, 'Poziomy'),
         CFG.LEVELS.map(function (l) {
@@ -458,7 +459,7 @@
         h('div', { class: 'flex items-center justify-between' }, h('span', { class: 'text-xs muted' }, st.value + ' / ' + st.goal),
           h('button', { type: 'button', class: 'btn', disabled: !st.completable, onclick: function () {
             var r = Core.claimTask(me, Object.assign({}, t, { rewardXp: Admin.scaleXp(t.rewardXp, cfg().xpMultiplier), rewardStars: t.rewardStars || 0 }), claimed, ctx);
-            if (r.ok) { Data.recordTaskCompletion(t.id); grantXp(0); save(); toast('+' + (t.rewardStars || 0) + ' ★' + (t.rewardXp ? ' +' + Admin.scaleXp(t.rewardXp, cfg().xpMultiplier) + ' XP' : '')); render(); }
+            if (r.ok) { Data.recordTaskCompletion(t.id); grantXp(0); save(); Data.action('tp_claim_task', { p_task_id: t.id }); toast('+' + (t.rewardStars || 0) + ' ★' + (t.rewardXp ? ' +' + Admin.scaleXp(t.rewardXp, cfg().xpMultiplier) + ' XP' : '')); render(); }
           } }, st.done ? 'Odebrano' : 'Odbierz')));
     }));
   }
@@ -763,6 +764,28 @@
   function editing() { var a = document.activeElement; return !!a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && content.contains(a); }
   grantXp(0); save(); Data.touchActivity(me.id);
   engage.boot();
+  // Backend mode: the server is the source of truth for progress and admin content; local state is the offline/mock fallback.
+  var syncing = false;
+  function applySync(res) {
+    if (!res) return;
+    if (res.user) {
+      var keepClicks = Math.max(me.clicks || 0, res.user.clicks || 0);
+      Object.assign(me, res.user, { clicks: keepClicks });
+      claimed.length = 0;
+      (res.claimed || []).forEach(function (id) { claimed.push(id); });
+      renderShell();
+      if (!editing() && !admin.isOpen()) render();
+    } else if (res.contentChanged && !editing() && !admin.isOpen()) render();
+  }
+  Data.onSynced = applySync;
+  function backendSync(first) {
+    if (syncing || !Data.remoteEnabled) return;
+    syncing = true;
+    var p = first ? Data.bootstrap(identity.user, identity.telegram && tg ? tg.initData : '', me.referred_by) : Data.sync();
+    p.then(applySync, function () {}).then(function () { syncing = false; }, function () { syncing = false; });
+  }
+  backendSync(true);
+  setInterval(function () { backendSync(false); }, 60000);
   Data.subscribeStorage(function (key) {
     if (key === 'user:' + me.id) {
       var fresh = Data.loadUser(identity.user);
