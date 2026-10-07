@@ -32,14 +32,15 @@
     { count: 20, rewardXp: 250 },
     { count: 50, rewardXp: 1000 }
   ]),
+  STARS_PER_PLN: 10,
   RIG_PARTS: Object.freeze([
-    { key: 'desk', title: 'Biurko', price: 0 },
-    { key: 'case', title: 'Obudowa', price: 25 },
-    { key: 'ram', title: 'Pamięć RAM', price: 20 },
-    { key: 'gpu', title: 'Karta graficzna', price: 40 },
-    { key: 'monitor', title: 'Monitor', price: 30 },
-    { key: 'keyboard', title: 'Klawiatura', price: 15 },
-    { key: 'mouse', title: 'Mysz', price: 10 }
+    { key: 'desk', title: 'Biurko', price: 0, stars: 50 },
+    { key: 'case', title: 'Obudowa', price: 25, stars: 100 },
+    { key: 'ram', title: 'Pamięć RAM', price: 20, stars: 150 },
+    { key: 'gpu', title: 'Karta graficzna', price: 40, stars: 200 },
+    { key: 'monitor', title: 'Monitor', price: 30, stars: 250 },
+    { key: 'keyboard', title: 'Klawiatura', price: 15, stars: 80 },
+    { key: 'mouse', title: 'Mysz', price: 10, stars: 60 }
   ].map(function (part) { return Object.freeze(part); })),
   SOCIAL_LINKS: Object.freeze({ x: '', facebook: '', instagram: '', telegram: '', discord: '', youtube: '', tiktok: '', website: '' }),
   EVENTS: Object.freeze([
