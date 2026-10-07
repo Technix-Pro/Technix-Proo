@@ -44,6 +44,11 @@
       });
     },
 
+    // Opens Telegram's native Stars purchase (bot id is public; the bot token must never be in client code)
+    buyStarsDirectLink: function (botId) {
+      return 'tg://starref?bot_id=' + encodeURIComponent(String(botId || CFG.BOT_ID || ''));
+    },
+
     // Offline queue: requests that failed on network errors are kept and retried on next load
     queueRequest: function (body) {
       try {

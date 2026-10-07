@@ -115,7 +115,7 @@
     Core.addXp(me, amount);
     var gained = Core.claimReferralMilestones(me, cfg().milestones);
     gained.forEach(function (m) { toast('Nagroda za ' + m.count + ' poleconych: +' + m.rewardXp + ' XP'); });
-    if (me.level > before) { toast('Nowy poziom: ' + Core.levelFor(me.xp_total).name + '!'); if (window.TPEffects) window.TPEffects.celebrate('levelup', document.getElementById('header-level')); }
+    if (me.level > before) { toast('Nowy poziom: ' + Core.levelFor(me.xp_total).name + '!'); if (window.TPEffects) window.TPEffects.celebrate('milestone', document.getElementById('header-level')); }
   }
 
   /* ---------- shell ---------- */
@@ -572,7 +572,8 @@
       console.log('Invoice ID:', res.invoice_id);
       P.trackInvoice(res.invoice_id, {
         onPaid: function () {
-          var r = Data.grantRigPart(me, part.key);
+          var r = Data.buyRigPart(me, part.key);
+          if (!r.ok && r.reason === 'insufficient_stars') r = Data.grantRigPart(me, part.key);
           if (r.ok) { pendingRigPart = part.key; save(); toast('Zapłacono: ' + part.title); if (window.TPEffects) window.TPEffects.celebrate('levelup', document.getElementById('header-level')); }
           done();
         },
@@ -615,14 +616,16 @@
             return h('div', { class: 'rig-shop-row', 'data-part': part.key },
               h('div', { class: 'min-w-0' }, h('div', { class: 'text-sm font-semibold' }, part.title), h('div', { class: 'text-[11px] muted' }, isOwned ? 'Zamontowano' : part.price + ' ★')),
               h('button', { type: 'button', class: 'btn ' + (isOwned ? 'btn-ghost' : ''), disabled: isOwned || isPaying, 'aria-label': isOwned ? part.title + ' — posiadana' : 'Kup ' + part.title, onclick: function () {
-                if (cannotAfford) { payRigPartWithStars(part); return; }
-                var result = Data.buyRigPart(me, part.key);
-                if (!result.ok) { toast(result.reason === 'insufficient_stars' ? 'Za mało gwiazdek.' : 'Nie udało się kupić części.'); return; }
-                pendingRigPart = part.key;
-                save();
-                toast('Kupiono: ' + part.title);
-                render();
-              } }, isOwned ? 'Posiadana' : isPaying ? 'Oczekuje na płatność…' : cannotAfford ? 'Kup za ' + part.stars + ' ⭐' : 'Kup'));
+                if (isOwned) { toast('Już posiadasz tę część.'); return; }
+                if (cannotAfford) {
+                  var link = window.TPPayments ? window.TPPayments.buyStarsDirectLink(SEC.BOT_ID) : null;
+                  toast('Brak gwiazdek! Otwieramy Telegram Stars...');
+                  if (!link) return;
+                  if (tg && tg.openTelegramLink) tg.openTelegramLink(link); else window.open(link, '_blank', 'noopener');
+                  return;
+                }
+                payRigPartWithStars(part);
+              } }, isOwned ? 'Posiadana' : isPaying ? 'Wysyłanie…' : 'Kup'));
             }),
           h('p', { class: 'text-[11px] muted text-center' }, 'Części kupione w warsztacie zapisują się na Twoim koncie. Postęp: ' + status.count + '/7.'))];
   }
