@@ -137,7 +137,7 @@
         var map = BE.settingsToMap(Array.isArray(r[1]) ? r[1] : []);
         put('admin', BE.contentToState(Data.getAdminState(), { admin_state: map.admin_state, tasks: Array.isArray(r[0]) ? r[0] : null }));
       }
-      if (Array.isArray(r[2])) put('posts', BE.mergePosts(r[2], read('posts', [])));
+      if (Array.isArray(r[2])) put('posts', BE.mergePosts(r[2], read('posts', []), { keepUnsynced: isAdminSession() }));
       if (Array.isArray(r[3])) put('admin:notifications', r[3].map(BE.notificationFromRow));
       return changed;
     });
@@ -169,7 +169,8 @@
     isStale: function () { return remoteOn && BE.isStale(lastOkAt, Date.now(), STALE_MS); },
     // Server-verified identity/role (null until auth-telegram succeeded); never derived from client-supplied ids.
     verifiedUser: function () { return verified && verified.user; },
-    isAdmin: function (id) { return BE.adminAllowed(SEC, id, session, remoteOn && !!initDataRaw); },
+    // The UI role survives JWT expiry (the next request re-authenticates; the server enforces permissions regardless).
+    isAdmin: function (id) { return BE.adminAllowed(SEC, id, session && session.token ? Object.assign({}, session, { expires_at: null }) : null, remoteOn && !!initDataRaw); },
     onSynced: null,
 
     // Starts a backend session from Telegram initData and loads content + progress. Resolves null when no backend is configured.
@@ -186,8 +187,10 @@
       return pre.then(function () { return Data.sync(); });
     },
     // Refreshes content (and the user's progress + leaderboard when signed in). Resolves { user, claimed, contentChanged } or null when offline.
-    sync: function () {
+    sync: function (noRetry) {
       if (!remoteOn) return Promise.resolve(null);
+      // A failed login at start-up (network) is retried here so the user does not stay in local mode until reload.
+      if (noRetry !== true && initDataRaw && currentId && !verified) return authenticate().then(null, noop).then(function () { return Data.sync(true); });
       var userP = canSync() ? fetchUserBundle(currentId).then(null, function () { return null; }) : Promise.resolve(null);
       var boardP = canSync() ? quiet(remote('POST', 'rpc/tp_leaderboard', {})).then(function (rows) {
         if (Array.isArray(rows) && rows.length) leadersCache = BE.leadersFromRows(rows);

@@ -155,3 +155,16 @@ test('isStale, error classification and retryDelay', () => {
   assert.equal(BEx.retryDelay(0), 1000);
   assert.equal(BEx.retryDelay(10), 30000);
 });
+
+test('mergePosts: keepUnsynced retains local posts missing on the server, never trashed ones', () => {
+  const rows = [
+    { id: 'a', status: 'published', body: 'A', created_at: '2026-01-02T00:00:00Z', payload: {} },
+    { id: 'b', status: 'trashed', body: 'B', created_at: '2026-01-01T00:00:00Z', payload: {} }
+  ];
+  const local = [
+    { id: 'b', content: 'B', created_at: '2026-01-01T00:00:00Z' },
+    { id: 'c', content: 'C', created_at: '2026-01-03T00:00:00Z' }
+  ];
+  assert.deepEqual(BEx.mergePosts(rows, local).map((p) => p.id), ['a']);
+  assert.deepEqual(BEx.mergePosts(rows, local, { keepUnsynced: true }).map((p) => p.id), ['c', 'a']);
+});

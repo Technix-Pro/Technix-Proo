@@ -128,14 +128,17 @@
       published_at: p.published ? p.created_at : null, payload: payload, created_at: p.created_at, updated_at: new Date().toISOString() };
   }
   // Keeps local likes/comments (not yet server-backed) when replacing posts with the remote list.
-  function mergePosts(remoteRows, localPosts) {
-    var local = {};
+  // opts.keepUnsynced (admin): local posts the server does not know yet (write still in flight / failed) are kept instead of being dropped.
+  function mergePosts(remoteRows, localPosts, opts) {
+    var local = {}, known = {};
     (localPosts || []).forEach(function (p) { local[p.id] = p; });
-    return (remoteRows || []).filter(function (r) { return r.status !== 'trashed'; }).map(function (r) {
+    var out = (remoteRows || []).filter(function (r) { known[r.id] = true; return r.status !== 'trashed'; }).map(function (r) {
       var p = postFromRow(r), l = local[p.id];
       if (l) { p.likes = l.likes || []; p.comments = l.comments || []; p.likes_count = p.likes.length; p.comments_count = p.comments.length; }
       return p;
     });
+    if (opts && opts.keepUnsynced) (localPosts || []).forEach(function (p) { if (!known[p.id]) out.push(p); });
+    return out.sort(function (a, b) { return Date.parse(b.created_at) - Date.parse(a.created_at) || 0; });
   }
 
   /* ----- notifications ----- */
