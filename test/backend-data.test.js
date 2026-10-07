@@ -36,7 +36,7 @@ test('backend mode: authenticates, loads progress + admin content, and actions r
   const calls = [];
   const data = setup((url, opts) => {
     calls.push({ url, opts });
-    if (url.endsWith('/functions/v1/auth-telegram')) return json({ token: 'jwt', expires_at: Math.floor(Date.now() / 1000) + 3600, role: 'user' });
+    if (url.endsWith('/functions/v1/auth-telegram')) return json({ token: 'jwt', expires_at: Math.floor(Date.now() / 1000) + 3600, role: 'user', user: { id: 42 } });
     if (url.includes('/users?telegram_id=eq.42')) return json([serverUser]);
     if (url.includes('/rig_parts_owned')) return json([{ part_id: 'gpu' }]);
     if (url.includes('/user_tasks')) return json([{ task_id: 'earn_xp', status: 'claimed' }]);
@@ -88,7 +88,7 @@ test('non-admin session never writes admin content', async () => {
   const calls = [];
   const data = setup((url, opts) => {
     calls.push({ url, opts });
-    if (url.endsWith('/auth-telegram')) return json({ token: 'jwt', expires_at: Math.floor(Date.now() / 1000) + 3600, role: 'user' });
+    if (url.endsWith('/auth-telegram')) return json({ token: 'jwt', expires_at: Math.floor(Date.now() / 1000) + 3600, role: 'user', user: { id: 42 } });
     return json([]);
   }, SEC);
   await data.bootstrap({ id: 9 }, 'initData');
