@@ -1,41 +1,13 @@
 // Fair-engagement UI (streak, weekly leaderboard, community milestones, sponsor disclosure, premium cosmetics UI, community links). Mounted by app.js.
 (function () {
   'use strict';
-  var CFG = window.TP_CONFIG, E = window.TPEngage, Core = window.TPCore, Data = window.TPData, FX = window.TPEffects;
-
-  var L = {
-    pl: {
-      streak: 'Seria logowań', days: 'dni', best: 'Rekord', streakNote: 'Bez przypomnień push — seria po prostu zaczyna się od nowa, gdy zrobisz przerwę.', streakBonus: 'Bonus za serię: +', next: 'Kolejny bonus za ', daysLeft: ' dni',
-      board: 'Ranking tygodniowy', thisWeek: 'Ten tydzień', lastWeek: 'Poprzedni tydzień', boardNote: 'Co poniedziałek wszyscy startują od zera.', noRows: 'Brak wyników.', pts: 'XP',
-      together: 'Razem zebraliśmy', milestones: 'Wspólne kamienie milowe', unlocked: 'Odblokowano', milestoneBanner: 'Wspólny sukces! ', dismiss: 'Zamknij',
-      cooldown: 'Zbyt szybka aktywność — krótka przerwa, spróbuj za chwilę.',
-      sponsor: 'Wspierane przez', sponsorOpen: 'Otwórz stronę sponsora',
-      premium: 'Premium (kosmetyki)', passInfo: 'Karnet miesięczny 9,99 zł: kosmetyki, brak banerów, wcześniejszy dostęp do eventów. Bez przewagi w grze.', premiumOn: 'Włącz Premium (podgląd)', premiumOff: 'Wyłącz Premium', premiumUiOnly: 'Tylko interfejs — brak weryfikacji płatności po stronie serwera.',
-      showBadge: 'Pokaż odznakę Premium', badge: 'Premium', none: '— brak —', border: 'Ramka awatara', theme: 'Motyw profilu', bubble: 'Dymek czatu',
-      charterTitle: 'Nasze wartości', charter: 'TechnixPro stawia na uczciwość i zrównoważony rozwój: bez ciemnych wzorców, bez płatnych przewag, z jasnym oznaczaniem sponsorów.',
-      roadmap: 'Mapa drogowa', feedback: 'Coś Ci się nie podoba? Powiedz nam', discord: 'Połącz Discord (WhiteList)', soon: 'Link wkrótce', community: 'Społeczność',
-      tab: 'Razem'
-    },
-    en: {
-      streak: 'Login streak', days: 'days', best: 'Best', streakNote: 'No push reminders — the streak simply restarts after a break.', streakBonus: 'Streak bonus: +', next: 'Next bonus at ', daysLeft: ' days',
-      board: 'Weekly leaderboard', thisWeek: 'This week', lastWeek: 'Last week', boardNote: 'Everyone starts from zero every Monday.', noRows: 'No results yet.', pts: 'XP',
-      together: 'Together we earned', milestones: 'Community milestones', unlocked: 'Unlocked', milestoneBanner: 'Shared win! ', dismiss: 'Dismiss',
-      cooldown: 'Activity too fast — short break, try again in a moment.',
-      sponsor: 'Supported by', sponsorOpen: 'Open sponsor website',
-      premium: 'Premium (cosmetics)', passInfo: 'Monthly pass 9.99 PLN: cosmetics, no banners, early event access. No gameplay advantage.', premiumOn: 'Enable Premium (preview)', premiumOff: 'Disable Premium', premiumUiOnly: 'UI only — no server-side payment verification yet.',
-      showBadge: 'Show Premium badge', badge: 'Premium', none: '— none —', border: 'Avatar border', theme: 'Profile theme', bubble: 'Chat bubble',
-      charterTitle: 'Our values', charter: 'TechnixPro is built on fairness and sustainability: no dark patterns, no pay-to-win, sponsors always clearly labelled.',
-      roadmap: 'Roadmap', feedback: 'Not happy with something? Tell us', discord: 'Connect Discord (WhiteList)', soon: 'Link coming soon', community: 'Community',
-      tab: 'Together'
-    }
-  };
-  var MILESTONE_NAMES = { pl: { total_xp: 'XP razem', users: 'użytkowników' }, en: { total_xp: 'XP together', users: 'users' } };
+  var CFG = window.TP_CONFIG, E = window.TPEngage, Core = window.TPCore, Data = window.TPData, FX = window.TPEffects, I18N = window.TPI18n;
 
   function create(ctx) {
     var h = ctx.h, icon = ctx.icon;
     var me = function () { return ctx.me(); };
     var ui = { board: 'now', banners: [], streak: null, rotated: false, sponsorSeen: {} };
-    function t(k) { return (L[ctx.lang()] || L.pl)[k] || L.pl[k] || k; }
+    function t(k) { return I18N.t('eng.' + k); }
     function now() { return new Date().toISOString(); }
 
     /* ---------- data ---------- */
@@ -101,7 +73,7 @@
       return ui.banners.map(function (m) {
         return h('div', { class: 'panel community-banner tp-banner flex items-center gap-3', role: 'status' },
           icon('fa-champagne-glasses', 'text-amber-300'),
-          h('div', { class: 'flex-1 text-sm' }, t('milestoneBanner') + ctx.fmt(m.target) + ' ' + (MILESTONE_NAMES[ctx.lang()] || MILESTONE_NAMES.pl)[m.metric]),
+          h('div', { class: 'flex-1 text-sm' }, t('milestoneBanner') + ctx.fmt(m.target) + ' ' + t('ms.' + m.metric)),
           h('button', { type: 'button', class: 'btn btn-ghost', 'aria-label': t('dismiss'), onclick: function () { ui.banners = ui.banners.filter(function (x) { return x !== m; }); ctx.rerender(); } }, icon('fa-xmark')));
       });
     }
@@ -119,7 +91,7 @@
     function sponsorLink(s) {
       var a = h('a', { class: 'sponsor-badge', href: s.link, target: '_blank', rel: 'noopener noreferrer sponsored', 'aria-label': t('sponsorOpen') + ': ' + s.name, title: s.name });
       if (s.logo_url) a.appendChild(h('img', { src: s.logo_url, alt: '', referrerpolicy: 'no-referrer', loading: 'lazy' })); else a.appendChild(icon('fa-handshake'));
-      a.appendChild(document.createTextNode(E.disclosure(s)));
+      a.appendChild(document.createTextNode(t('sponsor') + ' ' + s.name));
       return a;
     }
     function homeExtras() {
@@ -168,7 +140,7 @@
         h('div', { class: 'text-[10px] muted' }, t('boardNote')));
     }
     function milestonesCard() {
-      var tot = totals(), names = MILESTONE_NAMES[ctx.lang()] || MILESTONE_NAMES.pl;
+      var tot = totals(), names = { total_xp: t('ms.total_xp'), users: t('ms.users') };
       return h('div', { class: 'panel space-y-2' },
         h('h3', { class: 'font-bold text-sm' }, icon('fa-people-group', 'text-violet-300'), ' ' + t('milestones')),
         h('div', { class: 'text-sm' }, t('together') + ' ' + ctx.fmt(tot.total_xp) + ' XP'),

@@ -7,6 +7,7 @@ Static Telegram Mini App (no build step). Runs offline with mock data in `localS
 - `index.html` — shell (header, content, bottom nav); screens are rendered by `app.js`.
 - `app-config.js` — feature flags and constants (levels, tasks, referral milestones, RIG parts, XP timer, events).
 - `config.js` — **template** with placeholders (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `BOT_USERNAME`, `ADMIN_IDS`). Fill in your own values; never put a service_role key or bot token here.
+- `i18n.js` — shared PL/EN dictionaries and `t(key, params)` (fallback en → pl → key); tested with `node --test test/i18n.test.js`. See „Language (i18n)” below.
 - `core.js` — pure logic (levels, referrals, tasks, achievements, validation); tested with `node --test test/core.test.js`.
 - `backend-adapter.js` — pure mapping between Supabase rows and app shapes (users, tasks, posts, settings); tested with `node --test test/backend-adapter.test.js`.
 - `data.js` — versioned localStorage store (`technixpro:v<STORAGE_VERSION>:*`, older versions are purged) and optional Supabase REST adapter with fallback to mock data.
@@ -37,6 +38,14 @@ Static Telegram Mini App (no build step). Runs offline with mock data in `localS
 - Phase 1 (Stealth): only Kanał. Phase 2 (Community): + Chat, Bonusy, Warsztat. Phase 3 (Token & Wallet): + Wallet, Shop, Airdrop. The admin always sees everything (use "Podgląd użytkownika" to see what users see). With no phase deployed, all features stay on (backward compatible).
 - Admin data is kept in `localStorage` (`admin`, `admin:audit`, `admin:phases`, `admin:notifications`, `admin:trash`, `admin:history`) and mirrored best-effort to Supabase tables `admin_actions`, `phases`, `notifications`, `post_trash`. Without a backend, changes apply only on this device.
 - Bottom nav: Home, TechnixPro (bonuses), Warsztat, Wallet, Profil; Chat is a header button; the clicker counter is in the header (every 100 clicks +5 XP, every 1000 +50 XP and a loot box, 10 000 an achievement).
+
+## Language (i18n)
+
+The language lives in `me.settings.language` (`pl` | `en`, default `pl`; new Telegram users get `en` when their `language_code` is not `pl`). Changing it in Profil > Ustawienia > Język re-renders the whole app (including the admin panel and engagement UI) without a reload, updates `<html lang>`/`document.title`, and is persisted for the next launch.
+
+- **Add a key:** add it to both `pl` and `en` in `i18n.js` (admin tabs use the `admin.` prefix, Monetyzacja `monet.`, engagement UI `eng.`) and use `tr('key', { param })` in `app.js` (or the local `t('key')` in the admin/engagement modules). `{param}` placeholders must match in both languages; `node --test test/i18n.test.js` enforces identical key sets.
+- **Add a language:** add a dictionary with the same keys, register it in `DICT`, `SUPPORTED` and `LOCALES` in `i18n.js`, and add an `<option>` to the language select in `app.js` (`profileSettings`).
+- Built-in titles (levels, default tasks/events, RIG parts, achievements) are translated by key (`level.N`, `task.<id>`, `event.<id>.title|desc`, `rig.part.<key>`, `ach.*`). User/admin-authored content (posts, comments, chat, custom or edited tasks/events) is shown exactly as entered, never translated.
 
 ## Social links
 
