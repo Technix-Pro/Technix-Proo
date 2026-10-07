@@ -4,6 +4,8 @@ window.TECHNIX_CONFIG = {
   SUPABASE_URL: 'https://yvzackedovkrdnraznbl.supabase.co',
   SUPABASE_ANON_KEY: 'sb_publishable_WrCP0j-ngvGRYYS8bAAACQ_7W0jwa3b',
   BOT_USERNAME: 'TechnixProBot',
+  // Public numeric bot id (the part before ':' in the token) used for tg://starref links. Never put the token here.
+  BOT_ID: '8744702948',
   // HTTPS endpoint (e.g. Supabase Edge Function) returning { invoice_link } for a Telegram Stars invoice.
   INVOICE_ENDPOINT: 'https://yvzackedovkrdnraznbl.supabase.co/functions/v1/smooth-service',
   // Telegram IDs allowed to see the admin panel (UI only; enforce on the backend with RLS / initData verification).

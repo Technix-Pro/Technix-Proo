@@ -3,6 +3,7 @@ window.TECHNIX_CONFIG = {
   SUPABASE_URL: 'https://YOUR-PROJECT.supabase.co',
   SUPABASE_ANON_KEY: 'YOUR_SUPABASE_ANON_KEY',
   BOT_USERNAME: 'YourBotUsername',
+  BOT_ID: '123456789',
   // Endpoint that creates a Telegram Stars invoice link (see DEPLOYMENT.md). Empty = Stars payments off.
   INVOICE_ENDPOINT: 'https://YOUR-PROJECT.supabase.co/functions/v1/create-invoice',
   REPORT_BUG_URL: 'https://github.com/Technix-Pro/Technix-Proo/issues/new',
