@@ -785,6 +785,9 @@
     p.then(applySync, function () {}).then(function () { syncing = false; }, function () { syncing = false; });
   }
   backendSync(true);
+  function flushPending() { try { Data.flushProfile(); } catch (e) { /* ignore */ } }
+  document.addEventListener('visibilitychange', function () { if (document.hidden) flushPending(); else backendSync(false); });
+  window.addEventListener('pagehide', flushPending);
   setInterval(function () { backendSync(false); }, 60000);
   Data.subscribeStorage(function (key) {
     if (key === 'user:' + me.id) {
