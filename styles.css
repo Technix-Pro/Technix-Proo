@@ -84,3 +84,32 @@ body.admin-open { overflow: hidden; }
 }
 @media (prefers-reduced-motion: reduce) { .confetti-layer { display: none; } }
 .status-banner { position: sticky; top: 0; z-index: 40; text-align: center; font-size: 12px; padding: 6px 12px; background: #7c2d12; color: #fed7aa; }
+
+/* Fair-engagement animations: transform + opacity only, subtle, all disabled by prefers-reduced-motion */
+.confetti-rain .confetti-piece { top: 0; animation-name: confetti-fall; }
+@keyframes confetti-fall {
+  0% { opacity: 1; transform: translate3d(0,-20px,0) rotate(0deg); }
+  100% { opacity: 0; transform: translate3d(var(--dx), var(--dy), 0) rotate(var(--rot)); }
+}
+.tp-glow, .tp-sponsor-glow { position: relative; }
+.tp-glow::after, .tp-sponsor-glow::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; box-shadow: 0 0 18px rgba(34,211,238,.55); }
+.tp-glow::after { animation: tpGlow 1s ease-in-out 1; }
+.tp-sponsor-glow::after { animation: tpGlow 1.2s ease-in-out 1; box-shadow: 0 0 12px rgba(167,139,250,.4); }
+@keyframes tpGlow { 0%, 100% { opacity: 0; } 50% { opacity: .8; } }
+.tp-shake { animation: tpShake 300ms steps(4, end) 1; }
+@keyframes tpShake { 0% { transform: translate3d(0,0,0); } 25% { transform: translate3d(-4px,0,0); } 50% { transform: translate3d(4px,0,0); } 75% { transform: translate3d(-2px,0,0); } 100% { transform: translate3d(0,0,0); } }
+.tp-pulse { animation: tpPulse 1.6s ease-in-out infinite; }
+@keyframes tpPulse { 0%, 100% { transform: scale(1); opacity: .8; } 50% { transform: scale(1.15); opacity: 1; } }
+.tp-fade-in { animation: tpFadeIn 300ms cubic-bezier(.4,0,.2,1) both; }
+.tp-fade-out { animation: tpFadeOut 300ms cubic-bezier(.4,0,.2,1) both; }
+@keyframes tpFadeIn { from { opacity: 0; transform: translate3d(0,6px,0); } to { opacity: 1; transform: none; } }
+@keyframes tpFadeOut { from { opacity: 1; } to { opacity: 0; transform: translate3d(0,-6px,0); } }
+.tp-banner { animation: tpFadeIn 300ms cubic-bezier(.4,0,.2,1) both; }
+.sponsor-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: #c4b5fd; text-decoration: none; }
+.sponsor-badge img { width: 16px; height: 16px; border-radius: 4px; object-fit: cover; }
+.cosmetic-border { box-shadow: 0 0 0 2px var(--cosmetic-color, #22d3ee); }
+@media (prefers-reduced-motion: reduce) {
+  .tp-glow::after, .tp-sponsor-glow::after { animation: none !important; opacity: 0 !important; }
+  .tp-shake, .tp-pulse, .tp-fade-in, .tp-fade-out, .tp-banner { animation: none !important; }
+  .confetti-rain { display: none; }
+}

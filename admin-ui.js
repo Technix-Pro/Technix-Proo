@@ -5,7 +5,7 @@
 
   var L = {
     pl: {
-      title: 'Panel administratora', close: 'Zamknij', forbidden: 'Brak uprawnień administratora.',
+      title: 'Panel administratora', monetization: 'Monetyzacja', close: 'Zamknij', forbidden: 'Brak uprawnień administratora.',
       posts: 'Posty', tasks: 'Zadania', events: 'Eventy', notifications: 'Powiadomienia', phases: 'Fazy', settings: 'Ustawienia', stats: 'Statystyki',
       text: 'Treść posta…', images: 'Obrazy — URL, po jednym w linii', videos: 'Wideo — URL (.mp4/.webm), po jednym w linii', links: 'Linki — po jednym w linii',
       upload: 'Dodaj obraz (PNG/JPEG/WebP ≤ 2 MB)', schedule: 'Zaplanuj publikację', draft: 'Szkic', published: 'Opublikowany', scheduled: 'Zaplanowany',
@@ -22,7 +22,7 @@
       online: 'Online teraz', active24: 'Aktywni 24h', active7: 'Aktywni 7 dni', users: 'Użytkownicy (to urządzenie)', avgXp: 'Śr. XP / użytkownik', tasksDone: 'Ukończone zadania', referrals: 'Polecenia', totalXp: 'XP w obiegu', avgBalance: 'Śr. saldo (TON)', txVolume: 'Wolumen transakcji', topTasks: 'Najczęściej ukończone zadania', lastPhase: 'Ostatnia faza', adoption: 'Adopcja fazy', statsNote: 'Dane lokalne (demo). Po podpięciu Supabase statystyki obejmą wszystkich użytkowników.'
     },
     en: {
-      title: 'Admin panel', close: 'Close', forbidden: 'Admin permission required.',
+      title: 'Admin panel', monetization: 'Monetization', close: 'Close', forbidden: 'Admin permission required.',
       posts: 'Posts', tasks: 'Tasks', events: 'Events', notifications: 'Notifications', phases: 'Phases', settings: 'Settings', stats: 'Stats',
       text: 'Post text…', images: 'Images — URL, one per line', videos: 'Video — URL (.mp4/.webm), one per line', links: 'Links — one per line',
       upload: 'Add image (PNG/JPEG/WebP ≤ 2 MB)', schedule: 'Schedule publication', draft: 'Draft', published: 'Published', scheduled: 'Scheduled',
@@ -39,12 +39,18 @@
       online: 'Online now', active24: 'Active 24h', active7: 'Active 7 days', users: 'Users (this device)', avgXp: 'Avg XP / user', tasksDone: 'Tasks completed', referrals: 'Referrals', totalXp: 'XP in circulation', avgBalance: 'Avg balance (TON)', txVolume: 'Transaction volume', topTasks: 'Most completed tasks', lastPhase: 'Latest phase', adoption: 'Phase adoption', statsNote: 'Local data (demo). With Supabase connected, stats will cover all users.'
     }
   };
-  var TABS = ['posts', 'tasks', 'events', 'notifications', 'phases', 'settings', 'stats'];
+  var TABS = ['posts', 'tasks', 'events', 'notifications', 'phases', 'settings', 'stats', 'monetization'];
 
   function create(ctx) {
     var h = ctx.h, icon = ctx.icon;
     var ui = { tab: 'posts', draft: blankDraft(), previewPost: null, notifDraft: { title: '', message: '', link: '', scheduled_at: '' }, notifPreview: false, editTask: null, editEvent: null, connMsg: '', lastSend: 0 };
     var overlay = null, opener = null;
+    var monet = window.TPAdminMonet.create({
+      h: h, icon: icon, lang: ctx.lang, toast: ctx.toast, fmtDate: ctx.fmtDate, me: function () { return me(); }, guard: function () { return guard(); },
+      audit: function (a, ty, id, c) { audit(a, ty, id, c); }, applied: function (m) { applied(m); }, refresh: function () { refresh(); },
+      input: function (a) { return input(a); }, field: function (l, e) { return field(l, e); }, btn: function (l, f, c, e) { return btn(l, f, c, e); },
+      badge: function (l, c) { return badge(l, c); }, sectionTitle: function (l) { return sectionTitle(l); }
+    });
 
     function t(k) { return (L[ctx.lang()] || L.pl)[k] || L.pl[k] || k; }
     function blankDraft() { return { id: null, content: '', images: '', videos: '', links: '', attachments: [], scheduled_at: '', published: false }; }
@@ -104,7 +110,7 @@
       if (!ctx.isAdmin()) { close(); return; }
       var scroll = overlay.querySelector('.admin-body');
       var top = scroll ? scroll.scrollTop : 0;
-      var body = { posts: tabPosts, tasks: tabTasks, events: tabEvents, notifications: tabNotifications, phases: tabPhases, settings: tabSettings, stats: tabStats }[ui.tab]();
+      var body = { posts: tabPosts, tasks: tabTasks, events: tabEvents, notifications: tabNotifications, phases: tabPhases, settings: tabSettings, stats: tabStats, monetization: function () { return monet.render(); } }[ui.tab]();
       var tabs = h('div', { class: 'subtabs', role: 'tablist', 'aria-label': t('title') }, TABS.map(function (k) {
         return h('button', { type: 'button', role: 'tab', id: 'admin-tab-' + k, 'aria-selected': String(ui.tab === k), tabindex: ui.tab === k ? '0' : '-1', class: 'subtab' + (ui.tab === k ? ' active' : ''), onclick: function () { ui.tab = k; refresh(); } }, t(k));
       }));

@@ -13,6 +13,10 @@ Static Telegram Mini App (no build step). Runs offline with mock data in `localS
 - `admin-ui.js` — admin modal (Posty, Zadania, Eventy, Powiadomienia, Fazy, Ustawienia, Statystyki).
 - `app.js` — UI: Kanał (posts + admin panel), Chat, Bonusy, Warsztat RIG, Profil.
 - `rig-builder.js` — RIG assembly animation and reduced-motion handling.
+- `engagement.js` — pure fair-engagement logic (streaks, weekly leaderboard rotation, community milestones, anti-bot cooldown, sponsors, cosmetics, CSV); tested with `node --test test/engagement.test.js`.
+- `engagement-ui.js`, `admin-monetization.js` — user-facing engagement UI (Bonusy > Razem, Home, Profil) and the admin tab „Monetyzacja”.
+- `effects.js` — celebratory animations (confetti, glow, shake); all respect `prefers-reduced-motion`.
+- `supabase-engagement.sql` — optional Supabase tables (`user_streaks`, `leaderboard_history`, `sponsors`, `premium_cosmetics`, `user_premium`, `community_milestones`, `analytics_exports`).
 - `styles.css` — styles.
 
 ## Features
@@ -35,6 +39,10 @@ Static Telegram Mini App (no build step). Runs offline with mock data in `localS
 ## Social links
 
 Buttons (X, Facebook, Instagram, Telegram, Discord, YouTube, TikTok, Oficjalna strona) appear in Profil > Profil and at the bottom of Home. Links are empty by default (button shows „Link wkrótce”). Fill them in `SOCIAL_LINKS` in `app-config.js`, or as admin in Panel > Ustawienia > Społeczność / Social (saved in the admin state, overrides the defaults). Only http(s) URLs are accepted; `t.me` links open via `Telegram.WebApp.openTelegramLink`.
+
+## Fair engagement & monetization
+
+No dark patterns: daily streak (+1/day, bonus XP at day 7/14/30, quiet reset, no push), weekly leaderboard that resets every Monday for everyone, community milestones („Razem zebraliśmy X XP”), and a temporary anti-bot cooldown (never a ban). Sponsored posts always show „Wspierane przez [Sponsor]”. Premium is cosmetic only (`PREMIUM_COSMETICS` in `app-config.js` plus packs created in Panel > Monetyzacja); the Premium toggle is UI-only until server-side payment verification exists. Set `COMMUNITY_LINKS` (Discord bot invite, feedback, roadmap) in `app-config.js`. Admin CSV exports (monthly analytics and sponsor report) contain aggregates only.
 
 ## Run
 
