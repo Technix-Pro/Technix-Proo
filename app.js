@@ -557,6 +557,32 @@
       return svg;
   }
 
+  var payingParts = {};
+  function payRigPartWithStars(part) {
+    var P = window.TPPayments;
+    if (!P || !CFG.PAYMENTS_ENABLED || payingParts[part.key]) { toast('Płatności są niedostępne.'); return; }
+    payingParts[part.key] = true; render();
+    function done() { delete payingParts[part.key]; render(); }
+    P.sendStarsInvoice(me.id, part.stars, part.title, 'RIG: ' + part.title, part.key).then(function (res) {
+      if (!res.ok) {
+        done();
+        toast(res.queued ? 'Brak sieci — ponowimy przy następnym uruchomieniu.' : 'Błąd płatności: ' + res.error + ' (kliknij Kup, aby ponowić)');
+        return;
+      }
+      console.log('Invoice ID:', res.invoice_id);
+      P.trackInvoice(res.invoice_id, {
+        onPaid: function () {
+          var r = Data.grantRigPart(me, part.key);
+          if (r.ok) { pendingRigPart = part.key; save(); toast('Zapłacono: ' + part.title); if (window.TPEffects) window.TPEffects.celebrate('levelup', document.getElementById('header-level')); }
+          done();
+        },
+        onCancel: function () { toast('Płatność anulowana.'); done(); }
+      });
+      if (res.invoice_link && P.openInvoice(res.invoice_link)) return;
+      toast('Faktura wysłana do Telegrama, zatwierdź w czacie.');
+    });
+  }
+
   function viewRig() {
       var catalog = Data.rigPartsCatalog(), owned = Data.rigParts(me.id), status = TPRig.progress(owned);
       var allMounted = status.count === status.total;
@@ -585,16 +611,18 @@
           catalog.map(function (part) {
             var isOwned = owned.indexOf(part.key) !== -1;
             var cannotAfford = Number(me.stars) < part.price;
+            var isPaying = !!payingParts[part.key];
             return h('div', { class: 'rig-shop-row', 'data-part': part.key },
               h('div', { class: 'min-w-0' }, h('div', { class: 'text-sm font-semibold' }, part.title), h('div', { class: 'text-[11px] muted' }, isOwned ? 'Zamontowano' : part.price + ' ★')),
-              h('button', { type: 'button', class: 'btn ' + (isOwned ? 'btn-ghost' : ''), disabled: isOwned || cannotAfford, 'aria-label': isOwned ? part.title + ' — posiadana' : 'Kup ' + part.title, onclick: function () {
+              h('button', { type: 'button', class: 'btn ' + (isOwned ? 'btn-ghost' : ''), disabled: isOwned || isPaying, 'aria-label': isOwned ? part.title + ' — posiadana' : 'Kup ' + part.title, onclick: function () {
+                if (cannotAfford) { payRigPartWithStars(part); return; }
                 var result = Data.buyRigPart(me, part.key);
                 if (!result.ok) { toast(result.reason === 'insufficient_stars' ? 'Za mało gwiazdek.' : 'Nie udało się kupić części.'); return; }
                 pendingRigPart = part.key;
                 save();
                 toast('Kupiono: ' + part.title);
                 render();
-              } }, isOwned ? 'Posiadana' : cannotAfford ? 'Za mało ★' : 'Kup'));
+              } }, isOwned ? 'Posiadana' : isPaying ? 'Oczekuje na płatność…' : cannotAfford ? 'Kup za ' + part.stars + ' ⭐' : 'Kup'));
             }),
           h('p', { class: 'text-[11px] muted text-center' }, 'Części kupione w warsztacie zapisują się na Twoim koncie. Postęp: ' + status.count + '/7.'))];
   }
@@ -661,11 +689,12 @@
     return extras.concat([
       h('div', { class: 'panel text-center space-y-1' }, h('div', { class: 'text-xs muted' }, 'Saldo'), h('div', { class: 'text-3xl font-black text-white' }, fmt(me.wallet_balance) + ' TON')),
       h('div', { class: 'panel space-y-2' },
-        h('div', { class: 'flex items-center justify-between' }, h('span', { class: 'text-sm font-bold' }, icon('fa-wallet'), ' TON Keeper'), h('span', { class: 'text-xs ' + (me.ton_keeper_connected ? 'text-emerald-400' : 'muted') }, me.ton_keeper_connected ? 'Połączono' : 'Niepołączono')),
+        h('div', { class: 'flex items-center justify-between' }, h('span', { class: 'text-sm font-bold' }, icon('fa-wallet'), ' TON Keeper'), h('span', { class: 'text-xs ' + (me.ton_keeper_connected ? 'text-emerald-400' : 'muted') }, me.ton_keeper_connected ? 'Połączono' + (me.ton_keeper_pending ? ' (oczekuje na weryfikację)' : '') : 'Niepołączono')),
         h('button', { type: 'button', class: 'btn w-full', disabled: !CFG.FEATURES.tonKeeper, onclick: function () {
           if (me.ton_keeper_connected) { me.ton_keeper_connected = false; save(); render(); return; }
+          // TON Connect v3 integration pending - requires TON SDK (future: window.tonConnectUI)
           if (tg && tg.openLink) tg.openLink('https://app.tonkeeper.com/'); else window.open('https://app.tonkeeper.com/', '_blank', 'noopener');
-          me.ton_keeper_connected = true; save(); toast('Połączono (demo — brak weryfikacji TON Connect).'); render();
+          me.ton_keeper_pending = true; me.ton_keeper_connected = true; save(); toast('Oczekuje na weryfikację (demo — brak TON Connect).'); render();
         } }, me.ton_keeper_connected ? 'Rozłącz' : 'Połącz TON Keeper')),
       h('div', { class: 'panel space-y-2' }, amount, h('div', { class: 'flex gap-2' },
         h('button', { type: 'button', class: 'btn flex-1', onclick: function () { op('deposit'); } }, 'Wpłać'),
@@ -746,4 +775,5 @@
   }, 15000);
   lastNotifCount = pendingNotifications().length;
   render();
+  if (window.TPPayments) window.TPPayments.retryQueued();
 })();
