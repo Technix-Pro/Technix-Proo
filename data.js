@@ -6,6 +6,7 @@
   var remoteOn = BE.isConfigured(SEC);
   // Backend session (JWT from the auth-telegram Edge Function). Without it (no Telegram initData) the app stays in local/mock mode for progress.
   var session = null, authPromise = null, initDataRaw = '', currentId = null, syncedClicks = 0, leadersCache = null;
+  var failures = 0, lastOkAt = 0, verified = null, REQUEST_TIMEOUT_MS = 12000, STALE_MS = 10 * 60000;
   var queue = Promise.resolve(), profileTimer = null, pendingUser = null;
   function noop() {}
 
@@ -49,25 +50,41 @@
       return r.json();
     }).then(function (res) {
       authPromise = null;
-      session = { token: res.token, expires_at: res.expires_at, role: res.role };
+      var ident = BE.verifiedIdentity(res);
+      if (!ident) throw new Error('auth invalid response');
+      verified = ident; currentId = ident.id;
+      session = { token: ident.token, expires_at: ident.expires_at, role: ident.role };
       return session;
     }, function (e) { authPromise = null; throw e; });
     return authPromise;
   }
-  function canSync() { return remoteOn && !!initDataRaw && !!currentId; }
+  function canSync() { return remoteOn && !!initDataRaw && !!currentId && !!verified; }
   function isAdminSession() { return BE.sessionValid(session) && BE.isAdminRole(session.role); }
 
   function remote(method, path, body) {
     if (!remoteOn || !CFG.FEATURES.realtime) return Promise.reject(new Error('remote off'));
     var pre = initDataRaw && !BE.sessionValid(session) ? authenticate().catch(noop) : Promise.resolve();
-    return pre.then(function () {
+    return pre.then(function () { return request(method, path, body); }).then(null, function (err) {
+      if (!BE.isAuthError(err && err.status) || !initDataRaw) throw err;
+      session = null;
+      return authenticate().then(function () { return request(method, path, body); });
+    }).then(function (res) { failures = 0; lastOkAt = Date.now(); return res; }, function (err) {
+      if (BE.isTransient(err)) failures++;
+      throw err;
+    });
+  }
+  function request(method, path, body) {
+    return Promise.resolve().then(function () {
       var headers = {
         apikey: SEC.SUPABASE_ANON_KEY,
         Authorization: 'Bearer ' + (BE.sessionValid(session) ? session.token : SEC.SUPABASE_ANON_KEY),
         'Content-Type': 'application/json'
       };
       if (method === 'POST' && path.indexOf('rpc/') !== 0) headers.Prefer = 'return=representation,resolution=merge-duplicates';
-      return fetch(SEC.SUPABASE_URL.replace(/\/$/, '') + '/rest/v1/' + path, { method: method, headers: headers, body: body ? JSON.stringify(body) : undefined });
+      var ctl = typeof AbortController === 'function' ? new AbortController() : null;
+      var timer = ctl ? setTimeout(function () { ctl.abort(); }, REQUEST_TIMEOUT_MS) : null;
+      return fetch(SEC.SUPABASE_URL.replace(/\/$/, '') + '/rest/v1/' + path, { method: method, headers: headers, body: body ? JSON.stringify(body) : undefined, signal: ctl ? ctl.signal : undefined })
+        .then(function (r) { if (timer) clearTimeout(timer); return r; }, function (e) { if (timer) clearTimeout(timer); throw e; });
     }).then(function (r) {
       if (!r.ok) { var err = new Error('HTTP ' + r.status); err.status = r.status; throw err; }
       return r.status === 204 ? [] : r.json();
@@ -147,6 +164,12 @@
 
   var Data = {
     remoteEnabled: remoteOn,
+    // 'local' | 'remote' | 'offline' (configured but failing); stale = no successful backend call recently.
+    mode: function () { return BE.backendMode(SEC, { disabled: !CFG.FEATURES.realtime, failures: failures }); },
+    isStale: function () { return remoteOn && BE.isStale(lastOkAt, Date.now(), STALE_MS); },
+    // Server-verified identity/role (null until auth-telegram succeeded); never derived from client-supplied ids.
+    verifiedUser: function () { return verified && verified.user; },
+    isAdmin: function (id) { return BE.adminAllowed(SEC, id, session, remoteOn && !!initDataRaw); },
     onSynced: null,
 
     // Starts a backend session from Telegram initData and loads content + progress. Resolves null when no backend is configured.

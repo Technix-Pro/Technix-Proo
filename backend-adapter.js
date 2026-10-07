@@ -27,6 +27,36 @@
     return !isFinite(exp) || exp - 30000 > (nowMs || Date.now());
   }
 
+  // Single source of truth for the data source: 'local' (no usable config / feature off), 'remote' (signed-in or anonymous reads work), 'offline' (configured but recent requests failing).
+  function backendMode(sec, state) {
+    state = state || {};
+    if (!isConfigured(sec) || state.disabled) return 'local';
+    return num(state.failures, 0) >= 3 ? 'offline' : 'remote';
+  }
+
+  // The server-verified identity wins over whatever id the client claimed; null when the response is unusable.
+  function verifiedIdentity(res) {
+    var id = res && res.user ? Number(res.user.id) : NaN;
+    if (!res || !res.token || !isFinite(id) || id <= 0) return null;
+    return { id: id, role: isAdminRole(res.role) ? res.role : 'user', user: res.user, token: res.token, expires_at: res.expires_at };
+  }
+
+  // Admin UI is gated by the server role when a backend login is expected; ADMIN_IDS is only an offline/mock hint.
+  function adminAllowed(sec, id, session, expectServer, nowMs) {
+    if (expectServer) return sessionValid(session, nowMs) && isAdminRole(session.role);
+    return !!sec && Array.isArray(sec.ADMIN_IDS) && sec.ADMIN_IDS.map(Number).indexOf(Number(id)) !== -1;
+  }
+
+  function isStale(ts, nowMs, maxAgeMs) {
+    var t = typeof ts === 'number' ? ts : Date.parse(ts);
+    return !isFinite(t) || (nowMs || Date.now()) - t > (maxAgeMs == null ? 300000 : maxAgeMs);
+  }
+
+  // Auth failures (expired/invalid JWT) are retried once after re-authenticating; 5xx/network errors are transient.
+  function isAuthError(status) { return status === 401 || status === 403; }
+  function isTransient(err) { return !err || !err.status || err.status >= 500 || err.status === 429 || err.status === 408; }
+  function retryDelay(attempt) { return Math.min(30000, 1000 * Math.pow(2, Math.max(0, attempt || 0))); }
+
   /* ----- user ----- */
   function claimedFromTasks(rows) {
     return (Array.isArray(rows) ? rows : []).filter(function (r) { return r && r.status === 'claimed'; }).map(function (r) { return r.task_id; });
@@ -159,7 +189,8 @@
 
   var api = {
     isUuid: isUuid, isConfigured: isConfigured, authEndpoint: authEndpoint, isAdminRole: isAdminRole, sessionValid: sessionValid,
-    claimedFromTasks: claimedFromTasks, mapTransaction: mapTransaction, userFromRow: userFromRow, profilePatch: profilePatch,
+    backendMode: backendMode, verifiedIdentity: verifiedIdentity, adminAllowed: adminAllowed, isStale: isStale, isAuthError: isAuthError,
+    isTransient: isTransient, retryDelay: retryDelay, claimedFromTasks: claimedFromTasks, mapTransaction: mapTransaction, userFromRow: userFromRow, profilePatch: profilePatch,
     taskFromRow: taskFromRow, taskToRow: taskToRow, postFromRow: postFromRow, postToRow: postToRow, mergePosts: mergePosts,
     notificationFromRow: notificationFromRow, notificationToRow: notificationToRow, contentToState: contentToState,
     settingsRows: settingsRows, settingsToMap: settingsToMap, leadersFromRows: leadersFromRows

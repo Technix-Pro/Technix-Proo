@@ -79,7 +79,7 @@
 
   function isLocal() { return /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) || location.protocol === 'file:'; }
   function isAdmin() {
-    return Admin.isAdminId(me.id, SEC.ADMIN_IDS) || (!!SEC.DEV_MODE && isLocal() && /[?&]admin=1/.test(location.search));
+    return Data.isAdmin(me.id) || (!!SEC.DEV_MODE && isLocal() && /[?&]admin=1/.test(location.search));
   }
   function adminView() { return isAdmin() && !ui.preview; }
   function visible(feature) { return Admin.featureVisible(Data.getAdminState(), feature, adminView()); }

@@ -118,3 +118,40 @@ test('leadersFromRows maps to app leader shape', () => {
   const l = BE.leadersFromRows([{ telegram_id: 3, username: 'x', xp: 10, last_seen_at: 'now' }]);
   assert.deepEqual(l[0], { id: 3, username: 'x', avatar_url: '', xp_total: 10, last_active: 'now' });
 });
+
+const BEx = require('../backend-adapter.js');
+test('backendMode: local / remote / offline', () => {
+  assert.equal(BEx.backendMode({}, {}), 'local');
+  const sec = { SUPABASE_URL: 'https://x.supabase.co', SUPABASE_ANON_KEY: 'k' };
+  assert.equal(BEx.backendMode(sec, {}), 'remote');
+  assert.equal(BEx.backendMode(sec, { disabled: true }), 'local');
+  assert.equal(BEx.backendMode(sec, { failures: 3 }), 'offline');
+});
+test('verifiedIdentity uses the server user id and sanitizes role', () => {
+  assert.equal(BEx.verifiedIdentity(null), null);
+  assert.equal(BEx.verifiedIdentity({ token: 't', user: { id: 'x' } }), null);
+  const v = BEx.verifiedIdentity({ token: 't', role: 'root', user: { id: '42' }, expires_at: 9 });
+  assert.equal(v.id, 42);
+  assert.equal(v.role, 'user');
+  assert.equal(BEx.verifiedIdentity({ token: 't', role: 'owner', user: { id: 1 } }).role, 'owner');
+});
+test('adminAllowed: server role when backend expected, ADMIN_IDS only offline', () => {
+  const sec = { ADMIN_IDS: [7] };
+  const good = { token: 't', role: 'admin', expires_at: Date.now() / 1000 + 600 };
+  assert.equal(BEx.adminAllowed(sec, 7, null, true), false);
+  assert.equal(BEx.adminAllowed(sec, 1, good, true), true);
+  assert.equal(BEx.adminAllowed(sec, 1, Object.assign({}, good, { role: 'user' }), true), false);
+  assert.equal(BEx.adminAllowed(sec, 7, null, false), true);
+  assert.equal(BEx.adminAllowed(sec, 8, null, false), false);
+});
+test('isStale, error classification and retryDelay', () => {
+  assert.equal(BEx.isStale(0, 1e6), true);
+  assert.equal(BEx.isStale(900, 1000, 500), false);
+  assert.equal(BEx.isAuthError(401), true);
+  assert.equal(BEx.isAuthError(500), false);
+  assert.equal(BEx.isTransient({ status: 503 }), true);
+  assert.equal(BEx.isTransient({ status: 400 }), false);
+  assert.equal(BEx.isTransient(new Error('network')), true);
+  assert.equal(BEx.retryDelay(0), 1000);
+  assert.equal(BEx.retryDelay(10), 30000);
+});
