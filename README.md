@@ -17,6 +17,7 @@ Static Telegram Mini App (no build step). Runs offline with mock data in `localS
 - `engagement-ui.js`, `admin-monetization.js` — user-facing engagement UI (Bonusy > Razem, Home, Profil) and the admin tab „Monetyzacja”.
 - `effects.js` — celebratory animations (confetti, glow, shake); all respect `prefers-reduced-motion`.
 - `supabase-engagement.sql` — optional Supabase tables (`user_streaks`, `leaderboard_history`, `sponsors`, `premium_cosmetics`, `user_premium`, `community_milestones`, `analytics_exports`).
+- `supabase/migrations/` — Stage 1 schema + RLS (run after `supabase-engagement.sql`); `supabase/functions/auth-telegram` + `_shared/telegram-auth.mjs` — server-side Telegram initData verification (tested with `node --test test/telegram-auth.test.js`). See `DEPLOYMENT.md`.
 - `styles.css` — styles.
 
 ## Features
