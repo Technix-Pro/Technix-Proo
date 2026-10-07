@@ -1,44 +1,8 @@
 // Admin control panel UI (modal). Mounted by app.js; every mutating action re-checks ctx.isAdmin().
 (function () {
   'use strict';
-  var CFG = window.TP_CONFIG, Admin = window.TPAdmin, Core = window.TPCore, Data = window.TPData;
+  var CFG = window.TP_CONFIG, Admin = window.TPAdmin, Core = window.TPCore, Data = window.TPData, I18N = window.TPI18n;
 
-  var L = {
-    pl: {
-      title: 'Panel administratora', monetization: 'Monetyzacja', close: 'Zamknij', forbidden: 'Brak uprawnień administratora.',
-      posts: 'Posty', tasks: 'Zadania', events: 'Eventy', notifications: 'Powiadomienia', phases: 'Fazy', settings: 'Ustawienia', stats: 'Statystyki',
-      text: 'Treść posta…', images: 'Obrazy — URL, po jednym w linii', videos: 'Wideo — URL (.mp4/.webm), po jednym w linii', links: 'Linki — po jednym w linii',
-      upload: 'Dodaj obraz (PNG/JPEG/WebP ≤ 2 MB)', schedule: 'Zaplanuj publikację', draft: 'Szkic', published: 'Opublikowany', scheduled: 'Zaplanowany',
-      preview: 'Podgląd', savePost: 'Zapisz', cancel: 'Anuluj', edit: 'Edytuj', del: 'Usuń', restore: 'Przywróć', trash: 'Kosz', publish: 'Opublikuj', unpublish: 'Ukryj',
-      empty: 'Post jest pusty.', badDate: 'Niepoprawna data.', saved: 'Zapisano.', deleted: 'Przeniesiono do kosza.', restored: 'Przywrócono.', noItems: 'Brak elementów.',
-      badFile: 'Dozwolone: PNG, JPEG, WebP.', bigFile: 'Plik za duży (max 2 MB).', badLink: 'Pominięto niepoprawne adresy: ', storageFull: 'Brak miejsca w pamięci przeglądarki.',
-      confirmDelete: 'Na pewno usunąć?', add: 'Dodaj', reset: 'Przywróć domyślne', enabled: 'Włączone', completion: 'Ukończone', goal: 'Cel', metric: 'Metryka', rewardXp: 'Nagroda XP', rewardStars: 'Nagroda ★',
-      name: 'Tytuł', desc: 'Opis', reward: 'Nagroda', live: 'Live', upcoming: 'Wkrótce', startsAt: 'Start', endsAt: 'Koniec', invalid: 'Niepoprawne dane: ',
-      msgTitle: 'Tytuł powiadomienia', msgBody: 'Treść powiadomienia', msgLink: 'Link (opcjonalnie)', send: 'Wyślij do wszystkich', sendAt: 'Zaplanuj', history: 'Historia', status: 'Status', delivered: 'Dostarczono', sentAt: 'Wysłano', cancelled: 'Anulowane', sent: 'Wysłane', cancelNotif: 'Anuluj', sentOk: 'Powiadomienie wysłane.', scheduledOk: 'Powiadomienie zaplanowane.',
-      deploy: 'Wdróż Fazę ', deployConfirm: 'Wdrożyć fazę ', deployConfirm2: '? Zmieni to widoczność funkcji dla wszystkich użytkowników.', current: 'Aktualna', none: 'brak (wszystko włączone)', deployed: 'Wdrożono fazę ', deployedAt: 'Wdrożono',
-      flags: 'Funkcje', animation: 'Szybkość animacji', debug: 'Tryb debugowania', balance: 'Balans gry', xpMult: 'Mnożnik XP (0.5–2.0)', refScale: 'Skala nagród za polecenia', timerHours: 'Timer XP (godziny)', timerReward: 'Nagroda timera XP', dailyReward: 'Bonus dzienny XP', refRewards: 'Nagrody za polecenia (XP)', rigPrices: 'Ceny części RIG (★)', clicker: 'Clicker — progi', airdrop: 'Airdrop', airdropPool: 'Pula tokenów', airdropRate: 'Kurs (XP za 1 token)',
-      saveBalance: 'Zapisz ustawienia', supabase: 'Połączenie Supabase', connStatus: 'Status', connOn: 'Skonfigurowane', connOff: 'Tryb offline (mock localStorage)', testConn: 'Testuj połączenie', schema: 'Sprawdź schemat', connOk: 'Połączenie działa', connFail: 'Błąd połączenia: ', schemaOk: 'Schemat poprawny', schemaMissing: 'Brakujące tabele: ',
-      backup: 'Kopia zapasowa', export: 'Eksportuj JSON', import: 'Importuj JSON', importConfirm: 'Zastąpić bieżący stan aplikacji kopią zapasową?', importBad: 'Niepoprawny plik kopii.', versions: 'Historia wersji (ostatnie 5)', snapshot: 'Zapisz wersję', restoreVer: 'Przywróć', audit: 'Dziennik zmian',
-      online: 'Online teraz', active24: 'Aktywni 24h', active7: 'Aktywni 7 dni', users: 'Użytkownicy (to urządzenie)', avgXp: 'Śr. XP / użytkownik', tasksDone: 'Ukończone zadania', referrals: 'Polecenia', totalXp: 'XP w obiegu', avgBalance: 'Śr. saldo (TON)', txVolume: 'Wolumen transakcji', topTasks: 'Najczęściej ukończone zadania', lastPhase: 'Ostatnia faza', adoption: 'Adopcja fazy', statsNote: 'Dane lokalne (demo). Po podpięciu Supabase statystyki obejmą wszystkich użytkowników.'
-    },
-    en: {
-      title: 'Admin panel', monetization: 'Monetization', close: 'Close', forbidden: 'Admin permission required.',
-      posts: 'Posts', tasks: 'Tasks', events: 'Events', notifications: 'Notifications', phases: 'Phases', settings: 'Settings', stats: 'Stats',
-      text: 'Post text…', images: 'Images — URL, one per line', videos: 'Video — URL (.mp4/.webm), one per line', links: 'Links — one per line',
-      upload: 'Add image (PNG/JPEG/WebP ≤ 2 MB)', schedule: 'Schedule publication', draft: 'Draft', published: 'Published', scheduled: 'Scheduled',
-      preview: 'Preview', savePost: 'Save', cancel: 'Cancel', edit: 'Edit', del: 'Delete', restore: 'Restore', trash: 'Trash', publish: 'Publish', unpublish: 'Unpublish',
-      empty: 'Post is empty.', badDate: 'Invalid date.', saved: 'Saved.', deleted: 'Moved to trash.', restored: 'Restored.', noItems: 'Nothing here.',
-      badFile: 'Allowed: PNG, JPEG, WebP.', bigFile: 'File too large (max 2 MB).', badLink: 'Skipped invalid URLs: ', storageFull: 'Browser storage is full.',
-      confirmDelete: 'Delete for sure?', add: 'Add', reset: 'Restore defaults', enabled: 'Enabled', completion: 'Completed', goal: 'Goal', metric: 'Metric', rewardXp: 'XP reward', rewardStars: '★ reward',
-      name: 'Title', desc: 'Description', reward: 'Reward', live: 'Live', upcoming: 'Upcoming', startsAt: 'Starts', endsAt: 'Ends', invalid: 'Invalid data: ',
-      msgTitle: 'Notification title', msgBody: 'Notification message', msgLink: 'Link (optional)', send: 'Send to all users', sendAt: 'Schedule', history: 'History', status: 'Status', delivered: 'Delivered', sentAt: 'Sent', cancelled: 'Cancelled', sent: 'Sent', cancelNotif: 'Cancel', sentOk: 'Notification sent.', scheduledOk: 'Notification scheduled.',
-      deploy: 'Deploy Phase ', deployConfirm: 'Deploy phase ', deployConfirm2: '? This changes feature visibility for all users.', current: 'Current', none: 'none (everything enabled)', deployed: 'Deployed phase ', deployedAt: 'Deployed',
-      flags: 'Feature flags', animation: 'Animation speed', debug: 'Debug mode', balance: 'Game balance', xpMult: 'XP multiplier (0.5–2.0)', refScale: 'Referral reward scale', timerHours: 'XP timer (hours)', timerReward: 'XP timer reward', dailyReward: 'Daily bonus XP', refRewards: 'Referral rewards (XP)', rigPrices: 'RIG part prices (★)', clicker: 'Clicker — thresholds', airdrop: 'Airdrop', airdropPool: 'Token pool', airdropRate: 'Rate (XP per 1 token)',
-      saveBalance: 'Save settings', supabase: 'Supabase connection', connStatus: 'Status', connOn: 'Configured', connOff: 'Offline mode (localStorage mock)', testConn: 'Test connection', schema: 'Check schema', connOk: 'Connection OK', connFail: 'Connection failed: ', schemaOk: 'Schema OK', schemaMissing: 'Missing tables: ',
-      backup: 'Backup & restore', export: 'Export JSON', import: 'Import JSON', importConfirm: 'Replace the current app state with the backup?', importBad: 'Invalid backup file.', versions: 'Version history (last 5)', snapshot: 'Save version', restoreVer: 'Restore', audit: 'Audit log',
-      online: 'Online now', active24: 'Active 24h', active7: 'Active 7 days', users: 'Users (this device)', avgXp: 'Avg XP / user', tasksDone: 'Tasks completed', referrals: 'Referrals', totalXp: 'XP in circulation', avgBalance: 'Avg balance (TON)', txVolume: 'Transaction volume', topTasks: 'Most completed tasks', lastPhase: 'Latest phase', adoption: 'Phase adoption', statsNote: 'Local data (demo). With Supabase connected, stats will cover all users.'
-    }
-  };
   var TABS = ['posts', 'tasks', 'events', 'notifications', 'phases', 'settings', 'stats', 'monetization'];
 
   function create(ctx) {
@@ -52,7 +16,7 @@
       badge: function (l, c) { return badge(l, c); }, sectionTitle: function (l) { return sectionTitle(l); }
     });
 
-    function t(k) { return (L[ctx.lang()] || L.pl)[k] || L.pl[k] || k; }
+    function t(k) { return I18N.t('admin.' + k); }
     function blankDraft() { return { id: null, content: '', images: '', videos: '', links: '', attachments: [], scheduled_at: '', published: false }; }
     function me() { return ctx.me(); }
     function guard() {
@@ -476,15 +440,15 @@
 
       var soc = Admin.resolveSocialLinks(s), socIn = {};
       Admin.SOCIAL_KEYS.forEach(function (k) { socIn[k] = input({ type: 'url', inputmode: 'url', placeholder: 'https://…', value: soc[k], 'aria-label': 'Link: ' + k, maxlength: '500' }); });
-      out.push(sectionTitle('Społeczność / Social'));
+      out.push(sectionTitle(t('socialTitle')));
       out.push(h('div', { class: 'panel space-y-2' },
-        h('div', { class: 'text-[10px] muted' }, 'Puste pole = przycisk pokazuje „Link wkrótce”. Nadpisuje domyślne wartości z app-config.js.'),
+        h('div', { class: 'text-[10px] muted' }, t('socialHint')),
         Admin.SOCIAL_KEYS.map(function (k) { return field(k, socIn[k]); }),
-        btn('Zapisz linki', function () {
+        btn(t('socialSave'), function () {
           if (!guard()) return;
           var raw = {}; Admin.SOCIAL_KEYS.forEach(function (k) { raw[k] = socIn[k].value; });
           var r = Admin.validateSocialLinks(raw);
-          if (!r.ok) { ctx.toast('Nieprawidłowy URL: ' + r.invalid.join(', ')); return; }
+          if (!r.ok) { ctx.toast(t('socialInvalid') + r.invalid.join(', ')); return; }
           var cur = state();
           cur.config = Object.assign({}, cur.config, { social_links: r.links });
           if (commit(cur)) { audit('config.social', 'config', null, r.links); applied(t('saved')); }

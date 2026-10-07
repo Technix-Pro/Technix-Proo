@@ -1,37 +1,13 @@
 // Admin tab "Monetyzacja": sponsors (CRUD + preview), premium cosmetic packs, monthly analytics + CSV export. Mounted by admin-ui.js.
 (function () {
   'use strict';
-  var CFG = window.TP_CONFIG, E = window.TPEngage, Data = window.TPData;
+  var CFG = window.TP_CONFIG, E = window.TPEngage, Data = window.TPData, I18N = window.TPI18n;
 
-  var L = {
-    pl: {
-      sponsors: 'Sponsorzy', name: 'Nazwa sponsora', logo: 'Logo — URL (opcjonalnie)', link: 'Link sponsora', start: 'Początek', end: 'Koniec', save: 'Zapisz sponsora', update: 'Zapisz zmiany', cancel: 'Anuluj', edit: 'Edytuj', del: 'Usuń',
-      confirmDel: 'Usunąć? Tej operacji nie można cofnąć.', preview: 'Podgląd (tak zobaczą to użytkownicy)', saved: 'Zapisano.', deleted: 'Usunięto.', none: 'Brak wpisów.',
-      err_name: 'Podaj nazwę.', err_link: 'Niepoprawny link (http/https).', err_logo: 'Niepoprawny URL logo.', err_start: 'Niepoprawna data początku.', err_end: 'Niepoprawna data końca.', err_range: 'Koniec przed początkiem.',
-      active: 'Aktywny', inactive: 'Poza okresem', posts: 'Posty sponsorowane', noSponsor: '— bez sponsora —', postsNote: 'Każdy oznaczony post pokazuje „Wspierane przez [Sponsor]”.',
-      packs: 'Pakiety kosmetyczne', packName: 'Nazwa pakietu', packType: 'Typ', packCfg: 'Konfiguracja JSON, np. {"color":"#22d3ee"}', border: 'Ramka awatara', theme: 'Motyw profilu', bubble: 'Dymek czatu', addPack: 'Dodaj pakiet', builtin: 'wbudowany',
-      err_type: 'Niepoprawny typ.', err_config: 'Niepoprawny JSON konfiguracji.', packsNote: 'Tylko kosmetyka — bez przewagi w grze. Pakiety zapisane w konfiguracji admina (PREMIUM_COSMETICS).',
-      analytics: 'Analityka miesięczna', month: 'Miesiąc (RRRR-MM)', dau: 'Dzienni aktywni użytkownicy', retention: 'Retencja', cohort: 'Kohorta', retained: 'Wróciło', exportAnalytics: 'Eksportuj analitykę CSV', exportSponsors: 'Eksportuj raport sponsorów CSV',
-      health: 'Stan aplikacji (tylko agregaty)', users: 'Użytkownicy', milestones: 'Odblokowane kamienie milowe', exported: 'Wyeksportowano.', badMonth: 'Niepoprawny miesiąc.', exports: 'Ostatnie eksporty',
-      roi: 'ROI sponsora', note: 'Dane agregowane z tego urządzenia — bez śledzenia pojedynczych użytkowników.', pass: 'Karnet miesięczny (PLN)'
-    },
-    en: {
-      sponsors: 'Sponsors', name: 'Sponsor name', logo: 'Logo URL (optional)', link: 'Sponsor link', start: 'Start', end: 'End', save: 'Save sponsor', update: 'Save changes', cancel: 'Cancel', edit: 'Edit', del: 'Delete',
-      confirmDel: 'Delete? This cannot be undone.', preview: 'Preview (what users will see)', saved: 'Saved.', deleted: 'Deleted.', none: 'No entries.',
-      err_name: 'Enter a name.', err_link: 'Invalid link (http/https).', err_logo: 'Invalid logo URL.', err_start: 'Invalid start date.', err_end: 'Invalid end date.', err_range: 'End is before start.',
-      active: 'Active', inactive: 'Out of period', posts: 'Sponsored posts', noSponsor: '— no sponsor —', postsNote: 'Every labelled post shows “Wspierane przez [Sponsor]”.',
-      packs: 'Cosmetic packs', packName: 'Pack name', packType: 'Type', packCfg: 'Config JSON, e.g. {"color":"#22d3ee"}', border: 'Avatar border', theme: 'Profile theme', bubble: 'Chat bubble', addPack: 'Add pack', builtin: 'built-in',
-      err_type: 'Invalid type.', err_config: 'Invalid config JSON.', packsNote: 'Cosmetics only — no gameplay advantage. Packs live in the admin config (PREMIUM_COSMETICS).',
-      analytics: 'Monthly analytics', month: 'Month (YYYY-MM)', dau: 'Daily active users', retention: 'Retention', cohort: 'Cohort', retained: 'Returned', exportAnalytics: 'Export analytics CSV', exportSponsors: 'Export sponsor report CSV',
-      health: 'App health (aggregates only)', users: 'Users', milestones: 'Unlocked milestones', exported: 'Exported.', badMonth: 'Invalid month.', exports: 'Recent exports',
-      roi: 'Sponsor ROI', note: 'Aggregated from this device — no tracking of individual users.', pass: 'Monthly pass (PLN)'
-    }
-  };
 
   function create(x) {
     var h = x.h, icon = x.icon;
     var ui = { sponsor: blank(), month: new Date().toISOString().slice(0, 7), packType: 'border' };
-    function t(k) { return (L[x.lang()] || L.pl)[k] || L.pl[k] || k; }
+    function t(k) { return I18N.t('monet.' + k); }
     function blank() { return { id: null, name: '', logo_url: '', link: '', start_date: '', end_date: '' }; }
     function day(iso) { return iso ? String(iso).slice(0, 10) : ''; }
 

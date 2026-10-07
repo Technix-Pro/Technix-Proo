@@ -36,6 +36,9 @@
     return null;
   }
 
+  // New users follow their Telegram language: Polish stays Polish, anything else becomes English; default Polish.
+  function detectLanguage(code) { return code && !/^pl(?:[-_]|$)/i.test(String(code)) ? 'en' : 'pl'; }
+
   function newUser(tgUser, now) {
     now = now || new Date().toISOString();
     var id = Number(tgUser.id) || 0;
@@ -59,7 +62,7 @@
       last_active: now,
       last_xp_claim: null,
       last_daily: null,
-      settings: { notifications: { posts: true, chat: false, rewards: true }, privacy: { show_online: true, show_in_ranking: true }, language: 'pl' }
+      settings: { notifications: { posts: true, chat: false, rewards: true }, privacy: { show_online: true, show_in_ranking: true }, language: detectLanguage(tgUser.language_code) }
     };
   }
 
@@ -135,18 +138,18 @@
   }
 
   function achievements(user, ctx) {
-    var list = [{ id: 'first_login', title: 'Pierwsze logowanie', icon: 'fa-door-open', unlocked: true }];
+    var list = [{ id: 'first_login', title: 'Pierwsze logowanie', titleKey: 'ach.first_login', icon: 'fa-door-open', unlocked: true }];
     CFG.LEVELS.slice(1).forEach(function (l) {
-      list.push({ id: 'level_' + l.level, title: 'Poziom ' + l.level + ' — ' + l.name, icon: l.icon, unlocked: user.level >= l.level });
+      list.push({ id: 'level_' + l.level, title: 'Poziom ' + l.level + ' — ' + l.name, titleKey: 'ach.level', params: { level: l.level, name: l.name }, icon: l.icon, unlocked: user.level >= l.level });
     });
     [10, 50, 100].forEach(function (n) {
-      list.push({ id: 'tasks_' + n, title: n + ' zadań', icon: 'fa-list-check', unlocked: user.tasks_completed >= n });
+      list.push({ id: 'tasks_' + n, title: n + ' zadań', titleKey: 'ach.tasks', params: { n: n }, icon: 'fa-list-check', unlocked: user.tasks_completed >= n });
     });
     CFG.REFERRAL_MILESTONES.forEach(function (m) {
-      list.push({ id: 'ref_' + m.count, title: m.count + ' poleconych', icon: 'fa-user-plus', unlocked: user.referral_count >= m.count });
+      list.push({ id: 'ref_' + m.count, title: m.count + ' poleconych', titleKey: 'ach.ref', params: { n: m.count }, icon: 'fa-user-plus', unlocked: user.referral_count >= m.count });
     });
     [[10, 'Top 10'], [3, 'Top 3'], [1, 'Nr 1']].forEach(function (p) {
-      list.push({ id: 'top_' + p[0], title: p[1] + ' rankingu', icon: 'fa-trophy', unlocked: !!(ctx && ctx.rank && ctx.rank <= p[0]) });
+      list.push({ id: 'top_' + p[0], title: p[1] + ' rankingu', titleKey: 'ach.top_' + p[0], icon: 'fa-trophy', unlocked: !!(ctx && ctx.rank && ctx.rank <= p[0]) });
     });
     return list;
   }
@@ -178,8 +181,8 @@
 
   function validateAmount(raw, max) {
     var n = Number(raw);
-    if (!isFinite(n) || n <= 0) return { ok: false, error: 'Podaj poprawną kwotę.' };
-    if (max != null && n > max) return { ok: false, error: 'Niewystarczające środki.' };
+    if (!isFinite(n) || n <= 0) return { ok: false, code: 'invalid', error: 'Podaj poprawną kwotę.' };
+    if (max != null && n > max) return { ok: false, code: 'insufficient', error: 'Niewystarczające środki.' };
     return { ok: true, value: Math.round(n * 1e9) / 1e9 };
   }
 
