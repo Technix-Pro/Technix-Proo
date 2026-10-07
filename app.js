@@ -223,6 +223,33 @@
       .sort(function (a, b) { return Date.parse(b.created_at) - Date.parse(a.created_at); });
   }
 
+  /* ---------- SOCIAL ---------- */
+  var SOCIALS = [
+    { key: 'x', label: 'X', cls: 'fa-brands fa-x-twitter' }, { key: 'facebook', label: 'Facebook', cls: 'fa-brands fa-facebook' },
+    { key: 'instagram', label: 'Instagram', cls: 'fa-brands fa-instagram' }, { key: 'telegram', label: 'Telegram', cls: 'fa-brands fa-telegram' },
+    { key: 'discord', label: 'Discord', cls: 'fa-brands fa-discord' }, { key: 'youtube', label: 'YouTube', cls: 'fa-brands fa-youtube' },
+    { key: 'tiktok', label: 'TikTok', cls: 'fa-brands fa-tiktok' }, { key: 'website', label: 'Oficjalna strona', cls: 'fa-solid fa-globe' }
+  ];
+
+  function openSocial(key) {
+    var url = Core.safeUrl(Admin.resolveSocialLinks(Data.getAdminState())[key] || '');
+    if (!url) { toast('Link wkrótce'); return; }
+    try {
+      if (tg && /^https:\/\/t\.me\//i.test(url) && tg.openTelegramLink) tg.openTelegramLink(url);
+      else if (tg && tg.openLink) tg.openLink(url);
+      else window.open(url, '_blank', 'noopener,noreferrer');
+    } catch (e) { window.open(url, '_blank', 'noopener,noreferrer'); }
+  }
+
+  function socialPanel() {
+    return h('div', { class: 'panel space-y-2', role: 'group', 'aria-label': 'Społeczność' },
+      h('h2', { class: 'font-bold text-sm' }, icon('fa-users'), ' Społeczność'),
+      h('div', { class: 'grid grid-cols-4 gap-2' }, SOCIALS.map(function (x) {
+        return h('button', { type: 'button', class: 'btn btn-ghost', style: 'min-width:44px;min-height:44px;justify-content:center', 'aria-label': x.label, title: x.label, onclick: function () { openSocial(x.key); } },
+          h('i', { class: x.cls, 'aria-hidden': 'true' }));
+      })));
+  }
+
   function viewChannel() {
     var out = [];
     if (isAdmin()) out.push(adminPanel());
@@ -230,6 +257,7 @@
     var posts = visiblePosts();
     if (!posts.length) out.push(h('div', { class: 'panel text-sm muted text-center' }, 'Brak postów. ' + (isAdmin() ? 'Dodaj pierwszy powyżej.' : 'Wróć wkrótce!')));
     posts.forEach(function (p) { out.push(postCard(p)); });
+    out.push(socialPanel());
     return out;
   }
 
@@ -581,7 +609,8 @@
       h('div', { class: 'text-lg font-black' }, me.username), h('div', { class: 'text-sm text-violet-300 font-bold' }, levelBadge(me))),
       h('div', { class: 'panel' },
         row('Telegram ID', String(me.id) + (identity.telegram ? '' : ' (tryb lokalny)')), row('Username', '@' + me.username),
-        row('Dołączono', fmtDate(me.created_at)), row('Łączne XP', fmt(me.xp_total)), row('Gwiazdki', fmt(me.stars) + ' ★'))];
+        row('Dołączono', fmtDate(me.created_at)), row('Łączne XP', fmt(me.xp_total)), row('Gwiazdki', fmt(me.stars) + ' ★')),
+      socialPanel()];
   }
 
   function uploadAvatar(f) {

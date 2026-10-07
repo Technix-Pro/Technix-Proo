@@ -2,6 +2,8 @@
 (function (root) {
   var CFG = root.TP_CONFIG || (typeof require === 'function' ? require('./app-config.js') : null);
 
+  var Core = root.TPCore || (typeof require === 'function' ? require('./core.js') : null);
+
   var FEATURES = ['chat', 'bonus', 'rig', 'wallet', 'shop', 'airdrop'];
   var METRICS = ['xp_total', 'tasks_completed', 'referral_count', 'in_top10', 'level', 'clicks'];
 
@@ -303,7 +305,43 @@
     return bad ? { ok: false, error: 'posts' } : { ok: true };
   }
 
+  /* ---------- social links ---------- */
+  var SOCIAL_KEYS = ['x', 'facebook', 'instagram', 'telegram', 'discord', 'youtube', 'tiktok', 'website'];
+
+  function cleanSocial(raw) {
+    var out = {};
+    SOCIAL_KEYS.forEach(function (k) {
+      var v = raw && typeof raw[k] === 'string' ? raw[k].trim() : '';
+      out[k] = v ? (Core.safeUrl(v) || '') : '';
+    });
+    return out;
+  }
+
+  // Admin-saved links (state.config.social_links) override app-config.js defaults, key by key; invalid URLs are dropped.
+  function resolveSocialLinks(state) {
+    var base = cleanSocial(CFG && CFG.SOCIAL_LINKS);
+    var over = state && state.config && state.config.social_links;
+    if (over && typeof over === 'object') {
+      SOCIAL_KEYS.forEach(function (k) {
+        if (typeof over[k] === 'string') { var v = cleanSocial(over)[k]; if (v || over[k].trim() === '') base[k] = v; }
+      });
+    }
+    return base;
+  }
+
+  function validateSocialLinks(input) {
+    var out = {}, bad = [];
+    SOCIAL_KEYS.forEach(function (k) {
+      var v = input && typeof input[k] === 'string' ? input[k].trim() : '';
+      if (!v) { out[k] = ''; return; }
+      var u = Core.safeUrl(v);
+      if (u) out[k] = u; else { out[k] = ''; bad.push(k); }
+    });
+    return { ok: !bad.length, links: out, invalid: bad };
+  }
+
   var api = {
+    SOCIAL_KEYS: SOCIAL_KEYS, resolveSocialLinks: resolveSocialLinks, validateSocialLinks: validateSocialLinks,
     FEATURES: FEATURES, METRICS: METRICS, PHASES: PHASES, DEFAULT_CONFIG: DEFAULT_CONFIG,
     defaultState: defaultState, normalizeState: normalizeState, isAdminId: isAdminId, featureVisible: featureVisible,
     deployPhase: deployPhase, setFlag: setFlag, effectiveConfig: effectiveConfig, scaleXp: scaleXp, clickReward: clickReward,

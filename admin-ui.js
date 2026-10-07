@@ -468,6 +468,22 @@
           if (commit(cur)) { audit('config.update', 'config', null, cur.config); applied(t('saved')); }
         }, 'w-full')));
 
+      var soc = Admin.resolveSocialLinks(s), socIn = {};
+      Admin.SOCIAL_KEYS.forEach(function (k) { socIn[k] = input({ type: 'url', inputmode: 'url', placeholder: 'https://…', value: soc[k], 'aria-label': 'Link: ' + k, maxlength: '500' }); });
+      out.push(sectionTitle('Społeczność / Social'));
+      out.push(h('div', { class: 'panel space-y-2' },
+        h('div', { class: 'text-[10px] muted' }, 'Puste pole = przycisk pokazuje „Link wkrótce”. Nadpisuje domyślne wartości z app-config.js.'),
+        Admin.SOCIAL_KEYS.map(function (k) { return field(k, socIn[k]); }),
+        btn('Zapisz linki', function () {
+          if (!guard()) return;
+          var raw = {}; Admin.SOCIAL_KEYS.forEach(function (k) { raw[k] = socIn[k].value; });
+          var r = Admin.validateSocialLinks(raw);
+          if (!r.ok) { ctx.toast('Nieprawidłowy URL: ' + r.invalid.join(', ')); return; }
+          var cur = state();
+          cur.config = Object.assign({}, cur.config, { social_links: r.links });
+          if (commit(cur)) { audit('config.social', 'config', null, r.links); applied(t('saved')); }
+        }, 'w-full')));
+
       out.push(sectionTitle(t('supabase')));
       out.push(h('div', { class: 'panel space-y-2' },
         h('div', { class: 'text-xs' }, t('connStatus') + ': ' + (Data.remoteEnabled ? t('connOn') : t('connOff'))),
