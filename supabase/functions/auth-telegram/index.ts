@@ -1,6 +1,6 @@
 // Edge Function: POST { initData } -> { token, expires_at, role, user }. See DEPLOYMENT.md.
 // Secrets: TELEGRAM_BOT_TOKEN, APP_JWT_SECRET (= project JWT secret). SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are injected.
-import { buildIdentity, verifyInitData } from '../_shared/telegram-auth';
+import { buildIdentity, verifyInitData } from '../_shared/telegram-auth.mjs';
 
 const cors = {
   'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') || '*',
