@@ -26,6 +26,9 @@ test('without backend config the data layer stays local', async () => {
   const calls = [];
   const data = setup((...a) => { calls.push(a); return json([]); }, {});
   assert.equal(data.remoteEnabled, false);
+  assert.deepEqual(data.syncStatus(), {
+    mode: 'local', authenticated: false, isAdminSession: false, lastError: null, lastWriteOk: null, pendingWrites: 0
+  });
   assert.equal(await data.bootstrap({ id: 1 }, 'initData'), null);
   assert.equal(await data.action('tp_claim_daily'), null);
   assert.equal(calls.length, 0);
@@ -96,4 +99,42 @@ test('non-admin session never writes admin content', async () => {
   data.savePosts([{ id: '123e4567-e89b-42d3-a456-426614174000', content: 'x', created_at: 'now', published: true }]);
   data.saveAdminState(data.getAdminState());
   assert.equal(calls.length, before);
+});
+
+test('admin write status reports successful and failed remote writes', async () => {
+  const calls = [];
+  let failingPath = '';
+  const data = setup((url, opts) => {
+    calls.push({ url, opts });
+    if (url.endsWith('/auth-telegram')) return json({ token: 'jwt', expires_at: Math.floor(Date.now() / 1000) + 3600, role: 'admin', user: { id: 42 } });
+    if (opts.method !== 'GET' && failingPath && url.includes(failingPath)) return json([], 403);
+    return json([]);
+  }, SEC);
+  await data.bootstrap({ id: 42 }, 'initData');
+  assert.equal(data.syncStatus().authenticated, true);
+  assert.equal(data.syncStatus().isAdminSession, true);
+
+  const post = { id: '123e4567-e89b-42d3-a456-426614174000', content: 'x', created_at: 'now', published: true };
+  data.savePosts([post]);
+  await data.whenWritesSettled();
+  assert.equal(data.syncStatus().lastWriteOk, true);
+  assert.equal(data.syncStatus().lastError, null);
+
+  failingPath = '/posts';
+  data.savePosts([Object.assign({}, post, { content: 'rejected' })]);
+  await data.whenWritesSettled();
+  assert.equal(data.syncStatus().lastWriteOk, false);
+  assert.equal(data.syncStatus().lastError, 'HTTP 403');
+
+  failingPath = '/app_settings';
+  data.saveAdminState(data.getAdminState());
+  await data.whenWritesSettled();
+  assert.equal(data.syncStatus().lastWriteOk, false);
+
+  failingPath = '/notifications';
+  data.saveList('notifications', [{ id: '123e4567-e89b-42d3-a456-426614174001', title: 'Notice' }], 100);
+  await data.whenWritesSettled();
+  assert.equal(data.syncStatus().lastWriteOk, false);
+  assert.equal(data.syncStatus().pendingWrites, 0);
+  assert.ok(calls.some((call) => call.url.includes('/posts') && call.opts.method === 'POST'));
 });

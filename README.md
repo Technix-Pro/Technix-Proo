@@ -6,7 +6,7 @@ Static Telegram Mini App (no build step). Runs offline with mock data in `localS
 
 - `index.html` — shell (header, content, bottom nav); screens are rendered by `app.js`.
 - `app-config.js` — feature flags and constants (levels, tasks, referral milestones, RIG parts, XP timer, events).
-- `config.js` — **template** with placeholders (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `BOT_USERNAME`, `ADMIN_IDS`). Fill in your own values; never put a service_role key or bot token here.
+- `config.js` — safe offline defaults with placeholders (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, optional `AUTH_ENDPOINT`, `BOT_USERNAME`, `BOT_ID`, `ADMIN_IDS`, `DEV_MODE`). Replace with public values only; never put a service_role key or bot token here.
 - `i18n.js` — shared PL/EN dictionaries and `t(key, params)` (fallback en → pl → key); tested with `node --test test/i18n.test.js`. See „Language (i18n)” below.
 - `core.js` — pure logic (levels, referrals, tasks, achievements, validation); tested with `node --test test/core.test.js`.
 - `backend-adapter.js` — pure mapping between Supabase rows and app shapes (users, tasks, posts, settings); tested with `node --test test/backend-adapter.test.js`.

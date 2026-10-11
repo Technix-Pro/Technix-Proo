@@ -29,7 +29,17 @@
       return true;
     }
     function audit(action, type, id, changes) { Data.audit(me().id, action, type, id, changes); if (ctx.debug()) console.info('[admin]', action, type, id, changes); }
-    function applied(msg) { if (msg) ctx.toast(msg); ctx.applyConfig(); refresh(); ctx.rerender(); }
+    function applied(msg, syncKey) {
+      ctx.applyConfig(); refresh(); ctx.rerender();
+      if (!syncKey) { if (msg) ctx.toast(msg); return; }
+      Data.whenWritesSettled().then(function () {
+        var status = Data.syncStatus(), feedback;
+        if (!status.authenticated || !status.isAdminSession) feedback = t('syncLocal');
+        else if (status.lastWriteOk === false) feedback = I18N.t('admin.syncFailed', { error: status.lastError || 'unknown' });
+        else feedback = t(status.lastWriteOk === true ? syncKey : 'syncLocal');
+        ctx.toast(feedback);
+      });
+    }
 
     function field(label, el) { return h('label', { class: 'block text-[11px] muted space-y-1' }, h('span', {}, label), el); }
     function input(attrs) { return h('input', Object.assign({ class: 'field' }, attrs)); }
@@ -140,7 +150,7 @@
       if (!Data.savePosts(posts)) { ctx.toast(t('storageFull')); return; }
       audit(existing ? 'post.update' : 'post.create', 'post', existing ? existing.id : posts[posts.length - 1].id, { published: published, scheduled_at: r.post.scheduled_at });
       ui.draft = blankDraft(); ui.previewPost = null;
-      applied(t('saved'));
+      applied(null, published && !scheduledOnly ? 'syncPublished' : 'syncSaved');
     }
 
     function postStatus(p) {
@@ -188,7 +198,7 @@
               if (!guard()) return;
               var all = Data.getPosts(); all.forEach(function (x) { if (x.id === p.id) { x.published = !x.published; if (x.published) x.scheduled_at = null; } });
               if (!Data.savePosts(all)) { ctx.toast(t('storageFull')); return; }
-              audit(p.published ? 'post.unpublish' : 'post.publish', 'post', p.id); applied();
+              audit(p.published ? 'post.unpublish' : 'post.publish', 'post', p.id); applied(null, p.published ? 'syncSaved' : 'syncPublished');
             }, 'btn-ghost'),
             btn(t('del'), function () {
               if (!guard() || !confirm(t('confirmDelete'))) return;
@@ -196,7 +206,7 @@
               if (!r.ok) return;
               if (!Data.savePosts(r.posts)) { ctx.toast(t('storageFull')); return; }
               Data.saveList('trash', r.trash, 100); Data.mirror('post_trash', r.trash[0]);
-              audit('post.delete', 'post', p.id); applied(t('deleted'));
+              audit('post.delete', 'post', p.id); applied(null, 'syncSaved');
             }, 'btn-danger'))));
       });
       var trash = Data.getList('trash').filter(function (x) { return !x.restored_at; });
@@ -209,7 +219,7 @@
             var r = Admin.restorePost(Data.getPosts(), Data.getList('trash'), x.id, new Date().toISOString());
             if (!r.ok) return;
             if (!Data.savePosts(r.posts)) { ctx.toast(t('storageFull')); return; }
-            Data.saveList('trash', r.trash, 100); audit('post.restore', 'post', x.original_post_id); applied(t('restored'));
+            Data.saveList('trash', r.trash, 100); audit('post.restore', 'post', x.original_post_id); applied(null, 'syncSaved');
           }, 'btn-ghost')));
       });
       return out;
@@ -217,7 +227,7 @@
 
     /* ---------- TASKS ---------- */
     function tasksList() { var s = state(); return s.tasks || CFG.TASKS.map(function (x) { return Object.assign({ enabled: true }, x); }); }
-    function saveTasks(list, action, id) { if (!guard()) return; var s = state(); s.tasks = list; if (commit(s)) { audit(action, 'task', id); applied(t('saved')); } }
+    function saveTasks(list, action, id) { if (!guard()) return; var s = state(); s.tasks = list; if (commit(s)) { audit(action, 'task', id); applied(null, 'syncPublished'); } }
 
     function tabTasks() {
       var list = tasksList(), stats = Data.taskStats(), users = Math.max(1, Data.localUsers().length);
@@ -252,13 +262,13 @@
             ui.editTask = null; saveTasks(next, e.id ? 'task.update' : 'task.create', r.task.id);
           }, 'flex-1'),
           e.id ? btn(t('cancel'), function () { ui.editTask = null; refresh(); }, 'btn-ghost') : null,
-          btn(t('reset'), function () { if (!guard() || !confirm(t('confirmDelete'))) return; var s = state(); s.tasks = null; commit(s); audit('task.reset', 'task', null); applied(t('saved')); }, 'btn-ghost'))));
+          btn(t('reset'), function () { if (!guard() || !confirm(t('confirmDelete'))) return; var s = state(); s.tasks = null; if (commit(s)) { audit('task.reset', 'task', null); applied(null, 'syncPublished'); } }, 'btn-ghost'))));
       return out;
     }
 
     /* ---------- EVENTS ---------- */
     function eventsList() { return state().events || CFG.EVENTS.map(function (x) { return Object.assign({ starts_at: null, ends_at: null }, x); }); }
-    function saveEvents(list, action, id) { if (!guard()) return; var s = state(); s.events = list; if (commit(s)) { audit(action, 'event', id); applied(t('saved')); } }
+    function saveEvents(list, action, id) { if (!guard()) return; var s = state(); s.events = list; if (commit(s)) { audit(action, 'event', id); applied(null, 'syncPublished'); } }
     function localInput(iso) {
       var d = new Date(iso);
       if (!iso || isNaN(d)) return '';
@@ -294,7 +304,7 @@
             ui.editEvent = null; saveEvents(next, e.id ? 'event.update' : 'event.create', r.event.id);
           }, 'flex-1'),
           e.id ? btn(t('cancel'), function () { ui.editEvent = null; refresh(); }, 'btn-ghost') : null,
-          btn(t('reset'), function () { if (!guard() || !confirm(t('confirmDelete'))) return; var s = state(); s.events = null; commit(s); audit('event.reset', 'event', null); applied(t('saved')); }, 'btn-ghost'))));
+          btn(t('reset'), function () { if (!guard() || !confirm(t('confirmDelete'))) return; var s = state(); s.events = null; if (commit(s)) { audit('event.reset', 'event', null); applied(null, 'syncPublished'); } }, 'btn-ghost'))));
       return out;
     }
 
@@ -344,11 +354,11 @@
       ui.lastSend = Date.now();
       var now = new Date().toISOString();
       var row = Object.assign({ id: Data.newId(), status: 'sent', sent_at: Admin.notificationStatus(r.notification) === 'sent' ? now : null, delivered_count: 0, created_by: me().id }, r.notification);
-      Data.saveList('notifications', [row].concat(Data.getList('notifications')), 100);
+      if (!Data.saveList('notifications', [row].concat(Data.getList('notifications')), 100)) { ctx.toast(t('storageFull')); return; }
       Data.mirror('notifications', row);
       audit('notification.send', 'notification', row.id, { scheduled_at: row.scheduled_at });
       ui.notifDraft = { title: '', message: '', link: '', scheduled_at: '' }; ui.notifPreview = false;
-      applied(row.scheduled_at && Admin.notificationStatus(row) === 'scheduled' ? t('scheduledOk') : t('sentOk'));
+      applied(null, row.scheduled_at && Admin.notificationStatus(row) === 'scheduled' ? 'syncSaved' : 'syncPublished');
     }
 
     /* ---------- PHASES ---------- */
@@ -364,7 +374,7 @@
       Data.saveList('phases', [r.record].concat(Data.getList('phases')), 50);
       Data.mirror('phases', r.record);
       audit('phase.deploy', 'phase', n, r.record.config);
-      applied(t('deployed') + n);
+      applied(null, 'syncPublished');
     }
 
     function tabPhases() {
@@ -398,7 +408,7 @@
         var cb = h('input', { type: 'checkbox', class: 'w-4 h-4 accent-violet-500', 'aria-label': featureLabel(f), onchange: function () {
           if (!guard()) return;
           var r = Admin.setFlag(state(), f, cb.checked, { isAdmin: ctx.isAdmin() });
-          if (r.ok && commit(r.state)) { audit('flag.set', 'feature', f, { value: cb.checked }); applied(t('saved')); }
+          if (r.ok && commit(r.state)) { audit('flag.set', 'feature', f, { value: cb.checked }); applied(null, 'syncPublished'); }
         } });
         cb.checked = s.flags[f] !== false;
         return h('label', { class: 'flex items-center justify-between text-sm py-1.5' }, featureLabel(f), cb);
@@ -435,7 +445,7 @@
             click_thresholds: { small: Number(cs.small.value), smallXp: Number(cs.smallXp.value), big: Number(cs.big.value), bigXp: Number(cs.bigXp.value), special: Number(cs.special.value) },
             airdrop_pool: Number(pool.value), airdrop_rate: Number(rate.value)
           });
-          if (commit(cur)) { audit('config.update', 'config', null, cur.config); applied(t('saved')); }
+          if (commit(cur)) { audit('config.update', 'config', null, cur.config); applied(null, 'syncPublished'); }
         }, 'w-full')));
 
       var soc = Admin.resolveSocialLinks(s), socIn = {};
@@ -451,7 +461,7 @@
           if (!r.ok) { ctx.toast(t('socialInvalid') + r.invalid.join(', ')); return; }
           var cur = state();
           cur.config = Object.assign({}, cur.config, { social_links: r.links });
-          if (commit(cur)) { audit('config.social', 'config', null, r.links); applied(t('saved')); }
+          if (commit(cur)) { audit('config.social', 'config', null, r.links); applied(null, 'syncPublished'); }
         }, 'w-full')));
 
       out.push(sectionTitle(t('supabase')));

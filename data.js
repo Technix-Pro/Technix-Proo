@@ -8,6 +8,7 @@
   var session = null, authPromise = null, initDataRaw = '', currentId = null, syncedClicks = 0, leadersCache = null;
   var failures = 0, lastOkAt = 0, verified = null, REQUEST_TIMEOUT_MS = 12000, STALE_MS = 10 * 60000;
   var queue = Promise.resolve(), profileTimer = null, pendingUser = null;
+  var pendingWrites = 0, lastWriteOk = null, lastWriteError = null, activeWrites = [];
   function noop() {}
 
   (function purgeOldVersions() {
@@ -97,6 +98,35 @@
   }
   function inList(ids) { return '(' + ids.map(function (i) { return '"' + String(i).replace(/["\\]/g, '') + '"'; }).join(',') + ')'; }
   function quiet(p) { return p.then(null, noop); }
+  function trackWrite(p) {
+    if (!pendingWrites) { lastWriteOk = null; lastWriteError = null; }
+    pendingWrites++;
+    var tracked = Promise.resolve(p).then(function (value) {
+      pendingWrites--;
+      if (lastWriteOk !== false) lastWriteOk = true;
+      activeWrites.splice(activeWrites.indexOf(tracked), 1);
+      return value;
+    }, function (err) {
+      pendingWrites--;
+      lastWriteOk = false;
+      lastWriteError = err && err.message ? err.message : String(err || 'unknown error');
+      activeWrites.splice(activeWrites.indexOf(tracked), 1);
+      throw err;
+    });
+    activeWrites.push(tracked);
+    tracked.then(noop, noop);
+    return tracked;
+  }
+  function trackWrites(writes) {
+    if (!writes.length) return;
+    return trackWrite(Promise.all(writes.map(function (p) {
+      return Promise.resolve(p).then(function () { return null; }, function (err) { return err; });
+    })).then(function (errors) {
+      var err = errors.filter(Boolean)[0];
+      if (err) throw err;
+      return true;
+    }));
+  }
 
   function fetchUserBundle(id) {
     return Promise.all([
@@ -167,6 +197,22 @@
     // 'local' | 'remote' | 'offline' (configured but failing); stale = no successful backend call recently.
     mode: function () { return BE.backendMode(SEC, { disabled: !CFG.FEATURES.realtime, failures: failures }); },
     isStale: function () { return remoteOn && BE.isStale(lastOkAt, Date.now(), STALE_MS); },
+    syncStatus: function () {
+      return {
+        mode: Data.mode(),
+        authenticated: !!verified && BE.sessionValid(session),
+        isAdminSession: isAdminSession(),
+        lastError: lastWriteError,
+        lastWriteOk: lastWriteOk,
+        pendingWrites: pendingWrites
+      };
+    },
+    whenWritesSettled: function () {
+      var writes = activeWrites.slice();
+      return Promise.all(writes.map(function (p) { return p.then(noop, noop); })).then(function () {
+        return activeWrites.length ? Data.whenWritesSettled() : undefined;
+      });
+    },
     // Server-verified identity/role (null until auth-telegram succeeded); never derived from client-supplied ids.
     verifiedUser: function () { return verified && verified.user; },
     // The UI role survives JWT expiry (the next request re-authenticates; the server enforces permissions regardless).
@@ -326,8 +372,10 @@
         var kept = {};
         list.forEach(function (p) { kept[p.id] = true; });
         var removed = prev.filter(function (p) { return BE.isUuid(p.id) && !kept[p.id]; }).map(function (p) { return p.id; });
-        if (rows.length) quiet(remote('POST', 'posts', rows));
-        if (removed.length) quiet(remote('PATCH', 'posts?id=in.' + inList(removed), { status: 'trashed' }));
+        var writes = [];
+        if (rows.length) writes.push(remote('POST', 'posts', rows));
+        if (removed.length) writes.push(remote('PATCH', 'posts?id=in.' + inList(removed), { status: 'trashed' }));
+        trackWrites(writes);
       }
       return ok;
     },
@@ -343,10 +391,10 @@
       if (isAdminSession()) {
         var norm = window.TPAdmin ? window.TPAdmin.normalizeState(state) : state;
         var tasks = (norm.tasks || CFG.TASKS).map(function (t, i) { return BE.taskToRow(t, i, currentId); });
-        quiet(remote('POST', 'app_settings', BE.settingsRows(norm, currentId)));
-        quiet(remote('POST', 'tasks', tasks).then(function () {
+        var tasksWrite = remote('POST', 'tasks', tasks).then(function () {
           return tasks.length ? remote('PATCH', 'tasks?id=not.in.' + inList(tasks.map(function (t) { return t.id; })), { published: false }) : remote('PATCH', 'tasks?id=not.is.null', { published: false });
-        }));
+        });
+        trackWrites([remote('POST', 'app_settings', BE.settingsRows(norm, currentId)), tasksWrite]);
       }
       return ok;
     },
@@ -361,12 +409,14 @@
         list.forEach(function (n) { kept[n.id] = true; });
         var rows = list.filter(function (n) { return BE.isUuid(n.id); }).map(BE.notificationToRow);
         var removed = prev.filter(function (n) { return BE.isUuid(n.id) && !kept[n.id]; }).map(function (n) { return n.id; });
-        if (rows.length) quiet(remote('POST', 'notifications', rows));
-        if (removed.length) quiet(remote('PATCH', 'notifications?id=in.' + inList(removed), { published: false }));
+        var writes = [];
+        if (rows.length) writes.push(remote('POST', 'notifications', rows));
+        if (removed.length) writes.push(remote('PATCH', 'notifications?id=in.' + inList(removed), { published: false }));
+        trackWrites(writes);
       }
       return ok;
     },
-    mirror: function (table, row) { remote('POST', table, [row]).catch(function () {}); },
+    mirror: function (table, row) { trackWrites([remote('POST', table, [row])]); },
     audit: function (adminId, action, entityType, entityId, changes) {
       var row = { id: uid(), admin_id: adminId, action: action, entity_type: entityType, entity_id: entityId == null ? null : String(entityId), changes: changes || null, timestamp: new Date().toISOString() };
       Data.saveList('audit', [row].concat(Data.getList('audit')), 200);
